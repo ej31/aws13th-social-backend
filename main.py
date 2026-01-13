@@ -48,7 +48,6 @@ async def update_post(post_id: int, title: str, content: str):
 async def delete_post(post_id: int):
     return {"post_id": post_id}
 
-
 @app.get("/posts/{post_id}/comments")
 async def get_post_comments(post_id: int):
     return {"post_id": post_id, "comments": []}

@@ -140,3 +140,22 @@ async def update_comment(
         created_at=updated_comment["created_at"],
         updated_at=updated_comment["updated_at"]
     )
+@router.get("/me", response_model=List[CommentResponse], status_code=status.HTTP_200_OK)
+async def get_my_comments(current_user: dict = Depends(auth.get_current_user)):
+    comments = data.load_data("comments.json")
+    my_comments = [c for c in comments if c.get("user_id") == current_user["id"]]
+
+    my_comments.sort(key=lambda x: x.get("id", 0), reverse=True)
+
+    return [
+        CommentResponse(
+            id=c["id"],
+            post_id=c["post_id"],
+            user_id=c["user_id"],
+            author_nickname=c["author_nickname"],
+            content=c["content"],
+            created_at=c["created_at"],
+            updated_at=c["updated_at"]
+        )
+        for c in my_comments
+    ]

@@ -3,7 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from schemas.post import PostResponse, PostCreate, PostAllPostResponse
+from schemas.post import PostResponse, PostCreate, PostUpdate, PostAllPostResponse
 from utils import auth, data
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -130,3 +130,50 @@ async def delete_post(
     data.delete_by_id("posts.json", post_id)
 
 
+@router.patch("/{post_id}", response_model=PostResponse, status_code=status.HTTP_200_OK)
+async def update_post(
+        post_id: int,
+        post_data: PostUpdate,
+        current_user: dict = Depends(auth.get_current_user)
+):
+    post = data.find_by_id("posts.json", post_id)
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글을 찾을 수 없음"
+        )
+
+    if post["user_id"] != current_user["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="작성자만 수정할 수 있습니다"
+        )
+
+    update_fields = {}
+    if post_data.title is not None:
+        update_fields["title"] = post_data.title
+    if post_data.content is not None:
+        update_fields["content"] = post_data.content
+
+    if not update_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="수정할 내용이 없습니다"
+        )
+
+    update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+    data.update_by_id("posts.json", post_id, update_fields)
+
+    updated_post = data.find_by_id("posts.json", post_id)
+    return PostResponse(
+        id=updated_post["id"],
+        user_id=updated_post["user_id"],
+        author_nickname=updated_post.get("author_nickname", "탈퇴한 사용자"),
+        title=updated_post["title"],
+        content=updated_post["content"],
+        view_count=updated_post.get("view_count", 0),
+        like_count=updated_post.get("like_count", 0),
+        comment_count=updated_post.get("comment_count", 0),
+        created_at=updated_post["created_at"],
+        updated_at=updated_post["updated_at"]
+    )

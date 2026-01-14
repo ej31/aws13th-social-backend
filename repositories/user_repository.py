@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Optional, List
+from typing import Optional
 
 from common.config import settings
 
@@ -12,7 +12,7 @@ class UserRepository:
             self._save_all([])
 
     #내부용 함수
-    def _load_all(self) -> List[dict]:
+    def _load_all(self) -> list[dict]:
         with open(self.file_path,"r",encoding="utf-8") as f:
             try:
                 return json.load(f)
@@ -20,7 +20,7 @@ class UserRepository:
                 return []
 
     #내부용 함수
-    def _save_all(self, users: List[dict]):
+    def _save_all(self, users: list[dict]):
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(users, f, indent=4, ensure_ascii=False)
 

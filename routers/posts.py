@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -74,6 +74,42 @@ async def get_all_posts():
     ]
 
     return post_responses
+
+
+@router.get("/search", response_model=List[PostAllPostResponse], status_code=status.HTTP_200_OK)
+async def search_posts(q: Optional[str] = None):
+    if not q or len(q.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="검색어를 입력해주세요"
+        )
+
+    keyword = q.strip().lower()
+    posts = data.load_data("posts.json")
+
+    matched_posts = [
+        post for post in posts
+        if keyword in post.get("title", "").lower()
+        or keyword in post.get("content", "").lower()
+    ]
+
+    matched_posts.sort(key=lambda x: x.get("id", 0), reverse=True)
+
+    return [
+        PostAllPostResponse(
+            id=post["id"],
+            user_id=post["user_id"],
+            author_nickname=post.get("author_nickname", "탈퇴한 사용자"),
+            title=post["title"],
+            view_count=post.get("view_count", 0),
+            like_count=post.get("like_count", 0),
+            comment_count=post.get("comment_count", 0),
+            created_at=post["created_at"],
+            updated_at=post["updated_at"]
+        )
+        for post in matched_posts
+    ]
+
 
 @router.get("/{post_id}", response_model=PostResponse, status_code=status.HTTP_200_OK)
 async def get_detail_post(post_id: int):

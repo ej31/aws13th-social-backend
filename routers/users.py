@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
 from schemas.user import UserCreate, UserResponse, Token, UserLogin
 from utils import auth, data
@@ -76,4 +76,18 @@ async def login(credentials: UserLogin):
     access_token = auth.create_access_token(token_data)
 
     return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_profile(current_user: dict = Depends(auth.get_current_user)):
+
+    return UserResponse(
+        id=current_user["id"],
+        email=current_user["email"],
+        nickname=current_user["nickname"],
+        profile_image=current_user.get("profile_image"),
+        created_at=current_user["created_at"],
+        updated_at=current_user["updated_at"]
+    )
+
 

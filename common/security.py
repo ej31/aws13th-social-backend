@@ -1,17 +1,14 @@
-from dotenv import load_dotenv
 from hashids import Hashids
 from jose import jwt
 from passlib.context import CryptContext
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+from common.config import settings
 
-hashids = Hashids(salt="secret-key",min_length=8)
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
+hashids = Hashids(salt=settings.HASHIDS_SALT,min_length=8)
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -22,37 +19,19 @@ def verify_password(password: str,hashed_password: str ) -> bool:
 def encode_id(id: int) -> str:
     return hashids.encode(id)
 
-def decode_id(id: str) -> tuple:
-    return hashids.decode(id)
-
-def get_next_id_hash(db:list) -> str:
-    if not db:
-        return encode_id(1)
-
-    id_numbers = []
-
-    for user in db:
-        decoded_id = decode_id(user["id"])
-        if decoded_id:
-            id_numbers.append(decoded_id[0])
-
-    #DB에 데이터가 있는데 정상적인 숫자가 없으면 1번 시작
-    if not id_numbers:
-        return encode_id(1)
-
-    next_number = max(id_numbers) + 1
-
-    return encode_id(next_number)
+def decode_id(id: str) -> int:
+    decoded = hashids.decode(id)
+    return decoded[0] if decoded else None
 
 def create_access_token(subject:str):
     minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
-    expire = datetime.utcnow() + timedelta(minutes=minutes)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
     to_encode = {"exp": expire,
                  "sub":str(subject)}
 
     encoded_jwt = jwt.encode(
         to_encode,
-        SECRET_KEY,
-        algorithm=ALGORITHM
+        settings.SECRET_KEY,
+        settings.algorithm
     )
     return encoded_jwt

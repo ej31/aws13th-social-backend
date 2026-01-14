@@ -52,13 +52,19 @@ async def create_new_post(
     )
 
 @router.get("/", response_model=List[PostAllPostResponse], status_code=status.HTTP_200_OK)
-async def get_all_posts():
-
+async def get_all_posts(sort: Optional[str] = "latest"):
     posts = data.load_data("posts.json")
 
-    posts.sort(key=lambda x: x.get("id", 0), reverse=True)
+    if sort == "views":
+        posts.sort(key=lambda x: x.get("view_count", 0), reverse=True)
+    elif sort == "likes":
+        posts.sort(key=lambda x: x.get("like_count", 0), reverse=True)
+    elif sort == "comments":
+        posts.sort(key=lambda x: x.get("comment_count", 0), reverse=True)
+    else:
+        posts.sort(key=lambda x: x.get("id", 0), reverse=True)
 
-    post_responses = [
+    return [
         PostAllPostResponse(
             id=post["id"],
             user_id=post["user_id"],
@@ -73,11 +79,9 @@ async def get_all_posts():
         for post in posts
     ]
 
-    return post_responses
-
 
 @router.get("/search", response_model=List[PostAllPostResponse], status_code=status.HTTP_200_OK)
-async def search_posts(q: Optional[str] = None):
+async def search_posts(q: Optional[str] = None, sort: Optional[str] = "latest"):
     if not q or len(q.strip()) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -93,7 +97,14 @@ async def search_posts(q: Optional[str] = None):
         or keyword in post.get("content", "").lower()
     ]
 
-    matched_posts.sort(key=lambda x: x.get("id", 0), reverse=True)
+    if sort == "views":
+        matched_posts.sort(key=lambda x: x.get("view_count", 0), reverse=True)
+    elif sort == "likes":
+        matched_posts.sort(key=lambda x: x.get("like_count", 0), reverse=True)
+    elif sort == "comments":
+        matched_posts.sort(key=lambda x: x.get("comment_count", 0), reverse=True)
+    else:
+        matched_posts.sort(key=lambda x: x.get("id", 0), reverse=True)
 
     return [
         PostAllPostResponse(

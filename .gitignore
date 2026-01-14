@@ -78,10 +78,6 @@ htmlcov/
 .tox/
 .hypothesis/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
 # FastAPI / Uvicorn
 .uvicorn/
 

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from routers.users import router as users_router
+from routers.posts import router as posts_router
 
 load_dotenv()
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(users_router)
+app.include_router(posts_router)
 
 
 @app.get("/")

@@ -58,3 +58,39 @@ async def create_like(
         is_liked=True,
         total_likes=new_like_count
     )
+
+
+@router.delete("/{post_id}", response_model=LikeStatus, status_code=status.HTTP_200_OK)
+async def delete_like(
+        post_id: int,
+        current_user: dict = Depends(auth.get_current_user)
+):
+    post = data.find_by_id("posts.json", post_id)
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글을 찾을 수 없음"
+        )
+
+    likes = data.load_data("likes.json")
+    existing_like = next(
+        (like for like in likes
+         if like["post_id"] == post_id and like["user_id"] == current_user["id"]),
+        None
+    )
+
+    if not existing_like:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="좋아요를 누르지 않은 게시글입니다"
+        )
+
+    data.delete_by_id("likes.json", existing_like["id"])
+
+    new_like_count = max(post.get("like_count", 0) - 1, 0)
+    data.update_by_id("posts.json", post_id, {"like_count": new_like_count})
+
+    return LikeStatus(
+        is_liked=False,
+        total_likes=new_like_count
+    )

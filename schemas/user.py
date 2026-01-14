@@ -17,9 +17,9 @@ class UserBase(BaseModel):
         ...,
         min_length=2,
         max_length=20,
-        #한글,염문,숫자만 허용하고 공백이나 특수문자는 안됨
+        #한글,영문,숫자만 허용하고 공백이나 특수문자는 안됨
         pattern=r"^[가-힣a-zA-Z0-9]+$",
-        description="닉네임 (2~10자, 특수문자 불가)"
+        description="닉네임 (2~20자, 특수문자 불가)"
     )
 
 #회원가입 요청
@@ -28,12 +28,12 @@ class UserCreate(UserBase):
 
     @field_validator("password") # 클래스 내부의 필드 password
     @classmethod # 아직 객체가 생성되지 않았으므로 클래스메서드 선언
-    def validate_password(cls,v):
+    def validate_password(cls,v: str) -> str: # 반환 타입 str
         #re.search는 문자열 전체에서 해당 패턴이 하나라도 있는지 찾는다.
 
         #영문 대문자 또는 소문자가 하나라도 포함되는지 확인
         if not re.search(r"[A-Za-z]",v):
-            raise ValueError("비밀번호에 염문자가 포함되어야 합니다.")
+            raise ValueError("비밀번호에 영문자가 포함되어야 합니다.")
         #숫자 0-9가 하나라도 포함되는지 확인한다.
         if not re.search(r"[0-9]",v):
             raise ValueError("비밀번호에 숫자가 포함되어야 합니다.")
@@ -48,7 +48,7 @@ class UserLogin(BaseModel):
     password: str
 
 class UserUpdate(BaseModel):
-    nickname: str | None = Field(None,min_length=2,max_length=10,pattern=r"^[가-힣a-zA-Z0-9]+$")
+    nickname: str | None = Field(None,min_length=2,max_length=20,pattern=r"^[가-힣a-zA-Z0-9]+$")
 
 class UserResponse(UserBase):
     id : str

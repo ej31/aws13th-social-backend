@@ -4,6 +4,7 @@
 - 비밀번호 해싱/검증
 """
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -24,7 +25,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict[str, any], expires_delta: timedelta | None = None) -> str:
+def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """JWT 액세스 토큰 생성"""
     to_encode = data.copy()
     
@@ -39,7 +40,7 @@ def create_access_token(data: dict[str, any], expires_delta: timedelta | None = 
     return encoded_jwt
 
 
-def decode_access_token(token: str) -> dict[str, any] | None:
+def decode_access_token(token: str) -> dict[str, Any] | None:
     """JWT 액세스 토큰 디코딩 및 검증"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])

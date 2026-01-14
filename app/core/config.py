@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # 데이터 저장소 설정
     DATA_DIR: str = "./data"
     USE_DATABASE: bool = False
-    DATABASE_URL: Optional[str] = "sqlite:///./community.db"
+    DATABASE_URL: str = "sqlite:///./community.db"  # USE_DATABASE=True일 때 사용
     
     # MongoDB 설정
     # MONGODB_URL: Optional[str] = None

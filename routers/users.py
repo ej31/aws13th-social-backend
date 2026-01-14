@@ -1,10 +1,8 @@
-import os
 from typing import Annotated
 from fastapi import APIRouter, status, UploadFile
 from fastapi.params import Form, File, Depends
 from pydantic import EmailStr
 
-from common.config import settings
 from common.dependencies import get_auth_service
 from schemas.user import SignupRequest, UserResponse
 from common.common import CommonResponse

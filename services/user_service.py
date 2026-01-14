@@ -1,6 +1,7 @@
 import os
 import uuid
 from datetime import datetime
+from time import timezone
 
 from fastapi import HTTPException,status
 from fastapi import UploadFile
@@ -16,7 +17,7 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 class UserService:
-    def __init__(self,user_repo: UserRepository):
+    def __init__(self,user_repo: UserRepository) -> None:
         self.user_repo = user_repo
 
     async def signup_user(self, signup_data: SignupRequest, profile_image: UploadFile | None):
@@ -57,7 +58,7 @@ class UserService:
             "nickname": signup_data.nickname,
             "password": hash_password(signup_data.password),
             "profile_image": image_url,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         saved_user = self.user_repo.save(new_user)
 

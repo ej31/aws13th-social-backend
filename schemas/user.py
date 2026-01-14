@@ -27,6 +27,11 @@ class UserResponse(UserBase):
 class UserInDB(UserResponse):
     hashed_password: str
 
+class UserPublicResponse(BaseModel):
+    id: int
+    nickname: str
+    profile_image: Optional[str] = None
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

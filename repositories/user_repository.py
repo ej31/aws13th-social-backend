@@ -2,9 +2,12 @@ import json
 import os
 from typing import Optional, List
 
+from common.config import settings
+
+
 class UserRepository:
     def __init__(self):
-        self.file_path = "users.json"
+        self.file_path = settings.database_path
         if not os.path.exists(self.file_path):
             self._save_all([])
 
@@ -50,3 +53,12 @@ class UserRepository:
             users.append(user_data)
 
         self._save_all(users)
+
+        #저장한 데이터 반환
+        return user_data
+
+    def get_next_id(self) -> int:
+        users = self._load_all()
+        if not users:
+            return 1
+        return max(user["id"] for user in users) + 1

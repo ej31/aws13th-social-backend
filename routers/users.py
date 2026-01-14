@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
@@ -21,7 +21,7 @@ async def signup(user_data: UserCreate):
 
     user_id = data.get_next_id("users.json")
 
-    now = datetime.now().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     new_user = {
         "id": user_id,
         "email": user_data.email,

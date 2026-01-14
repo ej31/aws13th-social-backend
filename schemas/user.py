@@ -23,7 +23,7 @@ class UserBase(BaseModel):
     )
 
 #회원가입 요청
-class UserCreate(UserBase):
+class SignupRequest(UserBase):
     password: str = Field(...,min_length=8,max_length=20,description="비밀번호 (영문/숫자/특수문자 포함)")
 
     @field_validator("password") # 클래스 내부의 필드 password
@@ -43,19 +43,19 @@ class UserCreate(UserBase):
 
         return v
 
-class UserLogin(BaseModel):
+class UserLoginRequest(BaseModel):
     email:EmailStr
     password: str
 
-class UserUpdate(BaseModel):
+class UserUpdateRequest(BaseModel):
     nickname: str | None = Field(None,min_length=2,max_length=20,pattern=r"^[가-힣a-zA-Z0-9]+$")
 
 class UserResponse(UserBase):
     id : str
-    profileImage: str | None
-    createdAt: datetime
+    profile_image: str | None
+    created_at: datetime
 
-class Token(BaseModel):
+class TokenData(BaseModel):
     access_token: str
     token_type : str = "bearer"
 

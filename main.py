@@ -1,5 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI , Query
+from enum import Enum
 
+class PostSortType(str, Enum):
+    '''
+    최신순,조회수순,좋아요순
+    '''
+    latest = "latest"
+    views = "views"
+    likes = "likes"
 app = FastAPI()
 ############### 먼저 Users 엔드포인트 작성 ############
 # 내 프로필 조회
@@ -14,18 +22,29 @@ async def get_user(
     return {"user_id": user_id}
 # 내가 쓴 게시글 목록
 @app.get("/users/me/posts")
-async def get_user_posts():
-    pass
+async def get_user_posts(
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
+        sort : str | None = None
+):
+    return {"page": page, "limit": limit, "sort": sort}
 
 # 내가 작성한 댓글
 @app.get("/users/me/comments")
-async def get_user_comments():
-    pass
+async def get_user_comments(
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
+        sort: str | None = None
+):
+    return {"page" : page, "limit": limit, "sort": sort}
 
 # 내가 좋아요한 게시글 목록
 @app.get("/users/me/likes")
-async def get_user_likes():
-    pass
+async def get_user_likes(
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
+):
+    return {"page": page, "limit": limit}
 
 # 회원 가입
 @app.post("/users")
@@ -44,10 +63,30 @@ async def delete_user():
 
 ######Posts############
 #GET 먼저 생성
-# 게시글 검색 및 게시글 목록 조회 (query parameters의 keword가 있으면 게시글 검색), 게시글 정렬도 sort
+# 게시글 목록 조회
 @app.get("/posts")
-async def get_posts():
-    pass
+async def get_posts(
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
+):
+    return {"page": page, "limit": limit}
+# 게시글 검색
+@app.get("/posts/search")
+async def get_posts_by_keyword(
+        keyword: str = Query(min_length=1),
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
+):
+    return {"keyword": keyword, "page": page, "limit": limit}
+
+# 게시글 정렬
+@app.get("/posts/sorted")
+async def get_posts_sorted(
+        sort: PostSortType,
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
+):
+    return {"sort": sort, "page": page, "limit": limit}
 
 # 게시글 상세조회
 @app.get("/posts/{post_id}")
@@ -59,9 +98,11 @@ async def get_post(
 # 댓글 목록 조회
 @app.get("/posts/{post_id}/comments")
 async def get_post_comments(
-        post_id: str
+        post_id: str,
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
-    return {"post_id": post_id}
+    return {"post_id": post_id, "page": page, "limit": limit}
 
 # 좋아요 상태 확인
 @app.get("/posts/{post_id}/likes")

@@ -246,12 +246,6 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| page | integer | X | 페이지 번호(페이지는 1번부터) |
-| limit | integer | X | 한 페이지당 게시글 (기본값:20) |
-| sort | String | X | 정렬한 기준을 정한다. |
-
 **Response (200 OK)**
 
 ```json
@@ -351,7 +345,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 정렬 }
 
-**GET** `/posts` 
+**GET** `/posts/sorted` 
 
 게시글 목록을 조회 합니다. `sort`로 정렬 기준을 지정할 수 있습니다. 
 
@@ -361,7 +355,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 | --- | --- | --- | --- |
 | page | integer | X | 페이지 번호 (기본값: 1) |
 | limit | integer | X | 페이지당 게시글 개수 (기본값: 20) |
-| sort | String | X | 정렬 기준 |
+| sort | String | O | 정렬 기준(latest, views, likes)  |
 
 **Response (200 OK)**
 
@@ -372,7 +366,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 	    {
       "post_id" : "1",
       "title" : "게시글의 제목",
-
+			"sort" : "
       "author" : {
 	      "author_id" : "admin",
 	      "nickname" : "abc"
@@ -394,7 +388,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "error",
   "error": {
-    "code": "**BAD_REQUEST**",
+    "code": "**BAD__REQUEST**",
     "message" : "정렬 기준을 지원하지 않습니다."	  
   }
 }
@@ -404,7 +398,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 검색 }
 
-**GET** `/posts` 
+**GET** `/posts/search` 
 
 게시글은 제목/내용을 기준으로 검색하여 목록을 조회합니다.(로그인 없이 검색 가능)
 
@@ -470,7 +464,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 **Response (200 OK)**
 
 ```json
-{{
+{
   "status": "success",
   "data": [
     {
@@ -750,7 +744,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 댓글 수정 }
 
-**PUT** `/posts/{post_id}/comments/{comment_id}` 
+**PUT** `/posts/{post_id}/comments/{comment_id}`
 
 본인이 작성한 댓글을 수정합니다.
 

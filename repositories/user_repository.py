@@ -6,7 +6,7 @@ from common.config import settings
 
 
 class UserRepository:
-    def __init__(self):
+    def __init__(self) -> None:
         self.file_path = settings.database_path
         if not os.path.exists(self.file_path):
             self._save_all([])
@@ -40,7 +40,7 @@ class UserRepository:
 
         return None
 
-    def save(self,user_data: dict):
+    def save(self,user_data: dict) -> dict:
         #새로운 유저를 추가하거나 기존 유저 정보를 업데이트 한다.
         users = self._load_all()
 

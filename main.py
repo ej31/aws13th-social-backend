@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 
-from schemas.commons import UserId, PostId
+from schemas.commons import UserId, PostId, CommentId, Page
+from schemas.post import ListPostsQuery
 
 app = FastAPI()
 
@@ -50,13 +51,9 @@ async def get_specific_user(user_id: UserId):
 
 # List, search, sort posts
 @app.get("/posts")
-async def get_posts(
-        page: int = 1,
-        q: str | None = None,
-        sort: str = "created_at",
-        order: str = "desc"
-):
+async def get_posts(query: ListPostsQuery = Depends()):
     pass
+
 
 # post new post
 @app.post("/posts")
@@ -66,7 +63,7 @@ async def create_post(post: dict):
 
 # post list I wrote
 @app.get("/posts/me")
-async def get_posts_mine(page: int = 1):
+async def get_posts_mine(page: Page):
     pass
 
 
@@ -92,7 +89,7 @@ async def delete_post(post_id: PostId):
 
 # List all comments for a post
 @app.get("/posts/{post_id}/comments")
-async def get_comments(post_id: PostId, page: int = 1):
+async def get_comments(post_id: PostId, page: Page):
     pass
 
 
@@ -101,20 +98,22 @@ async def get_comments(post_id: PostId, page: int = 1):
 async def post_comment(post_id: PostId):
     pass
 
+
 # edit comment
 @app.patch("/posts/{post_id}/comments/{comment_id}")
-async def update_comment(post_id: PostId, comment_id: int):
+async def update_comment(post_id: PostId, comment_id: CommentId):
     pass
+
 
 # delete comment
 @app.delete("/posts/{post_id}/comments/{comment_id}")
-async def delete_comment(post_id: PostId, comment_id: int):
+async def delete_comment(post_id: PostId, comment_id: CommentId):
     pass
 
 
 # comment list I wrote
 @app.get("/comments/me")
-async def get_comments_mine(page: int = 1):
+async def get_comments_mine(page: Page):
     pass
 
 
@@ -125,17 +124,20 @@ async def get_comments_mine(page: int = 1):
 async def post_like(post_id: PostId):
     pass
 
+
 # delete like
 @app.delete("/posts/{post_id}/likes")
 async def delete_like(post_id: PostId):
     pass
+
 
 # check like status
 @app.get("/posts/{post_id}/likes")
 async def get_likes_status(post_id: PostId):
     pass
 
+
 # post list I liked
 @app.get("/posts/liked")
-async def get_posts_liked(page: int = 1):
+async def get_posts_liked(page: Page):
     pass

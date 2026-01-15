@@ -8,8 +8,10 @@ async def read_users_me():
     pass
 # 특정 회원 조회
 @app.get("/users/{user_id}")
-async def get_user():
-    pass
+async def get_user(
+        user_id: str
+):
+    return {"user_id": user_id}
 # 내가 쓴 게시글 목록
 @app.get("/users/me/posts")
 async def get_user_posts():
@@ -49,18 +51,24 @@ async def get_posts():
 
 # 게시글 상세조회
 @app.get("/posts/{post_id}")
-async def get_post():
-    pass
+async def get_post(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 댓글 목록 조회
 @app.get("/posts/{post_id}/comments")
-async def get_post_comments():
-    pass
+async def get_post_comments(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 좋아요 상태 확인
 @app.get("/posts/{post_id}/likes")
-async def get_post_likes():
-    pass
+async def get_post_likes(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 게시글 작성
 @app.post("/posts")
@@ -69,47 +77,57 @@ async def post_post():
 
 # 게시글 수정
 @app.put("/posts/{post_id}")
-async def put_post():
-    pass
+async def put_post(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 게시글 삭제
 @app.delete("/posts/{post_id}")
-async def delete_post():
-    pass
+async def delete_post(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 댓글 작성 (특정 게시글에 댓글을 작성합니다.)
 @app.post("/posts/{post_id}/comments")
-async def post_comment():
-    pass
+async def post_comment(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 댓글 수정
 @app.put("/posts/{post_id}/comments/{comment_id}")
-async def change_comment():
-    pass
+async def change_comment(
+        post_id: str,
+        comment_id: str
+):
+    return {"post_id": post_id, "comment_id": comment_id}
 
 # 좋아요 등록
 @app.post("/posts/{post_id}/likes")
-async def post_like():
-    pass
+async def post_like(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 # 좋아요 취소
 @app.delete("/posts/{post_id}/likes")
-async def delete_like():
-    pass
+async def delete_like(
+        post_id: str
+):
+    return {"post_id": post_id}
 
 ############Comments##################
 # 댓글 삭제
 @app.delete("/comments/{comment_id}")
-async def delete_comment():
-    pass
+async def delete_comment(
+        comment_id: str
+):
+    return {"comment_id": comment_id}
 
 ######### auth ############
 # 회원 로그인
 @app.post("/auth/token")
 async def auth_token():
     pass
-
-
-
-
-

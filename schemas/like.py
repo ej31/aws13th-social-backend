@@ -2,8 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from schemas.commons import PostId, UserId, Pagination
-from schemas.post import Count, Title
+from schemas.commons import PostId, UserId, Pagination, Count, Title
 
 
 class LikedListItem(BaseModel):

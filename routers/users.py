@@ -78,8 +78,6 @@ class UserUpdate(BaseModel):
             profile_image_url=profile_image_url
         )
 
-
-
 class UserPublicResponse(BaseModel):
    nickname: Optional[str] = None
    email: EmailStr

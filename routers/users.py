@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 from datetime import datetime, timezone, timedelta
 import json,os,uuid
-from fastapi import FastAPI, Form, HTTPException, Depends, status
+from fastapi import FastAPI, Form, HTTPException, Depends, status, APIRouter
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from jose import jwt
@@ -20,15 +20,19 @@ class JwtSettings(BaseSettings):
     SECRET_KEY: str ="dev_secret_key"
     ALGORITHM: str ="HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file="../.env")
 
 settings = JwtSettings()
 app = FastAPI()
+router = APIRouter(prefix="/users", tags=["users"])
 
-class UsersBase(BaseModel):
+#공통 필드
+class UserAuthBase(BaseModel):
+    email: Annotated[EmailStr, Field(description="사용자 이메일")]
+    password: Annotated[str, Field(min_length=8, max_length=50)]
+
+class UsersBase(UserAuthBase):
     nickname :Annotated[Optional[str], Field(min_length=2, max_length=20, description="2자 이상 20자 이하의 닉네임")] = None
-    email : Annotated[EmailStr, Field(description="사용자 이메일")]
-    password : Annotated[str, Field(min_length=8, max_length=50)] # 비밀번호 복잡성 로직은 나중에 추가
     profile_image_url: Optional[HttpUrl] = None
 
     @classmethod
@@ -43,11 +47,23 @@ class UsersBase(BaseModel):
             raise HTTPException(status_code=400, detail="패스워드 불일치")
         return cls(email=email,nickname=nickname, password=password)
 
+class LoginRequest(UserAuthBase):
+    @classmethod
+    def as_form(cls,
+                email: Annotated[EmailStr, Form()],
+                password: Annotated[str, Form()]):
+        return cls(email=email, password=password)
+
+class UserPublicResponse(BaseModel):
+   nickname: Optional[str] = None
+   email: EmailStr
+   profile_image_url: Optional[HttpUrl] = None
+
 class UserResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int
-    user : UsersBase
+    user : UserPublicResponse
     created_at: datetime
 
 
@@ -63,10 +79,7 @@ def create_access_token(user_id: str):
     expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     return token, expires_in
 
-
-
-DB_FILE = "users.json"
-
+DB_FILE = "./users.json"
 def get_db_users():
     if not os.path.exists(DB_FILE):
         return []
@@ -75,7 +88,6 @@ def get_db_users():
             return json.load(f)
         except json.JSONDecodeError:
             return []
-
 def save_user_to_json(user_dict: dict):
     users = get_db_users()
     if any(u['email'] == user_dict['email'] for u in users):
@@ -85,7 +97,7 @@ def save_user_to_json(user_dict: dict):
         json.dump(users, f, indent=4, ensure_ascii=False)
     return True
 
-@app.post("/auth/signup",response_model=UserResponse,status_code=status.HTTP_201_CREATED)
+@router.post("/auth/signup",response_model=UserResponse,status_code=status.HTTP_201_CREATED)
 async def signup(form_data: Annotated[UsersBase, Depends(UsersBase.as_form)]):
     #user_id 생성
     user_id = str(uuid.uuid4())
@@ -104,40 +116,44 @@ async def signup(form_data: Annotated[UsersBase, Depends(UsersBase.as_form)]):
         access_token=token,
         token_type="bearer",
         expires_in=expires_in,
-        user=form_data,
+        user=UserPublicResponse(nickname=form_data.nickname, email=form_data.email, profile_image_url=form_data.profile_image_url),
         created_at=datetime.now(timezone.utc)
     )
 
-
-@app.post("/auth/login",response_model=UserResponse)
-async def login(login_data : Annotated[UsersBase, Depends(UsersBase.as_form)]):
+@router.post("/auth/login",response_model=UserResponse)
+async def login(login_data: Annotated[LoginRequest, Depends(LoginRequest.as_form)]):
     users = get_db_users()
     user_record = next((u for u in users if u["email"] == login_data.email), None)
+
+    if not user_record or user_record["password"] != login_data.password:
+        raise HTTPException(status_code=401, detail="인증 정보가 올바르지 않습니다.")
+
     token, expires_in = create_access_token(user_record["user_id"])
 
     return UserResponse(
         access_token=token,
         token_type="bearer",
         expires_in=expires_in,
+        user=UserPublicResponse(**user_record),
         created_at=datetime.now(timezone.utc)
     )
 
-# @app.post("/auth/logout")
-# async def logout(user: Users):
-#     return {"logout": user}
+@app.post("/auth/logout")
+async def logout():
+    return {"logout": "로그아웃 성공"}
 
-@app.get("/users/me",response_model=UserResponse)
+@router.get("/users/me",response_model=UserResponse)
 async def get_users():
     return {"username": "admin", "email": "", "password": ""}
 
-@app.get("/users/{user_id}")
+@router.get("/users/{user_id}")
 async def get_user(user_id: int):
     return {"user_id": user_id}
 
-@app.patch("/users/me")
+@router.patch("/users/me")
 async def update_user(user_id: int):
     return {"user_id": user_id}
 
-@app.delete("/users/me")
+@router.delete("/users/me")
 async def delete_user(user_id: int):
     return {"user_id": user_id}

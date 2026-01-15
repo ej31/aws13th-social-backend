@@ -1,22 +1,22 @@
 import os
-import uuid
 from datetime import datetime
 
-from fastapi import HTTPException,status
+from FileUtil.FileUpload import FileUtil
+from fastapi import HTTPException, status, Depends
 from fastapi import UploadFile
 
 from common.config import settings
 from common.security import hash_password, encode_id, verify_password, create_access_token
 from repositories.user_repository import UserRepository
-from schemas.user import SignupRequest, UserLoginRequest
+from schemas.user import SignupRequest, UserLoginRequest, UserUpdateRequest
 
-UPLOAD_DIR = settings.upload_dir
 
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
+if not os.path.exists(settings.upload_dir):
+    os.makedirs(settings.upload_dir)
 
 class UserService:
-    def __init__(self,user_repo: UserRepository) -> None:
+    # service에서 jwt 의존성을 주입 받지 않는 이유는 이미 router에서 jwt로 인증을 받았기 때문이다.
+    def __init__(self, user_repo: UserRepository):
         self.user_repo = user_repo
 
     async def signup_user(self, signup_data: SignupRequest, profile_image: UploadFile | None):
@@ -26,28 +26,10 @@ class UserService:
                 detail="해당 이메일은 이미 가입되었습니다.",
             )
 
-        image_url = f"{settings.upload_dir}/default.png"
+        image_url = f"/{settings.upload_dir}/default.png"
+
         if profile_image:
-            if profile_image.content_type not in ["image/png","image/jpeg"]:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="JPG 또는 PNG 파일의 형식만 저장할 수 있습니다."
-                )
-
-            file_content = await profile_image.read()
-            if len(file_content) > 5 * 1024 * 1024: #5MB
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="파일의 용량은 5MB를 넘을 수 없습니다."
-                )
-
-            file_name = f"{uuid.uuid4()}_{profile_image.filename}"
-            file_path = os.path.join(UPLOAD_DIR, file_name)
-
-            with open(file_path, "wb") as f:
-                f.write(file_content)
-
-            image_url = f"/{file_path}"
+            image_url = await FileUtil.validate_and_save_image(profile_image)
 
         user_id = self.user_repo.get_next_id()
 
@@ -66,10 +48,10 @@ class UserService:
 
         return response_data
 
-    async def login_user(self,login_data: UserLoginRequest):
+    async def login_user(self, login_data: UserLoginRequest):
         user = self.user_repo.find_by_email(str(login_data.email))
 
-        #유저가 없거나 비밀번호가 틀렸을 경우
+        # 유저가 없거나 비밀번호가 틀렸을 경우
         if not user or not verify_password(login_data.password, user["password"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -83,7 +65,7 @@ class UserService:
             "token_type": "bearer"
         }
 
-    async def delete_user(self,email:str):
+    async def delete_user(self, email: str):
         user = self.user_repo.find_by_email(email)
         if not user:
             raise HTTPException(
@@ -91,14 +73,54 @@ class UserService:
                 detail="유저를 찾을 수 없습니다."
             )
         if user.get("profile_image"):
-            self._delete_profile_image_file(user["profile_image"])
+            FileUtil.delete_file(user["profile_image"])
 
         self.user_repo.delete_by_email(email)
 
-    def _delete_profile_image_file(self,file_path:str):
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                print("파일이 정상적으로 삭제 되었습니다.")
-            except Exception as e:
-                print(f"파일 삭제 실패: {e}")
+    async def update_user(self, email: str, update_data: UserUpdateRequest, profile_image: UploadFile | None):
+        user = self.user_repo.find_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="사용자를 찾을 수 없습니다."
+            )
+
+        if not verify_password(update_data.current_password, user["password"]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="현재 비밀번호가 일치하지 않습니다."
+            )
+
+        if update_data.nickname:
+            user["nickname"] = update_data.nickname
+
+        if update_data.password:
+            # 새 비밀번호가 기존과 같은지 체크
+            if verify_password(update_data.password, user["password"]):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="새 비밀번호는 이전과 달라야 합니다."
+                )
+            user["password"] = hash_password(update_data.password)
+
+        if profile_image:
+            if user.get("profile_image"):
+                FileUtil.delete_file(user["profile_image"])
+
+            new_image_path = await FileUtil.validate_and_save_image(profile_image)
+            user["profile_image"] = new_image_path
+
+        self.user_repo.save(user)
+        return user
+
+    async def find_user_by_id(self,id:int):
+        target_user = self.user_repo.find_by_id(id)
+        print(target_user)
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당하는 이메일을 가진 유저를 찾을 수 없습니다."
+            )
+
+        return target_user
+

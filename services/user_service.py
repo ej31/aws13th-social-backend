@@ -1,15 +1,14 @@
 import os
 import uuid
 from datetime import datetime
-from time import timezone
 
 from fastapi import HTTPException,status
 from fastapi import UploadFile
 
 from common.config import settings
-from common.security import hash_password, encode_id
+from common.security import hash_password, encode_id, verify_password, create_access_token
 from repositories.user_repository import UserRepository
-from schemas.user import SignupRequest
+from schemas.user import SignupRequest, UserLoginRequest
 
 UPLOAD_DIR = settings.upload_dir
 
@@ -58,7 +57,7 @@ class UserService:
             "nickname": signup_data.nickname,
             "password": hash_password(signup_data.password),
             "profile_image": image_url,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": datetime.now().isoformat()
         }
         saved_user = self.user_repo.save(new_user)
 
@@ -66,3 +65,40 @@ class UserService:
         response_data["id"] = encode_id(saved_user["id"])
 
         return response_data
+
+    async def login_user(self,login_data: UserLoginRequest):
+        user = self.user_repo.find_by_email(str(login_data.email))
+
+        #유저가 없거나 비밀번호가 틀렸을 경우
+        if not user or not verify_password(login_data.password, user["password"]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="이메일 또는 비밀번호가 올바르지 않습니다."
+            )
+
+        access_token = create_access_token(subject=user["email"])
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+
+    async def delete_user(self,email:str):
+        user = self.user_repo.find_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="유저를 찾을 수 없습니다."
+            )
+        if user.get("profile_image"):
+            self._delete_profile_image_file(user["profile_image"])
+
+        self.user_repo.delete_by_email(email)
+
+    def _delete_profile_image_file(self,file_path:str):
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print("파일이 정상적으로 삭제 되었습니다.")
+            except Exception as e:
+                print(f"파일 삭제 실패: {e}")

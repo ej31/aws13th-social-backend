@@ -49,7 +49,7 @@ def decode_access_token(token: str) -> str | None:
                              )
         email: str= payload.get("sub")
         return email
-    except JWTError as e:
+    except JWTError:
         #토큰이 만료되거나 없을 경우
         return None
 

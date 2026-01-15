@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import StringConstraints, BaseModel, Field, model_validator
 
-from schemas.commons import PostId, UserId, Pagination
+from schemas.commons import PostId, UserId, Pagination, Page
 
 Title = Annotated[
     str,
@@ -26,14 +26,8 @@ class PostListItem(BaseModel):
     created_at: datetime
 
 
-class PostDetail(BaseModel):
-    id: PostId
-    author: UserId
-    title: Title
+class PostDetail(PostListItem):
     content: Content
-    view_count: Count
-    like_count: Count
-    created_at: datetime
     updated_at: datetime | None = None
 
 

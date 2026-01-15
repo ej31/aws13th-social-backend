@@ -34,12 +34,19 @@ class FileUtil:
         with open(full_path,"wb") as f:
             f.write(content)
 
-        return  f"/{full_path}"
+        return  cls.as_url(full_path)
 
     @staticmethod
-    def delete_file(file_path: str):
+    def delete_file(file_path: str) -> None:
         actual_path = file_path.lstrip("/")
         if os.path.exists(actual_path):
             os.remove(actual_path)
 
+    @staticmethod
+    # 어떤 경로든 "/static/profiles/file.png 형식으로 통일한다"
+    def as_url(path: str) -> str:
+        path = path.replace("\\","/")
+        if not path.startswith("/"):
+            path = "/" + path
+        return path
 

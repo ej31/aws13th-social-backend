@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 from schemas.commons import Content, CommentId, Pagination, PostId, UserId
 
@@ -19,13 +19,7 @@ class CommentBase(BaseModel):
 
 
 class CommentUpdateRequest(BaseModel):
-    content: Content | None = None
-
-    @model_validator(mode="after")
-    def at_least_one_field(self):
-        if self.content is None:
-            raise ValueError("수정할 필드가 없습니다.")
-        return self
+    content: Content
 
 
 class CommentUpdateResponse(CommentBase):

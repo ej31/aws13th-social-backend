@@ -1,58 +1,17 @@
 from fastapi import FastAPI, Depends
 
-from schemas.commons import UserId, PostId, CommentId, Page
+from routers import users
+from schemas.commons import PostId, CommentId, Page
 from schemas.post import ListPostsQuery
 
 app = FastAPI()
+app.include_router(users.router)
 
-
-# ----- USERS ----- #
-
-# signup
-@app.post("/users")
-async def create_user(user: dict):
-    pass
-
-
-# login
-@app.post("/auth/tokens")
-async def get_auth_tokens():
-    pass
-
-
-# edit profile
-# Depends를 활용한 의존성 주입으로 구현
-@app.patch("/users/me")
-async def update_my_profile():
-    pass
-
-
-# get my profile
-# Depends를 활용한 의존성 주입으로 구현
-@app.get("/users/me")
-async def get_my_profile():
-    pass
-
-
-# delete account
-# Depends를 활용한 의존성 주입으로 구현
-@app.delete("/users/me")
-async def delete_my_account():
-    pass
-
-
-# get a specific user
-@app.get("/users/{user_id}")
-async def get_specific_user(user_id: UserId):
-    pass
-
-
-# ----- POSTS ----- #
 
 # List, search, sort posts
 @app.get("/posts")
 async def get_posts(query: ListPostsQuery = Depends()):
-    pass
+
 
 
 # post new post

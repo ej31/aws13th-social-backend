@@ -31,7 +31,7 @@ class UserCreateResponse(BaseModel):
 
 class UserLoginRequest(BaseModel):
     email: EmailStr
-    password: Password
+    password: str
 
 
 class UserLoginResponse(BaseModel):

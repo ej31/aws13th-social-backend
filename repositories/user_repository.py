@@ -7,7 +7,7 @@ from common.config import settings
 
 class UserRepository:
     def __init__(self) -> None:
-        self.file_path = settings.database_path
+        self.file_path = settings.users_json_path
         if not os.path.exists(self.file_path):
             self._save_all([])
 

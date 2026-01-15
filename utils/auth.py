@@ -1,21 +1,23 @@
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
 from dotenv import load_dotenv
-from fastapi import HTTPException, status,Depends
+from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 
 from schemas.user import TokenData
-from utils.data import find_by_id
+from utils import data as data_utils
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 security = HTTPBearer()
 
@@ -78,7 +80,7 @@ def get_current_user(
 
     token_data = verify_token(token)
 
-    user = find_by_id("users.json", token_data.user_id)
+    user = data_utils.find_by_id("users.json", token_data.user_id)
 
     if user is None:
         raise HTTPException(
@@ -90,3 +92,65 @@ def get_current_user(
     user_response = {k: v for k, v in user.items() if k != "hashed_password"}
 
     return user_response
+
+
+def create_refresh_token(user_id: int) -> str:
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    refresh_tokens = data_utils.load_data("refresh_tokens.json")
+
+    refresh_tokens = [rt for rt in refresh_tokens if rt.get("user_id") != user_id]
+
+    token_id = data_utils.get_next_id("refresh_tokens.json")
+    new_token = {
+        "id": token_id,
+        "user_id": user_id,
+        "token": token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    refresh_tokens.append(new_token)
+    data_utils.save_data(refresh_tokens, "refresh_tokens.json")
+
+    return token
+
+
+def verify_refresh_token(token: str) -> dict:
+    refresh_tokens = data_utils.load_data("refresh_tokens.json")
+
+    token_data = next((rt for rt in refresh_tokens if rt.get("token") == token), None)
+
+    if not token_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="유효하지 않은 리프레시 토큰"
+        )
+
+    expires_at = datetime.fromisoformat(token_data["expires_at"])
+    if datetime.now(timezone.utc) > expires_at:
+        delete_refresh_token(token)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="만료된 리프레시 토큰"
+        )
+
+    return token_data
+
+
+def delete_refresh_token(token: str) -> bool:
+    refresh_tokens = data_utils.load_data("refresh_tokens.json")
+    original_length = len(refresh_tokens)
+
+    refresh_tokens = [rt for rt in refresh_tokens if rt.get("token") != token]
+
+    if len(refresh_tokens) < original_length:
+        return data_utils.save_data(refresh_tokens, "refresh_tokens.json")
+    return False
+
+
+def delete_user_refresh_tokens(user_id: int) -> bool:
+    refresh_tokens = data_utils.load_data("refresh_tokens.json")
+    refresh_tokens = [rt for rt in refresh_tokens if rt.get("user_id") != user_id]
+    return data_utils.save_data(refresh_tokens, "refresh_tokens.json")

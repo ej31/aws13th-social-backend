@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
-from schemas.user import UserCreate, UserResponse, UserUpdate, UserPublicResponse, Token, UserLogin
+from schemas.user import UserCreate, UserResponse, UserUpdate, UserPublicResponse, Token, UserLogin, RefreshTokenRequest
 from utils import auth, data
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -74,8 +74,9 @@ async def login(credentials: UserLogin):
         "user_id": user["id"]
     }
     access_token = auth.create_access_token(token_data)
+    refresh_token = auth.create_refresh_token(user["id"])
 
-    return Token(access_token=access_token, token_type="bearer")
+    return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
 
 @router.get("/me", response_model=UserResponse)
@@ -166,6 +167,8 @@ async def delete_account(current_user: dict = Depends(auth.get_current_user)):
     users = [u for u in users if u.get("id") != user_id]
     data.save_data(users, "users.json")
 
+    auth.delete_user_refresh_tokens(user_id)
+
 
 @router.get("/{user_id}", response_model=UserPublicResponse)
 async def get_user_profile(user_id: int):
@@ -181,3 +184,33 @@ async def get_user_profile(user_id: int):
         nickname=user["nickname"],
         profile_image=user.get("profile_image")
     )
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(token_request: RefreshTokenRequest):
+    token_data = auth.verify_refresh_token(token_request.refresh_token)
+
+    user = data.find_by_id("users.json", token_data["user_id"])
+    if not user:
+        auth.delete_refresh_token(token_request.refresh_token)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="사용자를 찾을 수 없습니다"
+        )
+
+    access_token_data = {
+        "sub": user["email"],
+        "user_id": user["id"]
+    }
+    new_access_token = auth.create_access_token(access_token_data)
+    new_refresh_token = auth.create_refresh_token(user["id"])
+
+    return Token(access_token=new_access_token, refresh_token=new_refresh_token, token_type="bearer")
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+        token_request: RefreshTokenRequest,
+        current_user: dict = Depends(auth.get_current_user)
+):
+    auth.delete_refresh_token(token_request.refresh_token)

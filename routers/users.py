@@ -233,7 +233,7 @@ async def update_user(
     patch_dict = update_data.model_dump(exclude_unset=True,mode="json")
 
     users[user].update(patch_dict)
-
+#왜 커밋 안되?
     with open(DB_FILE,"w",encoding="utf-8") as f:
         json.dump(users,f,ensure_ascii=False,indent=4)
     return users[user]

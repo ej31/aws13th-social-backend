@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 
 from FileUtil.FileUpload import FileUtil
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from fastapi import UploadFile
 
 from common.config import settings

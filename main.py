@@ -1,8 +1,12 @@
 import fastapi
+import os
 from starlette.staticfiles import StaticFiles
 
 from routers import users
 
+# static 디렉토리가 없으면 생성
+if not os.path.exists("static"):
+    os.makedirs("static")
 app = fastapi.FastAPI()
 
 # 정적 파일 이미지를 외부에서 볼 수 있게 한다.

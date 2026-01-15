@@ -44,7 +44,7 @@
         "email": "test1234@example.com",
         "nickname": "test1234",
         "password": "$pbkdf2-sha256$29000$jhECAGCs9d577x1jjDFmrA$pkx4Is0sFfAMCx08bEa6Uw9CbVUndQ9t1meBJJKEq/c",
-        "profile_image": "/static/profiles\\2a20143b-0e5e-4e7c-a921-ce4391bcd3c4_dice_img.jpg",
+        "profile_image": "/static/profiles/2a20143b-0e5e-4e7c-a921-ce4391bcd3c4_dice_img.jpg",
         "created_at": "2026-01-14T18:52:40.746879"
     },
     {
@@ -52,7 +52,7 @@
         "email": "admin@example.com",
         "nickname": "updateadminzz",
         "password": "$pbkdf2-sha256$29000$SYmR8j6HEMKY0/r/vxciZA$ZPS7GwsqjavkQK4HeA0GYmpKb8jL1U178mSefcQRt5A",
-        "profile_image": "/static/profiles\\fea5c54c-968b-489f-9af3-ac24ee4f0541_admin.png",
+        "profile_image": "/static/profiles/fea5c54c-968b-489f-9af3-ac24ee4f0541_admin.png",
         "created_at": "2026-01-15T14:38:59.127878"
     }
 ]

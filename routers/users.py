@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, status, UploadFile
 from fastapi.params import Form, File, Depends
 from pydantic import EmailStr
-
+from fastapi import HTTPException
 from common.common import CommonResponse
 from common.dependencies import get_auth_service, get_current_user
 from common.security import encode_id, decode_id
@@ -61,8 +61,8 @@ async def delete_me(user_service: Annotated[UserService, Depends(get_auth_servic
 async def update_me(user_service: Annotated[UserService, Depends(get_auth_service)],
                     current_user: Annotated[dict, Depends(get_current_user)],
                     current_password: str = Form(...),
-                    password: str = Form(),
-                    nickname: str = Form(),
+                    password: str | None = Form(None),
+                    nickname: str = Form(None),
                     profile_image: UploadFile = File(None)
                     ):
     user_update_data = UserUpdateRequest(nickname=nickname, password=password,current_password=current_password)
@@ -78,8 +78,11 @@ async def get_user_by_id(
                          user_id: str,
                          user_service: Annotated[UserService,Depends(get_auth_service)]):
 
-    user_id = decode_id(user_id)
-    result = await user_service.find_user_by_id(user_id)
+    decoded_id = decode_id(user_id)
+    if decoded_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="유효하지 않은 사용자입니다.")
+    result = await user_service.find_user_by_id(decoded_id)
+
     return CommonResponse(
         status="success",
         message="회원 정보를 찾았습니다.",

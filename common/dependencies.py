@@ -21,7 +21,6 @@ def get_auth_service(
 #jwt 인증된 사용자인지 확인
 async def get_current_user(
         auth: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-        user_service : Annotated[UserService, Depends(get_auth_service)],
         user_repo : Annotated[UserRepository, Depends(get_user_repo)]
 ) -> dict:
     token = auth.credentials

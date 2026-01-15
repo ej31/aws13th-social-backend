@@ -5,5 +5,5 @@ T = TypeVar("T")
 
 class CommonResponse(BaseModel, Generic[T]):
     status: str = "success"
-    messages: str = "요청이 성공적으로 처리되었습니다."
+    message: str = "요청이 성공적으로 처리되었습니다."
     data: Optional[T] = None

@@ -1,9 +1,8 @@
 from datetime import datetime
-from typing import List
 
 from pydantic import BaseModel, Field
 
-from schemas.pagenation import PaginationMeta
+from schemas.pagination import PaginationMeta
 
 
 #게시물 스키마에 공통 모델
@@ -21,7 +20,7 @@ class PostsBase(BaseModel):
 
 #게시글을 쓴 사용자에 대한 정보 (상속을 받지 않는 이유는 불 필요한 정보까지 같이 받게 됨)
 class PostsAuthorResponse(BaseModel):
-    id:str = Field(...,description="해시된 사용자 ID")
+    id: str = Field(...,description="해시된 사용자 ID")
     nickname:str
 
 #게시글 상세 조회
@@ -36,9 +35,9 @@ class PostsResponse(PostsBase):
     updated_at: datetime | None = None
 
 #게시물 목록 조횐
-class PostsListResponse(PostsBase):
+class PostsListResponse(BaseModel):
     # content 안에는 PostResponse가 들어간다.
-    content = List[PostsResponse]
+    content : list[PostsResponse]
     # 목록 하단에 페이지 번호를 표시하기 위해 사용한다.
     pagination: PaginationMeta
 
@@ -49,4 +48,3 @@ class PostsCreateRequest(PostsBase):
 class PostsUpdateRequest(PostsBase):
     title: str | None = Field(None,min_length=1,max_length=100,description="글의 주인이 제목을 수정한다.")
     content: str | None = Field(None,min_length=1,max_length=255,description="글의 주인이 내용을 수정한다.")
-

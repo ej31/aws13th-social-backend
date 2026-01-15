@@ -4,7 +4,7 @@ from fastapi import APIRouter, status, UploadFile
 from fastapi.params import Form, File, Depends
 from pydantic import EmailStr
 from fastapi import HTTPException
-from common.common import CommonResponse
+from schemas.common_response import CommonResponse
 from common.dependencies import get_auth_service, get_current_user
 from common.security import encode_id, decode_id
 from schemas.user import SignupRequest, UserResponse, UserLoginRequest, TokenData, UserQueryResponse, UserUpdateRequest, \

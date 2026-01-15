@@ -15,21 +15,21 @@ class PostRepository:
         with open(self.file_path, "r", encoding="utf-8") as f:
             try:
                 return json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
+            except json.JSONDecodeError:
                 return []
 
     # 내부용 함수
-    def _save_all(self, users: list[dict]) -> None:
+    def _save_all(self, posts: list[dict]) -> None:
         with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(users, f, indent=4, ensure_ascii=False)
+            json.dump(posts, f, indent=4, ensure_ascii=False)
 
-    def find_all(self) -> list:
+    def find_all(self) -> list[dict]:
         return self._load_all()
 
     def find_by_id(self, post_id: int) -> dict | None:
         posts = self._load_all()
         for p in posts:
-            if (p["post_id"]) == post_id:
+            if p["post_id"] == post_id:
                 return p
         return None
 

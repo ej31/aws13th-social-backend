@@ -11,6 +11,8 @@ class UserCreateRequest(BaseModel):
 
 
 class UserCreateResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: int
     nickname: str
     created_at: datetime
@@ -22,10 +24,14 @@ class UserLoginRequest(BaseModel):
 
 
 class UserLoginResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
     access_token: str
 
 
 class UserMyProfile(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: int
     email: EmailStr
     nickname: str
@@ -39,6 +45,8 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserProfile(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: int
     nickname: str
     profile_img: str | None = None

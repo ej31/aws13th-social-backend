@@ -6,7 +6,7 @@ from utils.data import load_data,save_data
 
 router = APIRouter(prefix="/users")
 
-@router.post("/signup", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def signup(data: UserCreate):
     users = load_data("users")
 
@@ -42,10 +42,6 @@ async def signup(data: UserCreate):
                 "created_at":new_user["created_at"]
              }
             }
-
-@router.post("/login")
-def login(data: UserLogin):
-    return {"message": "로그인 및 토큰 발급"}
 
 @router.get("/me")
 def get_me():

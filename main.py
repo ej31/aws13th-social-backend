@@ -1,8 +1,4 @@
-from typing import Annotated, Optional
-from fastapi import FastAPI, UploadFile, Body
-from pydantic import BaseModel, Field
-from starlette import status
-from pydantic import EmailStr
+from fastapi import FastAPI
 from routers import posts, users, comments, likes
 
 app = FastAPI()

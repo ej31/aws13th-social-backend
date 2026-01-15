@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 from datetime import datetime, timezone, timedelta
 import json,os,uuid
-from fastapi import FastAPI, Form, HTTPException, Depends, status, APIRouter
+from fastapi import Form, HTTPException, Depends, status, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -55,6 +55,30 @@ class LoginRequest(UserAuthBase):
                 email: Annotated[EmailStr, Form()],
                 password: Annotated[str, Form()]):
         return cls(email=email, password=password)
+
+class UserUpdate(BaseModel):
+    # 수정하고 싶은 필드만 선택적으로 받을 수 있게 Optional 처리
+    email: Annotated[Optional[EmailStr], Field(description="사용자 이메일")] = None
+    password: Annotated[Optional[str], Field(min_length=8, max_length=50)] = None
+    nickname: Annotated[Optional[str], Field(min_length=2, max_length=20)] = None
+    profile_image_url: Optional[HttpUrl] = None
+
+    @classmethod
+    def as_form(
+        cls,
+        email: Optional[EmailStr] = Form(None),
+        nickname: Optional[str] = Form(None),
+        password: Optional[str] = Form(None),
+        profile_image_url: Optional[HttpUrl] = Form(None)
+    ):
+        return cls(
+            email=email,
+            nickname=nickname,
+            password=password,
+            profile_image_url=profile_image_url
+        )
+
+
 
 class UserPublicResponse(BaseModel):
    nickname: Optional[str] = None
@@ -110,6 +134,31 @@ def save_user_to_json(user_dict: dict):
         json.dump(users, f, indent=4, ensure_ascii=False)
     return True
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="자격 증명을 확인 할 수 없습니다.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    payload = decode_access_token(token)
+    if not payload:
+        raise credentials_exception
+
+    user_id: str = payload.get("sub")
+    if user_id is None:
+        raise credentials_exception
+
+    users = get_db_users()
+    user = next((u for u in users if u["user_id"] == user_id), None)
+
+    if user is None:
+        raise credentials_exception
+
+    return user
+
 @router.post("/auth/signup",response_model=UserResponse,status_code=status.HTTP_201_CREATED)
 async def signup(form_data: Annotated[UsersBase, Depends(UsersBase.as_form)]):
     #user_id 생성
@@ -141,7 +190,11 @@ async def login(
     users = get_db_users()
     user_record = next((u for u in users if u["email"] == login_data.username), None)
 
+    if not user_record:
+        raise HTTPException(status_code=401,detail="없는 유저입니다.")
+
     if not user_record or user_record["password"] != login_data.password:
+        print(f"DB비번: {user_record['password']}, 입력비번: {login_data.password}")
         raise HTTPException(status_code=401, detail="인증 정보가 올바르지 않습니다.")
 
     token, expires_in = create_access_token(user_record["user_id"])
@@ -157,36 +210,50 @@ async def login(
 async def logout():
     return {"logout": "로그아웃 성공"}
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
 @router.get("/users/me",response_model=UserPublicResponse)
-async def get_user_me(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="자격 증명을 확인 할 수 없습니다.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    payload = decode_access_token(token)
-    if not payload:
-        raise credentials_exception
-    user_id: str = payload.get("sub")
+async def get_user_me(current_user: Annotated[dict, Depends(get_current_user)]):
+    return current_user
 
+@router.get("/users/{user_id}", response_model=UserPublicResponse)
+async def get_user(user_id: str):
     users = get_db_users()
-    user = next((u for u in users if u["user_id"] == user_id), None)
-
+    user =next((u for u in users if u["user_id"] == user_id),None)
     if user is None:
-        raise credentials_exception
-
+        raise HTTPException(status_code=404,detail="해당 사용자를 찾을수 없습니다")
     return UserPublicResponse(**user)
 
+@router.patch("/users/me",response_model=UserPublicResponse)
+async def update_user(
+        update_data : Annotated[UserUpdate, Depends(UserUpdate.as_form)],
+        current_user:  Annotated[dict, Depends(get_current_user)]):
+    users = get_db_users()
+    user =next((i for i,u in enumerate(users) if u["user_id"] == current_user["user_id"]),None)
+    if user is None:
+        raise HTTPException(status_code=404,detail="해당 유저가 없습니다")
 
-@router.get("/users/{user_id}")
-async def get_user():
-    return {}
+    patch_dict = update_data.model_dump(exclude_unset=True,mode="json")
 
-@router.patch("/users/me")
-async def update_user():
-    return {"user_id": "수정 되었음"}
+    users[user].update(patch_dict)
 
-@router.delete("/users/me",status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user():
+    with open(DB_FILE,"w",encoding="utf-8") as f:
+        json.dump(users,f,ensure_ascii=False,indent=4)
+    return users[user]
+
+@router.delete("/users/me",status_code=status.HTTP_200_OK)
+async def delete_user(current_user: Annotated[dict, Depends(get_user_me)]):
+    users = get_db_users()
+
+    # 2. 내 ID를 제외한 나머지 유저들만 필터링 (삭제 효과)
+    original_count = len(users)
+    users = [u for u in users if u["user_id"] != current_user["user_id"]]
+
+    # 3. 만약 리스트 크기가 줄어들지 않았다면 삭제 실패
+    if len(users) == original_count:
+        raise HTTPException(status_code=404, detail="삭제할 유저를 찾을 수 없습니다.")
+
+    # 4. ★ 핵심: 변경된 리스트를 다시 파일에 덮어쓰기
+    with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=4, ensure_ascii=False)
+
     return {"user_id": "삭제되었음"}

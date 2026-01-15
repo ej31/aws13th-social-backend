@@ -1,4 +1,3 @@
 from fastapi import APIRouter
 
-
-router = APIRouter( tags=["comments"])
+router = APIRouter(tags=["comments"])

@@ -1,0 +1,58 @@
+[
+    {
+        "id": 1,
+        "email": "userzzz@example.com",
+        "nickname": "string",
+        "password": "$pbkdf2-sha256$29000$Sak15ty79743BgDg3Pu/tw$2u5xLsIPBRLNRY7eg9FXnvlDj8dGn9F17wGjw6HgYvs",
+        "profile_image": "/static/profiles/2900f793-7b24-474c-b1c6-c705525cd73c_dice_img.jpg",
+        "created_at": "2026-01-14T16:35:22.975890"
+    },
+    {
+        "id": 2,
+        "email": "userzzzxxx@example.com",
+        "nickname": "stringzz",
+        "password": "$pbkdf2-sha256$29000$V4oxJuR8L2VszZnzXgvBmA$N7l/TQnjNTaGXfWsTvXyHgb8k7EJVv7VHY36J4DtbBI",
+        "profile_image": "/static/profiles/3bccf219-bf87-45a6-843f-611597b6c18d_dice_img.jpg",
+        "created_at": "2026-01-14T16:35:49.836028"
+    },
+    {
+        "id": 3,
+        "email": "ddddddd@example.com",
+        "nickname": "stringzz",
+        "password": "$pbkdf2-sha256$29000$YCwlJOS8F2LsPeccozRGiA$gVRSJlALuhd.Hy0Mo31fSY7LUYlwdATd1TfwHmCf5DI",
+        "profile_image": "/static/profiles/05b469a0-4d7e-4d74-ad7f-179a0b413e72_dice_img.jpg",
+        "created_at": "2026-01-14T16:37:04.099775"
+    },
+    {
+        "id": 4,
+        "email": "dddddddzz@example.com",
+        "nickname": "stringzz",
+        "password": "$pbkdf2-sha256$29000$HaOUEgJAyNl7D4EwpjSm9A$vxh1Krk3ioKUj6NuFvSd19r9DOqBuoT7La.h.GiXYt4",
+        "profile_image": "/static/profiles/9df2c5f0-6963-42b4-85be-ef30a292c18b_dice_img.jpg",
+        "created_at": "2026-01-14T16:42:45.906575"
+    },
+    {
+        "id": 5,
+        "email": "ddsssdzz@example.com",
+        "nickname": "stringzz",
+        "password": "$pbkdf2-sha256$29000$PYfQuleq9Z5T6r03phSi1A$d0RsCat/ZMQ7YMrKO.6JAZ2ODTBTuhKtFeMH7laEYX8",
+        "profile_image": "/static/profiles/422e8f87-b8fd-4012-9071-056bc7e62f07_dice_img.jpg",
+        "created_at": "2026-01-14T16:44:36.637416"
+    },
+    {
+        "id": 6,
+        "email": "test1234@example.com",
+        "nickname": "test1234",
+        "password": "$pbkdf2-sha256$29000$jhECAGCs9d577x1jjDFmrA$pkx4Is0sFfAMCx08bEa6Uw9CbVUndQ9t1meBJJKEq/c",
+        "profile_image": "/static/profiles/2a20143b-0e5e-4e7c-a921-ce4391bcd3c4_dice_img.jpg",
+        "created_at": "2026-01-14T18:52:40.746879"
+    },
+    {
+        "id": 7,
+        "email": "admin@example.com",
+        "nickname": "updateadminzz",
+        "password": "$pbkdf2-sha256$29000$SYmR8j6HEMKY0/r/vxciZA$ZPS7GwsqjavkQK4HeA0GYmpKb8jL1U178mSefcQRt5A",
+        "profile_image": "/static/profiles/fea5c54c-968b-489f-9af3-ac24ee4f0541_admin.png",
+        "created_at": "2026-01-15T14:38:59.127878"
+    }
+]

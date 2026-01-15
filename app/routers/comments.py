@@ -6,7 +6,7 @@ router = APIRouter(prefix="/posts/{postId}",tags=["comments"])
 async def post_comments():
     return
 
-@router.patch("/comments", summary="댓글 수정", description= "본인이 작성한 댓글만 수정하는 리소스", tags=["comments"])
+@router.patch("/comments/{comment_id}", summary="댓글 수정", description= "본인이 작성한 댓글만 수정하는 리소스", tags=["comments"])
 async def patch_comments():
     return
 

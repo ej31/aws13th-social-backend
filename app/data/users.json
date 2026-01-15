@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "id": 1,
+    "email": "sss",
+    "nickname": "string",
+    "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$Y.9Cu8XXVMK.zUmkH.4aDu$.jsahHzk9apsAOvDiRMqfrABpWbKec2",
+    "profile_image": "string",
+    "created_at": "2026-01-15T01:44:29.786225Z"
+  },
+  {
+    "id": 2,
+    "email": "ss",
+    "nickname": "string",
+    "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$EVulugecVRD8O7JPZiiebu$8MoSh3wvLHpZAITphF5wbA5oeExISLS",
+    "profile_image": "string",
+    "created_at": "2026-01-15T05:33:34.136082Z"
+  }
+]

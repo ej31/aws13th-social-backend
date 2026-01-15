@@ -1,11 +1,12 @@
 from fastapi import APIRouter, FastAPI, HTTPException
+from app.routers.auth import hash_password
 from app.schemas.users import UserLoginRequest, UserSignupRequest
 from app.utils.data import read_users, write_users
 from datetime import datetime
 
 router = APIRouter(prefix="/users",tags=["users"])
 
-@router.post("/signup", summary="유저 회원가입",description="회원가입: 이메일, 비밀번호, 닉네임, 프로필 이미지(선택)로 가입", tags=["users"])
+@router.post("/", summary="유저 회원가입",description="회원가입: 이메일, 비밀번호, 닉네임, 프로필 이미지(선택)로 가입", tags=["users"])
 async def post_user(new_user: UserSignupRequest):
     users = read_users()
 
@@ -13,12 +14,22 @@ async def post_user(new_user: UserSignupRequest):
         "id": len(users) + 1,
         "email": new_user.email,
         "nickname": new_user.nickname,
+        "password_hash": hash_password(new_user.password),
         "profile_image": new_user.profile_image,
         "created_at": datetime.utcnow().isoformat() + "Z"
     }
     users.append(new_user)
     write_users(users)
-    return {"status": "success", "data": new_user}
+
+    # 해싱된 비밀번호도 담기면 안되서 따로 respon_user를 만듬
+    response_user = {
+        "id": new_user["id"],
+        "email": new_user["email"],
+        "nickname": new_user["nickname"],
+        "profile_image": new_user["profile_image"],
+        "created_at": new_user["created_at"]
+    }
+    return {"status": "success", "data": response_user}
 
 @router.post("/login", summary="유저 로그인", description="로그인: 이메일/비밀번호로 인증 후 토큰 발급", tags=["users"])
 async def login_user(request: UserLoginRequest):
@@ -40,7 +51,7 @@ async def get_me(request: UserLoginRequest):
 async def get_user_by_id(request: UserLoginRequest, user_id: int):
     return
 
-@router.get("/{user_id",summary="내가 쓴 게시글 목록", description="로그인한 사용자가 쓴 게시글을 조회하여 목록을 보여주는 리소스.", tags=["users"])
+@router.get("/me/posts",summary="내가 쓴 게시글 목록", description="로그인한 사용자가 쓴 게시글을 조회하여 목록을 보여주는 리소스.", tags=["users"])
 async def get_user_by_id(request: UserLoginRequest, user_id: int):
     return
 

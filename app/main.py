@@ -4,6 +4,7 @@ FastAPI Community - 메인
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from app.schemas import *
 
 from app.core.config import get_settings
 

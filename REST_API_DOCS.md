@@ -467,14 +467,15 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": [
-	    {
-      "post_id" : "1",
-      "title" : "postname",
-      "author" : {
-	      "authorid" : "admin",
-	      "nickname" : "abc"
+    {
+      "post_id": "1",
+      "title": "postname",
+      "author": {
+        "author_id": "admin",
+        "nickname": "abc"
+      },
+      "created_at": "2026-01-07T08:30:00+09:00"
     }
-      "created_at" : "2026-01-07T08:30:00+09:00",
   ],
   "pagination": {
     "page": 1,
@@ -482,6 +483,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     "total": 100
   }
 }
+
 ```
 
 ---

@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Query
+from fastapi import FastAPI , Query
 from enum import Enum
 
 class PostSortType(str, Enum):
@@ -23,8 +23,8 @@ async def get_user(
 # 내가 쓴 게시글 목록
 @app.get("/users/me/posts")
 async def get_user_posts(
-        page : int = 1,
-        limit: int = 20,
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
         sort : str | None = None
 ):
     return {"page": page, "limit": limit, "sort": sort}
@@ -32,8 +32,8 @@ async def get_user_posts(
 # 내가 작성한 댓글
 @app.get("/users/me/comments")
 async def get_user_comments(
-        page : int = 1,
-        limit: int = 20,
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
         sort: str | None = None
 ):
     return {"page" : page, "limit": limit, "sort": sort}
@@ -41,8 +41,8 @@ async def get_user_comments(
 # 내가 좋아요한 게시글 목록
 @app.get("/users/me/likes")
 async def get_user_likes(
-        page : int = 1,
-        limit: int = 20
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
     return {"page": page, "limit": limit}
 
@@ -66,25 +66,25 @@ async def delete_user():
 # 게시글 목록 조회
 @app.get("/posts")
 async def get_posts(
-        page : int = 1,
-        limit: int = 20
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
     return {"page": page, "limit": limit}
 # 게시글 검색
 @app.get("/posts/search")
 async def get_posts_by_keyword(
         keyword: str = Query(min_length=1),
-        page: int = 1,
-        limit: int = 20
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
     return {"keyword": keyword, "page": page, "limit": limit}
 
 # 게시글 정렬
 @app.get("/posts/sorted")
 async def get_posts_sorted(
-        sort : PostSortType,
-        page: int = 1,
-        limit: int = 20
+        sort: PostSortType,
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
     return {"sort": sort, "page": page, "limit": limit}
 
@@ -99,8 +99,8 @@ async def get_post(
 @app.get("/posts/{post_id}/comments")
 async def get_post_comments(
         post_id: str,
-        page: int = 1,
-        limit: int = 20
+        page: int = Query(default=1, ge=1, description="페이지 번호"),
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
     return {"post_id": post_id, "page": page, "limit": limit}
 

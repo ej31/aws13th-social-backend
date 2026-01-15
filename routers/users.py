@@ -2,9 +2,10 @@ from typing import Annotated, Optional
 from datetime import datetime, timezone, timedelta
 import json,os,uuid
 from fastapi import FastAPI, Form, HTTPException, Depends, status, APIRouter
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from jose import jwt
+from jose import jwt, JWTError
 
 """
 Users리소스 유의사항
@@ -16,6 +17,7 @@ Users리소스 유의사항
 """
 
 #jwt토큰 검증 pydantic모델, 토큰 기본값은 2시간
+
 class JwtSettings(BaseSettings):
     SECRET_KEY: str ="dev_secret_key"
     ALGORITHM: str ="HS256"
@@ -23,8 +25,8 @@ class JwtSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file="../.env")
 
 settings = JwtSettings()
-app = FastAPI()
-router = APIRouter(prefix="/users", tags=["users"])
+
+router = APIRouter(tags=["users"])
 
 #공통 필드
 class UserAuthBase(BaseModel):
@@ -79,6 +81,17 @@ def create_access_token(user_id: str):
     expires_in = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     return token, expires_in
 
+def decode_access_token(token: str) -> Optional[dict]:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        return payload if payload.get("sub") else None
+    except JWTError:
+        return None
+
 DB_FILE = "./users.json"
 def get_db_users():
     if not os.path.exists(DB_FILE):
@@ -121,9 +134,12 @@ async def signup(form_data: Annotated[UsersBase, Depends(UsersBase.as_form)]):
     )
 
 @router.post("/auth/login",response_model=UserResponse)
-async def login(login_data: Annotated[LoginRequest, Depends(LoginRequest.as_form)]):
+async def login(
+        # login_data: Annotated[LoginRequest, Depends(LoginRequest.as_form)]
+    login_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
     users = get_db_users()
-    user_record = next((u for u in users if u["email"] == login_data.email), None)
+    user_record = next((u for u in users if u["email"] == login_data.username), None)
 
     if not user_record or user_record["password"] != login_data.password:
         raise HTTPException(status_code=401, detail="인증 정보가 올바르지 않습니다.")
@@ -137,23 +153,41 @@ async def login(login_data: Annotated[LoginRequest, Depends(LoginRequest.as_form
         user=UserPublicResponse(**user_record),
         created_at=datetime.now(timezone.utc)
     )
-
-@app.post("/auth/logout")
+@router.post("/auth/logout")
 async def logout():
     return {"logout": "로그아웃 성공"}
 
-@router.get("/users/me",response_model=UserResponse)
-async def get_users():
-    return {"username": "admin", "email": "", "password": ""}
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+@router.get("/users/me",response_model=UserPublicResponse)
+async def get_user_me(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="자격 증명을 확인 할 수 없습니다.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = decode_access_token(token)
+    if not payload:
+        raise credentials_exception
+    user_id: str = payload.get("sub")
+
+    users = get_db_users()
+    user = next((u for u in users if u["user_id"] == user_id), None)
+
+    token, expires_in = create_access_token(user["user_id"])
+    if user is None:
+        raise credentials_exception
+
+    return UserPublicResponse(**user)
+
 
 @router.get("/users/{user_id}")
-async def get_user(user_id: int):
-    return {"user_id": user_id}
+async def get_user():
+    return {}
 
 @router.patch("/users/me")
-async def update_user(user_id: int):
-    return {"user_id": user_id}
+async def update_user():
+    return {"user_id": "수정 되었음"}
 
-@router.delete("/users/me")
-async def delete_user(user_id: int):
-    return {"user_id": user_id}
+@router.delete("/users/me",status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user():
+    return {"user_id": "삭제되었음"}

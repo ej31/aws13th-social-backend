@@ -1,10 +1,6 @@
-from typing import Annotated, Optional
-from datetime import datetime, timezone, timedelta
-import json,os,uuid
-from fastapi import FastAPI, Form, HTTPException, Depends, status, APIRouter
-from pydantic import BaseModel, EmailStr, Field, HttpUrl
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from jose import jwt
+
+from fastapi import APIRouter
+
 
 #
 # import json
@@ -28,7 +24,7 @@ from jose import jwt
 #     if not post:
 #         raise HTTPException(status_code=404, detail="Post not found")
 #     return post
-app = FastAPI()
+
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 @router.post("/posts")

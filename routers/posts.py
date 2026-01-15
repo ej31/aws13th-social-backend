@@ -25,7 +25,7 @@ from fastapi import APIRouter
 #         raise HTTPException(status_code=404, detail="Post not found")
 #     return post
 
-router = APIRouter(prefix="/posts", tags=["posts"])
+router = APIRouter( tags=["posts"])
 
 @router.post("/posts")
 async def create_post(title: str, content: str):

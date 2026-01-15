@@ -1,4 +1,4 @@
 from fastapi import APIRouter
 
 
-router = APIRouter(prefix="/likes", tags=["likes"])
+router = APIRouter( tags=["likes"])

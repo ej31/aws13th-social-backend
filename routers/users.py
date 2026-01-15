@@ -173,7 +173,6 @@ async def get_user_me(token: Annotated[str, Depends(oauth2_scheme)]):
     users = get_db_users()
     user = next((u for u in users if u["user_id"] == user_id), None)
 
-    token, expires_in = create_access_token(user["user_id"])
     if user is None:
         raise credentials_exception
 

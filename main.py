@@ -50,7 +50,6 @@ async def get_specific_user(user_id: int):
 @app.get("/posts")
 async def get_posts(
         page: int = 1,
-        limit: int = 20,
         q: str | None = None,
         sort: str = "created_at",
         order: str = "desc"
@@ -65,7 +64,7 @@ async def create_post(post: dict):
 
 # post list I wrote
 @app.get("/posts/me")
-async def get_posts_mine(page: int = 1, limit: int = 20):
+async def get_posts_mine(page: int = 1):
     pass
 
 
@@ -91,7 +90,7 @@ async def delete_post(post_id: int):
 
 # List all comments for a post
 @app.get("/posts/{post_id}/comments")
-async def get_comments(post_id: int, page: int = 1, limit: int = 10):
+async def get_comments(post_id: int, page: int = 1):
     pass
 
 
@@ -113,7 +112,7 @@ async def delete_comment(post_id: int, comment_id: int):
 
 # comment list I wrote
 @app.get("/comments/me")
-async def get_comments_mine(page: int = 1, limit: int = 20):
+async def get_comments_mine(page: int = 1):
     pass
 
 
@@ -136,5 +135,5 @@ async def get_likes_status(post_id: int):
 
 # post list I liked
 @app.get("/posts/liked")
-async def get_posts_liked(page: int = 1, limit: int = 20):
+async def get_posts_liked(page: int = 1):
     pass

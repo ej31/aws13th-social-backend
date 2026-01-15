@@ -79,7 +79,6 @@ async def get_user_by_id(
                          user_service: Annotated[UserService,Depends(get_auth_service)]):
 
     user_id = decode_id(user_id)
-    print(user_id)
     result = await user_service.find_user_by_id(user_id)
     return CommonResponse(
         status="success",

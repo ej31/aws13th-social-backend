@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from FileUtil.FileUpload import FileUtil
 from fastapi import HTTPException, status, Depends
@@ -25,10 +25,12 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="해당 이메일은 이미 가입되었습니다.",
             )
-
-        image_url = f"/{settings.upload_dir}/default.png"
+        #기본 이미지 경로 공통 처리
+        default_path = os.path.join(settings.upload_dir,"default.png")
+        image_url = FileUtil.as_url(default_path)
 
         if profile_image:
+            #업로드 시에도 as_url 메서드가 호출 되어서 저장 경로 통일
             image_url = await FileUtil.validate_and_save_image(profile_image)
 
         user_id = self.user_repo.get_next_id()
@@ -39,7 +41,7 @@ class UserService:
             "nickname": signup_data.nickname,
             "password": hash_password(signup_data.password),
             "profile_image": image_url,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         saved_user = self.user_repo.save(new_user)
 
@@ -115,11 +117,10 @@ class UserService:
 
     async def find_user_by_id(self,id:int):
         target_user = self.user_repo.find_by_id(id)
-        print(target_user)
         if not target_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="해당하는 이메일을 가진 유저를 찾을 수 없습니다."
+                detail="해당하는 ID를 가진 유저를 찾을 수 없습니다."
             )
 
         return target_user

@@ -18,11 +18,12 @@ def get_auth_service(
 ) -> UserService:
     return UserService(user_repo = repo)
 
-#jwt 인증된 사용자인지 확이
+#jwt 인증된 사용자인지 확인
 async def get_current_user(
         auth: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-        user_service : Annotated[UserService, Depends(get_auth_service)]
-):
+        user_service : Annotated[UserService, Depends(get_auth_service)],
+        user_repo : Annotated[UserRepository, Depends(get_user_repo)]
+) -> dict:
     token = auth.credentials
     email = decode_access_token(token)
 
@@ -31,7 +32,7 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="인증 토큰을 찾을 수 없습니다.",
         )
-    user = user_service.user_repo.find_by_email(email)
+    user = user_repo.find_by_email(email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

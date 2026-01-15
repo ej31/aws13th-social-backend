@@ -28,7 +28,7 @@ def decode_id(id: str) -> int:
     return decoded[0] if decoded else None
 
 #access Token 생성
-def create_access_token(subject:str):
+def create_access_token(subject:str) -> str:
     minutes = int(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
     to_encode = {"exp": expire,
@@ -37,7 +37,7 @@ def create_access_token(subject:str):
     encoded_jwt = jwt.encode(
         to_encode,
         settings.SECRET_KEY,
-        settings.ALGORITHM
+        algorithm=settings.ALGORITHM
     )
     return encoded_jwt
 
@@ -48,6 +48,8 @@ def decode_access_token(token: str) -> str | None:
                              algorithms=[settings.ALGORITHM]
                              )
         email: str= payload.get("sub")
+        if not email:
+            return None
         return email
     except JWTError:
         #토큰이 만료되거나 없을 경우

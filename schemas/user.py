@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
 class UserCreate(BaseModel):
@@ -8,8 +8,9 @@ class UserCreate(BaseModel):
     nickname: str | None = None
     profile_image: str | None = None
 
-    @validator('password')
-    def check_password(cls, v):
+    @field_validator('password')
+    @classmethod
+    def check_password(cls, v:str) -> str:
         has_upper = any(c.isupper() for c in v)  #대문자 확인
         has_special = any(c in "!@#$%^&*" for c in v)  #특수 기호 확인
 

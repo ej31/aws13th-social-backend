@@ -1,13 +1,14 @@
 from fastapi import APIRouter, status, HTTPException
-from schemas.user import UserCreate, UserLogin, UserUpdate
-from datetime import datetime
+from schemas.user import UserCreate, UserUpdate
+from datetime import datetime, timezone
 from utils.auth import get_password_hash
 from utils.data import load_data,save_data
+import uuid
 
-router = APIRouter(prefix="/users")
+router = APIRouter(prefix="/users",tags=["Likes"])
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def signup(data: UserCreate):
+def signup(data: UserCreate):
     users = load_data("users")
 
 
@@ -23,13 +24,13 @@ async def signup(data: UserCreate):
                 detail={"status": "error","data":{"message":"닉네임이 중복되었습니다."}}
             )
     new_user = {
-        "userId": str(len(users) + 1),
+        "userId": str(uuid.uuid4()),
         "email": data.email,
         "name": data.name,
         "password": get_password_hash(data.password),
         "nickname": data.nickname,
         "profile_image": data.profile_image,
-        "created_at": datetime.now().isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     users.append(new_user)
     save_data("users", users)

@@ -5,4 +5,4 @@ class CommentCreate(BaseModel):
     content: str
 
 class CommentUpdate(BaseModel):
-    content: str
+    content: str | None = None

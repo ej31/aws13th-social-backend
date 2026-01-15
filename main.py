@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import users, auth,posts,comments,likes
+from routers import users, auth, posts, comments, likes
 
 app = FastAPI(title="Social Media API")
 

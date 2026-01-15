@@ -1,6 +1,10 @@
 import json
 import os
+import logging
+import shutil
+import tempfile
 
+logger = logging.getLogger(__name__)
 DATA_DIR = "data"
 
 def load_data(filename: str):
@@ -22,13 +26,18 @@ def load_data(filename: str):
         try:
             return json.load(f)
         except json.JSONDecodeError:
+            logger.warning(f"JSON 파싱 실패: {file_path}. 빈 리스트 반환")
             return []
 
 
-def save_data(filename: str, data):
-
+def save_data_safe(filename: str, data):
     file_path = os.path.join(DATA_DIR, f"{filename}.json")
 
-    with open(file_path, 'w', encoding='utf-8') as f:
+    # 임시 파일에 먼저 쓰기
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8',
+                                     delete=False, suffix='.json') as tmp:
+        json.dump(data, tmp, ensure_ascii=False, indent=4)
+        tmp_path = tmp.name
 
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    # 성공 시 원본 교체 (atomic operation)
+    shutil.move(tmp_path, file_path)

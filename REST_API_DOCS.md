@@ -917,14 +917,12 @@ POST `/posts/{postId}/comments`
 
 **Request Example**
 
-**Request Example**
-
 ```json
 DELETE /posts/1
 Authorization: Bearer
 ```
 
-게시글이 존재하지 않는 경우 (404 Not Found)
+**게시글이 존재하지 않는 경우 (404 Not Found)**
 
 ```json
 {
@@ -933,7 +931,7 @@ Authorization: Bearer
 }
 ```
 
-본인이 작성한 게시글이 아닌 경우 (403 Forbidden)
+**본인이 작성한 게시글이 아닌 경우 (403 Forbidden)**
 
 ```json
 {
@@ -942,7 +940,7 @@ Authorization: Bearer
 }
 ```
 
-인증되지 않은 경우 (401 Unauthorized)
+**인증되지 않은 경우 (401 Unauthorized)**
 
 ```json
 {

@@ -26,7 +26,7 @@ class UserRepository(BaseRepository):
         super().__init__(f"{data_dir}/users.json")
         self.data_dir = data_dir
     
-    # ========== 조회 메서드 ==========
+    # 조회 메서드
     
     def find_by_user_id(self, user_id: int) -> dict[str, Any] | None:
         """
@@ -88,7 +88,7 @@ class UserRepository(BaseRepository):
         """
         return self.find_by_nickname(nickname) is not None
     
-    # ========== 생성 메서드 ==========
+    # 생성 메서드
     
     def create_user(
         self,
@@ -123,7 +123,7 @@ class UserRepository(BaseRepository):
         
         return self.create(user_data)
     
-    # ========== 수정 메서드 ==========
+    # 수정 메서드
     
     def update_user(self, user_id: int, **updates) -> bool:
         """
@@ -144,11 +144,14 @@ class UserRepository(BaseRepository):
         
         # 비밀번호가 포함되어 있으면 해싱
         if "password" in updates:
-            updates["password"] = get_password_hash(updates["password"])
+            if updates["password"]:
+                updates["password"] = get_password_hash(updates["password"])
+            else:
+                updates.pop("password")
         
         return self.update("user_id", user_id, updates)
     
-    # ========== 삭제 메서드 ==========
+    # 삭제 메서드
     
     def delete_user(self, user_id: int) -> bool:
         """

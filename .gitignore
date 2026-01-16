@@ -1,5 +1,7 @@
+__pycache__/
+*.py[cod]
 .env
-.env.*
 venv/
-env/
-.venv/
+.idea/
+.vscode/
+data/

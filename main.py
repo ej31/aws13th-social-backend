@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends, sta
 from pydantic import EmailStr
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
-from jose import jwt
+from jose import jwt, JWTError, ExpiredSignatureError
 import os
 from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer
@@ -78,11 +78,24 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM"))
 
 #----- Oauth 2.0 Bearer 선언 & 토큰 디코딩 및 로그인 인증 --------- TODO : 추후 인증 미들웨어로 따로 분리 해야함!!
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 def auth_user_with_token_decoding(token: str = Depends(oauth2_scheme)):
     user_info = None
-    payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+    try:
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="토큰이 만료되었습니다.")
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="토큰 인증 정보가 유효하지 않습니다. ")
+
     user_id: str = payload.get("sub")
+    token_type = payload.get("type", "access")
+
+    if token_type != "access":
+        raise HTTPException(status_code=401, detail="유효한 액세스 토큰이 아닙니다.")
+
     if user_id is None:
         raise HTTPException(status_code=401, detail="토큰 인증 정보가 유효하지 않습니다. ")
 
@@ -143,7 +156,7 @@ async def post_users(
             "user_id": user_id,
             "email_address": email_address,
             "nickname": nickname,
-            "profile_image_url": profile_image if profile_image else None,
+            "profile_image_url": profile_image_url,
             "users_created_time": datetime.now(timezone.utc).strftime('%Y.%m.%d - %H:%M:%S')
         }
     }
@@ -174,7 +187,7 @@ async def post_auth_token(
     login_attempts[email_address] = 0
     # 5. 비밀번호 해시값 검증 완료, 액세스 토큰 & 리프레시 토큰 생성
     access_token = create_access_token(
-        data={"sub":is_users_email["user_id"]},
+        data={"sub":is_users_email["user_id"], "type" : "access"},
         expires_delta=timedelta(minutes=int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES')))
     )
     refresh_token = create_access_token(
@@ -222,12 +235,10 @@ async def patch_users_my_page(
     # 최소 1개가 요청되었는지 확인
     if not any([nickname, password, profile_image]):
         raise HTTPException(status_code=400, detail="닉네임, 비밀번호, 프로필 이미지 중 최소 1개는 선택해야 합니다.")
-    # 1. 닉네임 변경이 요청된 경우
-    if nickname:
-        for i in demo_db:
-            if i["nickname"] == nickname and i["user_id"] != user["user_id"]:
-                raise HTTPException(status_code=409, detail="해당 닉네임은 이미 존재합니다.")
-        user["nickname"] = nickname
+    # 1. 닉네임 변경이 요청된 경우 -- 일단 규칙 확인 후 중복 검사 (코드 리뷰에서 pythonic하게 변경)
+    if any(i["nickname"] == nickname and i["user_id"] != user["user_id"] for i in demo_db):
+        raise HTTPException(status_code=409, detail="해당 닉네임은 이미 존재합니다.")
+    user["nickname"] = nickname
     # 2. 비밀번호 변경이 요청된 경우 -- 회원가입 로직과 동일함.
     if password:
         validate_password(password)
@@ -239,6 +250,7 @@ async def patch_users_my_page(
         #TODO : 파일 저장 및 이미지 크기 확인 로직
         await validate_image_size(profile_image)
         profile_image_url = f"/uploads/{profile_image.filename}"
+        user["profile_image_url"] = profile_image_url
     # 4. 프로필 수정 시간 DB에 업데이트
     user["users_modified_time"] = datetime.now(timezone.utc).strftime('%Y.%m.%d - %H:%M:%S')
 

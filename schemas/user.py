@@ -4,6 +4,8 @@ import re
 from pydantic import BaseModel, EmailStr, model_validator, StringConstraints, AfterValidator
 from typing import Annotated
 
+from schemas.commons import UserId
+
 SPECIAL_CHARS = r"!\"#$%&'()*+,\-./:;<=>?@\[₩\]\^_`{|}~"
 
 
@@ -47,7 +49,7 @@ class UserCreateRequest(BaseModel):
 
 
 class UserCreateResponse(BaseModel):
-    id: int
+    id: UserId
     nickname: Nickname
     email: EmailStr
     created_at: datetime
@@ -63,7 +65,7 @@ class UserLoginResponse(BaseModel):
 
 
 class UserMyProfile(BaseModel):
-    id: int
+    id: UserId
     email: EmailStr
     nickname: Nickname
     profile_img: str | None = None
@@ -82,7 +84,7 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserProfile(BaseModel):
-    id: int
+    id: UserId
     nickname: Nickname
     profile_img: str | None = None
 

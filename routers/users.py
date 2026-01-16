@@ -1,16 +1,66 @@
-from fastapi import APIRouter
+import hashlib
+from datetime import datetime
+from pathlib import Path
+
+import bcrypt
+from fastapi import APIRouter, HTTPException, status
 
 from schemas.commons import UserId
+from schemas.user import UserCreateRequest, UserCreateResponse
+from utils.data import read_json, write_json
+
+USERS_FILE = Path("data/users.json")
 
 router = APIRouter(
     tags=["USERS"],
 )
 
 
-# signup
-@router.post("/users")
-async def create_user(user: dict):
-    return {"success": "create_user"}
+def hash_password(password: str) -> str:
+    # SHA-256으로 사전 해싱 (bcrypt 72바이트 제한 우회)
+    prehashed = hashlib.sha256(password.encode()).hexdigest().encode()
+    return bcrypt.hashpw(prehashed, bcrypt.gensalt()).decode()
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    prehashed = hashlib.sha256(plain_password.encode()).hexdigest().encode()
+    return bcrypt.checkpw(prehashed, hashed_password.encode())
+
+
+@router.post("/users", response_model=UserCreateResponse)
+async def create_user(user: UserCreateRequest):
+    """회원가입"""
+    users = read_json(USERS_FILE)
+
+    # 이메일 중복 확인
+    if any(u["email"] == user.email for u in users):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered"
+        )
+
+    # 새 유저 ID 생성
+    new_id = f"user_{len(users) + 1}"
+    now = datetime.now()
+
+    new_user = {
+        "id": new_id,
+        "email": user.email,
+        "nickname": user.nickname,
+        "password": hash_password(user.password),
+        "profile_img": user.profile_img,
+        "created_at": now.isoformat(),
+    }
+
+    users.append(new_user)
+    write_json(USERS_FILE, users)
+
+    return {
+        "id": new_id,
+        "email": user.email,
+        "nickname": user.nickname,
+        "created_at": now,
+    }
 
 
 # login

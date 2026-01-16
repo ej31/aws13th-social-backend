@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 import bcrypt
@@ -41,7 +41,7 @@ async def create_user(user: UserCreateRequest):
 
     # 새 유저 ID 생성
     new_id = f"user_{len(users) + 1}"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     new_user = {
         "id": new_id,

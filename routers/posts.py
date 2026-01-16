@@ -5,7 +5,7 @@ from fastapi.params import Depends, Query, Path
 
 from common.dependencies import get_current_user, get_current_optional_user
 from schemas.common_response import CommonResponse
-from schemas.pagination import PaginatedResponse
+from schemas.pagination import PaginatedResponse,PaginationMeta
 from schemas.post import PostsResponse, PostsResponseDetail, PostsUpdateRequest, PostsCreateRequest
 from services.post_service import PostService
 
@@ -15,11 +15,20 @@ router = APIRouter(prefix="/posts",tags=["posts"])
 async def get_posts(post_service: Annotated[PostService,Depends(PostService)],
                     page: Annotated[int,Query(ge=1)] = 1,# 페이지 번호 1 이상
                     size: Annotated[int,Query(ge=1,le=100)]=10):
-        posts_data = await post_service.get_posts(page=page,limit=size)
+        posts,total = await post_service.get_posts(page=page,limit=size)
+        meta = PaginationMeta(
+            page=page,
+            limit=size,
+            total_items=total
+        )
+        paginated_data = PaginatedResponse(
+            content= posts,
+            pagination=meta
+        )
         return CommonResponse(
             status = "success",
             message= "게시물 목록 조회에 성공하였습니다.",
-            data = posts_data
+            data = paginated_data
         )
 
 @router.get("/{post_id}",response_model=CommonResponse[PostsResponseDetail],status_code=status.HTTP_200_OK)

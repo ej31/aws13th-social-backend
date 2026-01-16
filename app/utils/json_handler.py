@@ -34,10 +34,8 @@ class JsonFileHandler:
                     with open(self.file_path, 'w', encoding='utf-8') as f:
                         json.dump([], f)
         except Timeout:
-            # 10초 동안 다른 프로세스가 파일을 잡고 놓지 않을 때 발생
             print(f"로그: {self.lock_path}에 대한 락을 획득하지 못했습니다.")
-            raise  # 혹은 시스템 상황에 맞는 예외 처리
-        
+            raise
     
     def read(self) -> list[dict[str, Any]]:
         """
@@ -62,7 +60,6 @@ class JsonFileHandler:
         with lock:
             with open(self.file_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-                # JSON저장 시 한글 깨짐 방지
     
     def append(self, item: dict[str, Any]) -> None:
         """
@@ -162,3 +159,92 @@ class JsonFileHandler:
             return data
         
         return [item for item in data if condition(item)]
+    
+    # 원자적 연산 메서드 - 동시성 문제 해결
+    
+    def atomic_increment(
+        self,
+        condition: Callable[[dict[str, Any]], bool],
+        field: str,
+        delta: int = 1
+    ) -> bool:
+        """
+        원자적 증감 연산 (읽기-수정-쓰기를 한 번의 LOCK으로 처리)
+        
+        Args:
+            condition: 대상 항목을 찾는 함수 (item -> bool)
+            field: 증감할 필드명 (예: "views", "likes")
+            delta: 증감량 (양수: 증가, 음수: 감소)
+        
+        Returns:
+            bool: 업데이트 성공 여부
+            
+        Example:
+            >>> handler.atomic_increment(
+            ...     lambda x: x["post_id"] == 123,
+            ...     "views",
+            ...     1
+            ... )
+        """
+        lock = FileLock(self.lock_path, timeout=10)
+        with lock:
+            # 읽기-수정-쓰기를 한 번의 LOCK 안에서 처리
+            with open(self.file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            updated = False
+            for i, item in enumerate(data):
+                if condition(item):
+                    current_value = item.get(field, 0)
+                    data[i][field] = max(0, current_value + delta)  # 음수 방지
+                    updated = True
+                    break
+            
+            if updated:
+                with open(self.file_path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            return updated
+    
+    def atomic_update_with_callback(
+        self,
+        condition: Callable[[dict[str, Any]], bool],
+        update_fn: Callable[[dict[str, Any]], dict[str, Any]]
+    ) -> bool:
+        """
+        콜백 함수를 사용한 원자적 업데이트
+        
+        Args:
+            condition: 대상 항목을 찾는 함수 (item -> bool)
+            update_fn: 업데이트 로직을 담은 함수 (item -> updates)
+        
+        Returns:
+            bool: 업데이트 성공 여부
+            
+        Example:
+            >>> handler.atomic_update_with_callback(
+            ...     lambda x: x["post_id"] == 123,
+            ...     lambda post: {
+            ...         "views": post.get("views", 0) + 1,
+            ...         "updated_at": datetime.now().isoformat()
+            ...     }
+            ... )
+        """
+        lock = FileLock(self.lock_path, timeout=10)
+        with lock:
+            with open(self.file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            updated = False
+            for i, item in enumerate(data):
+                if condition(item):
+                    updates = update_fn(item)
+                    data[i].update(updates)
+                    updated = True
+                    break
+            
+            if updated:
+                with open(self.file_path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            return updated

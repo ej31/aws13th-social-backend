@@ -89,6 +89,9 @@ class LikeRepository(BaseRepository):
         Returns:
             tuple[list[dict[str, Any]], int]: (좋아요 목록, 전체 개수)
         """
+        # 페이지 입력 검증
+        if page < 1 or limit < 1:
+            raise ValueError("page and limit must be >=1")
         all_likes = self.find_by_user_id(user_id)
         
         total = len(all_likes)
@@ -135,6 +138,10 @@ class LikeRepository(BaseRepository):
         Returns:
             dict[str, Any]: 생성된 좋아요 데이터
         """
+        
+        existing = self.find_by_post_and_user(post_id, user_id)
+        if existing:
+            return existing
         now = datetime.now(timezone.utc).isoformat()
         
         like_data = {

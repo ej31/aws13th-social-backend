@@ -70,6 +70,9 @@ class PostRepository(BaseRepository):
         Returns:
             tuple[list[dict[str, Any]], int]: (게시글 목록, 전체 개수)
         """
+        
+        if page < 1 or limit < 1:
+            raise ValueError("page and limit must be >=1")
         all_posts = self.find_all()
         
         # 검색 필터
@@ -155,7 +158,7 @@ class PostRepository(BaseRepository):
     
     def increment_views(self, post_id: int) -> bool:
         """
-        조회수 증가
+        조회수 증가 (원자적 연산)
         
         Args:
             post_id: 게시글 ID
@@ -163,16 +166,15 @@ class PostRepository(BaseRepository):
         Returns:
             bool: 수정 성공 여부
         """
-        post = self.find_by_post_id(post_id)
-        if not post:
-            return False
-        
-        current_views = post.get("views", 0)
-        return self.update("post_id", post_id, {"views": current_views + 1})
+        return self.handler.atomic_increment(
+            lambda x: x.get("post_id") == post_id,
+            "views",
+            1
+        )
     
     def increment_likes(self, post_id: int) -> bool:
         """
-        좋아요 수 증가
+        좋아요 수 증가 (원자적 연산)
         
         Args:
             post_id: 게시글 ID
@@ -180,12 +182,12 @@ class PostRepository(BaseRepository):
         Returns:
             bool: 수정 성공 여부
         """
-        post = self.find_by_post_id(post_id)
-        if not post:
-            return False
         
-        current_likes = post.get("likes", 0)
-        return self.update("post_id", post_id, {"likes": current_likes + 1})
+        return self.handler.atomic_increment(
+            lambda x: x.get("post_id") == post_id,
+            "likes",
+            1
+        )
     
     def decrement_likes(self, post_id: int) -> bool:
         """
@@ -197,12 +199,12 @@ class PostRepository(BaseRepository):
         Returns:
             bool: 수정 성공 여부
         """
-        post = self.find_by_post_id(post_id)
-        if not post:
-            return False
-        
-        current_likes = max(0, post.get("likes", 0) - 1)
-        return self.update("post_id", post_id, {"likes": current_likes})
+
+        return self.handler.atomic_increment(
+            lambda x: x.get("post_id") == post_id,
+            "likes",
+            -1
+        )
     
     def increment_comments_count(self, post_id: int) -> bool:
         """
@@ -214,12 +216,12 @@ class PostRepository(BaseRepository):
         Returns:
             bool: 수정 성공 여부
         """
-        post = self.find_by_post_id(post_id)
-        if not post:
-            return False
         
-        current_count = post.get("comments_count", 0)
-        return self.update("post_id", post_id, {"comments_count": current_count + 1})
+        return self.handler.atomic_increment(
+            lambda x: x.get("post_id") == post_id,
+            "comment_count",
+            1
+        )
     
     def decrement_comments_count(self, post_id: int) -> bool:
         """
@@ -231,12 +233,11 @@ class PostRepository(BaseRepository):
         Returns:
             bool: 수정 성공 여부
         """
-        post = self.find_by_post_id(post_id)
-        if not post:
-            return False
-        
-        current_count = max(0, post.get("comments_count", 0) - 1)
-        return self.update("post_id", post_id, {"comments_count": current_count})
+        return self.handler.atomic_increment(
+            lambda x: x.get("post_id") == post_id,
+            "comment_count",
+            -1
+        )
     
     # 삭제 메서드
     

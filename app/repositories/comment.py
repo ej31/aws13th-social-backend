@@ -86,6 +86,9 @@ class CommentRepository(BaseRepository):
         Returns:
             tuple[list[dict[str, Any]], int]: (댓글 목록, 전체 개수)
         """
+        # 페이지 입력 검증
+        if page < 1 or limit < 1:
+            raise ValueError("page and limit must be >=1")
         all_comments = self.find_by_post_id(post_id)
         
         total = len(all_comments)
@@ -111,6 +114,10 @@ class CommentRepository(BaseRepository):
         Returns:
             tuple[list[dict[str, Any]], int]: (댓글 목록, 전체 개수)
         """
+        
+        # 페이지 입력 검증
+        if page < 1 or limit < 1:
+            raise ValueError("page and limit must be >=1")
         all_comments = self.find_by_author_id(author_id)
         
         total = len(all_comments)

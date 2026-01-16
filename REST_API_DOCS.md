@@ -833,7 +833,7 @@ Authorization: Bearer {accessToken}
 
 POST `/posts/{postId}/comments`
 
-로그인한 사용자가 게시글에 댓글을 조회할 수 있습니다.
+로그인한 사용자가 게시글에 댓글을 작성할 수 있습니다.
 
 **Request Headers**
 

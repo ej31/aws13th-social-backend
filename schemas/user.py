@@ -1,15 +1,31 @@
 from datetime import datetime
+import re
 
-from pydantic import BaseModel, EmailStr, model_validator, StringConstraints
+from pydantic import BaseModel, EmailStr, model_validator, StringConstraints, AfterValidator
 from typing import Annotated
+
+SPECIAL_CHARS = r"!\"#$%&'()*+,\-./:;<=>?@\[₩\]\^_`{|}~"
+
+
+def validate_password(v: str) -> str:
+    if not re.search(r"[A-Z]", v):
+        raise ValueError("비밀번호에 대문자가 포함되어야 합니다")
+    if not re.search(r"[a-z]", v):
+        raise ValueError("비밀번호에 소문자가 포함되어야 합니다")
+    if not re.search(r"\d", v):
+        raise ValueError("비밀번호에 숫자가 포함되어야 합니다")
+    if not re.search(rf"[{SPECIAL_CHARS}]", v):
+        raise ValueError("비밀번호에 특수문자가 포함되어야 합니다")
+    return v
+
 
 Password = Annotated[
     str,
     StringConstraints(
-        pattern=r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!\"#$%&'()*+,\-./:;<=>?@\[₩\]\^_`{|}~])[A-Za-z\d!\"#$%&'()*+,\-./:;<=>?@\[₩\]\^_`{|}~]+$",
         min_length=8,
         max_length=16,
     ),
+    AfterValidator(validate_password),
 ]
 
 Nickname = Annotated[

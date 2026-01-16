@@ -23,9 +23,12 @@ def decode_access_token(token: str) -> str | None:
     try:
         payload = jwt.decode(token,settings.SECRET_KEY,algorithms=[settings.ALGORITHM])
         email: str= payload.get("sub")
+
         if not email:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="사용자 정보가 없습니다.")
+
         return email
+
     except ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="토큰이 만료되었습니다.")
     except JWTClaimsError:

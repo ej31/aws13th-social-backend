@@ -2,7 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from schemas.pagination import PaginationMeta
 
 
 #게시물 스키마에 공통 모델
@@ -24,6 +23,7 @@ class PostsAuthorResponse(BaseModel):
     nickname:str
 
 #게시글 상세 조회
+#게시물 목록을 조회할때는 PaginatedResponse(Generic[T], BaseModel) 함수를 이용함
 class PostsResponse(PostsBase):
     post_id: int = Field(...,description="게시물의 아이디")
     author: PostsAuthorResponse
@@ -34,12 +34,9 @@ class PostsResponse(PostsBase):
     created_at: datetime
     updated_at: datetime | None = None
 
-#게시물 목록 조횐
-class PostsListResponse(BaseModel):
-    # content 안에는 PostResponse가 들어간다.
-    content : list[PostsResponse]
-    # 목록 하단에 페이지 번호를 표시하기 위해 사용한다.
-    pagination: PaginationMeta
+class PostsResponseDetail(PostsResponse):
+    pass
+    #comments: list[CommentResponse] 나중에 댓글 내용을 가져올 때 사용할 필드
 
 class PostsCreateRequest(PostsBase):
     pass

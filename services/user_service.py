@@ -7,7 +7,8 @@ from fastapi import HTTPException, status, Depends
 from fastapi import UploadFile
 
 from common.config import settings
-from common.security import hash_password, encode_id, verify_password, create_access_token
+from common.security import hash_password, encode_id, verify_password
+from common.jwt import create_access_token
 from repositories.user_repository import UserRepository
 from schemas.user import SignupRequest, UserLoginRequest, UserUpdateRequest
 

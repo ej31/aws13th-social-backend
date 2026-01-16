@@ -219,7 +219,7 @@ class PostRepository(BaseRepository):
         
         return self.handler.atomic_increment(
             lambda x: x.get("post_id") == post_id,
-            "comment_count",
+            "comments_count",
             1
         )
     
@@ -235,7 +235,7 @@ class PostRepository(BaseRepository):
         """
         return self.handler.atomic_increment(
             lambda x: x.get("post_id") == post_id,
-            "comment_count",
+            "comments_count",
             -1
         )
     

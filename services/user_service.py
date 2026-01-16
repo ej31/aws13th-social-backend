@@ -1,8 +1,9 @@
 import os
 from datetime import datetime, timezone
+from typing import Annotated
 
-from FileUtil.FileUpload import FileUtil
-from fastapi import HTTPException, status
+from util.file_upload import FileUtil
+from fastapi import HTTPException, status, Depends
 from fastapi import UploadFile
 
 from common.config import settings
@@ -16,7 +17,7 @@ if not os.path.exists(settings.upload_dir):
 
 class UserService:
     # service에서 jwt 의존성을 주입 받지 않는 이유는 이미 router에서 jwt로 인증을 받았기 때문이다.
-    def __init__(self, user_repo: UserRepository):
+    def __init__(self, user_repo: Annotated[UserRepository, Depends(UserRepository)]) -> None:
         self.user_repo = user_repo
 
     async def signup_user(self, signup_data: SignupRequest, profile_image: UploadFile | None):
@@ -81,20 +82,25 @@ class UserService:
 
     async def update_user(self, email: str, update_data: UserUpdateRequest, profile_image: UploadFile | None):
         user = self.user_repo.find_by_email(email)
+        #해당 하는 이메일의 사용자가 없을 시
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="사용자를 찾을 수 없습니다."
             )
-
+        #현재 비밀번호 검증
         if not verify_password(update_data.current_password, user["password"]):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="현재 비밀번호가 일치하지 않습니다."
             )
 
-        if update_data.nickname:
-            user["nickname"] = update_data.nickname
+        #current_password는 현재 비밀번호 검증을 위한 필드, password는 해시를 하여 저장하여야 하므로 따로 뺌
+        update_dict = update_data.model_dump(exclude={"current_password","password"})
+
+        # 일반 필드 업데이트 (nickname 등..)
+        for key,value in update_dict.items():
+            user[key] = value
 
         if update_data.password:
             # 새 비밀번호가 기존과 같은지 체크

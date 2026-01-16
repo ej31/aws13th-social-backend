@@ -1,47 +1,14 @@
 from fastapi import FastAPI, Depends
 
-from routers import users
+from routers import users, posts
 from schemas.commons import PostId, CommentId, Page
-from schemas.post import ListPostsQuery
 
 app = FastAPI()
 app.include_router(users.router)
-
-
-# List, search, sort posts
-@app.get("/posts")
-async def get_posts(query: ListPostsQuery = Depends()):
+app.include_router(posts.router)
 
 
 
-# post new post
-@app.post("/posts")
-async def create_post(post: dict):
-    pass
-
-
-# post list I wrote
-@app.get("/posts/me")
-async def get_posts_mine(page: Page):
-    pass
-
-
-# get a single post
-@app.get("/posts/{post_id}")
-async def get_single_post(post_id: PostId):
-    pass
-
-
-# edit post
-@app.patch("/posts/{post_id}")
-async def update_post(post_id: PostId):
-    pass
-
-
-# delete post
-@app.delete("/posts/{post_id}")
-async def delete_post(post_id: PostId):
-    pass
 
 
 # ----- COMMENTS ----- #

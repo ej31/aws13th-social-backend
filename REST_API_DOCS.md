@@ -1198,7 +1198,7 @@ Authorization: Bearer {accessToken}
     "id": 1,
     "email": "user@example.com",
     "nickname": "user",
-	  "profileImageUrl": "https://storage.googleapis.com/my-bucket/users/profile/profile.png"
+	  "profileImageUrl": "https://storage.googleapis.com/my-bucket/users/profile/profile.png",
     "createdAt": "2026-01-04T12:00:00Z"
   }
 }

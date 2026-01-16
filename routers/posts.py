@@ -1,35 +1,19 @@
+from typing import Annotated
+from fastapi import APIRouter, Depends, status
 
-from fastapi import APIRouter
-
-
-#
-# import json
-# from pathlib import Path
-# from fastapi import HTTPException
-#
-# POSTS_FILE = Path("posts.json")
-#
-# def load_posts():
-#     if POSTS_FILE.exists():
-#         return json.loads(POSTS_FILE.read_text())
-#     return []
-#
-# def save_posts(posts):
-#     POSTS_FILE.write_text(json.dumps(posts, indent=2))
-#
-# `@app.get`("/posts/{post_id}")
-# async def get_post(post_id: int):
-#     posts = load_posts()
-#     post = next((p for p in posts if p["id"] == post_id), None)
-#     if not post:
-#         raise HTTPException(status_code=404, detail="Post not found")
-#     return post
+from dependencies.auth import get_current_user
+from models.post import PostPublic, Post, post_form_reader
+from services.post_service import write_posts
 
 router = APIRouter( tags=["posts"])
 
-@router.post("/posts")
-async def create_post(title: str, content: str):
-    return {"title": title, "content": content}
+@router.post("/posts", response_model=PostPublic)
+async def create_post(
+        post_data:Annotated[Post, Depends(post_form_reader)],
+        current_user : Annotated[dict,Depends(get_current_user)]
+):
+    post_dict = post_data.model_dump(exclude_unset=True,mode="json")
+    return write_posts(post_data, current_user)
 
 @router.get("/posts/{post_id}")
 async def get_post(post_id: int):

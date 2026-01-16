@@ -1,3 +1,8 @@
+# Social Backend REST API 문서
+
+클라우드 커뮤니티 서비스의 REST API 명세서입니다.
+
+## 사용자(User) API
 
 ### { 내가 좋아요한 게시글 목록 }
 

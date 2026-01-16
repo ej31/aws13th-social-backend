@@ -8,6 +8,7 @@ from typing import Any
 
 import jwt
 from jwt.exceptions import InvalidTokenError, ExpiredSignatureError, DecodeError
+
 from passlib.context import CryptContext
 
 from app.core.config import get_settings

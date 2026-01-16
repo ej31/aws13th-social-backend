@@ -57,7 +57,6 @@ async def update_user(
     patch_dict = update_data.model_dump(exclude_unset=True, mode="json")
     return update_my_profile(current_user, patch_dict)
 
-
 @router.delete("/users/me",status_code=status.HTTP_200_OK)
 async def delete_user(
         current_user: Annotated[dict, Depends(get_current_user)]

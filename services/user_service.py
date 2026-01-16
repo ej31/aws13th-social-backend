@@ -26,7 +26,6 @@ def update_my_profile(current_user: dict, patch_data: dict) -> dict:
     save_users(users)
     return users[index]
 
-
 def delete_my_account(current_user: dict) -> None:
     users = get_users()
     new_users = [u for u in users if u["user_id"] != current_user["user_id"]]

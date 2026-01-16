@@ -11,7 +11,7 @@ def get_users():
         except json.JSONDecodeError:
             return []
 
-def save_users(users: list):
+def save_users(users: list[dict]):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, indent=4, ensure_ascii=False)
 

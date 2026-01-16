@@ -4,7 +4,6 @@ from models.post import Post, PostInternal
 from fastapi import HTTPException
 from repositories.posts_repo import get_post, save_post
 
-
 def write_posts(data: Post, current_user: dict):
     posts = get_post()
 
@@ -14,6 +13,7 @@ def write_posts(data: Post, current_user: dict):
     my_post = PostInternal(
         user_id=current_user["user_id"],
         post_id=str(uuid.uuid4()),
+        view_count=0,
         title=data.title,
         content=data.content,
         media=data.media,
@@ -21,6 +21,48 @@ def write_posts(data: Post, current_user: dict):
     ).model_dump(mode="json")
 
     posts.append(my_post)
-    save_post(my_post)
-
+    save_post(posts)
     return my_post
+
+def get_user_post(post_id: str) -> dict:
+    posts = get_post()
+    user_post = next((u for u in posts if u["post_id"] == post_id), None)
+    if user_post is None:
+        raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다")
+
+    if "view_count" not in user_post:
+        user_post["view_count"] = 0
+    user_post["view_count"] += 1
+    save_post(posts)
+    return user_post
+
+def update_my_post(post_id:str, post_dict: dict, current_user: dict) -> dict:
+    posts = get_post()
+    user_post = next((u for u in posts if u["post_id"] == post_id), None)
+    if user_post is None:
+        raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다")
+
+    index = next(
+        (i for i, u in enumerate(posts) if u["user_id"] == current_user["user_id"]),
+        None,
+    )
+    if index is None:
+        raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+    posts[index].update(post_dict)
+    save_post(posts)
+    return posts[index]
+
+
+def delete_my_post(post_id:str,current_user: dict) -> None:
+    posts = get_post()
+    target_post = next((u for u in posts if u["post_id"] == post_id), None)
+    if not target_post:
+        raise HTTPException(status_code=404, detail="게시물을 찾을 수 없습니다.")
+
+    if target_post["user_id"] != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="본인의 게시물만 삭제할 수 있습니다."
+        )
+    updated_posts = [p for p in posts if p["post_id"] != post_id]
+    save_post(updated_posts)

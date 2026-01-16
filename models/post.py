@@ -26,6 +26,7 @@ def post_form_reader(
 class PostInternal(BaseModel):
     user_id: str
     post_id: str
+    view_count :int
     title: str
     content: str
     media: Optional[HttpUrl] = None

@@ -22,7 +22,9 @@ def signup_user(data: UserSignUp):
         profile_image_url = data.profile_image_url,
         created_at = datetime.now(timezone.utc).isoformat(),
     ).model_dump(mode="json")
+
     users.append(user)
+
     save_users(users)
 
     return user, *create_access_token(user["user_id"])

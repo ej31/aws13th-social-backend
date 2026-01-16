@@ -786,7 +786,7 @@ Authorization: Bearer {accessToken}
 | --- | --- | --- | --- |
 | Authorization | string | O | Bearer |
 
-Path Parameters
+**Path Parameters**
 
 | 파라미터 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
@@ -877,7 +877,7 @@ POST `/posts/{postId}/comments`
 }
 ```
 
-인증되지 않은 경우 (401 Unauthorized)
+**인증되지 않은 경우 (401 Unauthorized)**
 
 ```json
 {
@@ -899,7 +899,7 @@ POST `/posts/{postId}/comments`
 
 ### { 게시글 삭제 }
 
-DELETE `/posts/{postId}`
+**DELETE** `/posts/{postId}`
 
 로그인한 사용자가 본인이 작성한 게시글을 삭제할 수 있습니다.
 
@@ -1160,7 +1160,7 @@ Authorization: Bearer {accessToken}
 
 ### { 회원가입 }
 
-POST `/users/sign-up`
+**POST** `/users/sign-up`
 
 이메일,비밀번호, 닉네임 정보를 입력받아 새로운 사용자 계정을 생성할 수 있습니다. 
 

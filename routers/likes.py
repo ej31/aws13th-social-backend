@@ -7,6 +7,12 @@ router = APIRouter(
 )
 
 
+# post list I liked
+@router.get("/posts/liked")
+async def get_posts_liked(page: Page):
+    return {"success": "get_posts_liked"}
+
+
 # register like
 @router.post("/posts/{post_id}/likes")
 async def post_like(post_id: PostId):
@@ -23,9 +29,3 @@ async def delete_like(post_id: PostId):
 @router.get("/posts/{post_id}/likes")
 async def get_likes_status(post_id: PostId):
     return {"success": "get_likes_status"}
-
-
-# post list I liked
-@router.get("/posts/liked")
-async def get_posts_liked(page: Page):
-    return {"success": "get_posts_liked"}

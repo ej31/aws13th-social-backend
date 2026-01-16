@@ -1,1 +1,6 @@
 # 의존성 패키지 목록
+fastapi[standard]
+pydantic
+python-jose[cryptography]  # JWT용
+passlib[bcrypt]            # 비밀번호 해싱용
+python-dotenv

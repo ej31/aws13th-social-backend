@@ -1,12 +1,7 @@
 # schemas/posts.py
 from pydantic import BaseModel
 from datetime import datetime
-
-
-class Pagination(BaseModel):
-    page: int
-    limit: int
-    total: int
+from app.schemas.common import Pagination
 
 
 class Author(BaseModel):
@@ -110,8 +105,3 @@ class MyPostListData(BaseModel):
 class MyPostListResponse(BaseModel):
     status: str
     data: MyPostListData
-
-
-class FailResponse(BaseModel):
-    status: str
-    message: str

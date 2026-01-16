@@ -4,28 +4,23 @@ from datetime import datetime
 import re
 
 
-class Pagination(BaseModel):
-    page: int
-    limit: int
-    total: int
-
-
 # ===== Requests =====
 class UserSignupRequest(BaseModel):
     email: str
-    password: str = Field(min_length= 2, max_length=20)
+    password: str = Field(min_length= 8, max_length=20)
     nickname: str
     profile_image: str | None = None
 
     @field_validator("password")
     @classmethod
     def check_password(cls, v: str) -> str:
-        if not re.search(r"\d", v) and not re.search(r"[^\w\s]", v):
-            raise ValueError("비밀번호에는 숫자와 특수문자가 반드시 포함되어야 합니다.")
+        errors=[]
         if not re.search(r"\d", v):
-            raise ValueError("비밀번호에는 숫자가 반드시 포함되어야 합니다.")
+            errors.append("숫자")
         if not re.search(r"[^\w\s]", v):
-            raise ValueError("비밀번호에는 특수문자가 반드시 포함되어야 합니다.")
+            errors.append("특수문자")
+        if errors:
+            raise ValueError(f"비밀번호에는 {', '.join(errors)}가 반드시 포함되어야 합니다.")
         return v
 
 
@@ -102,9 +97,3 @@ class TokenData(BaseModel):
 class TokenCreateResponse(BaseModel):
     status: str
     data: TokenData
-
-
-# ===== Fail Response (공통) =====
-class FailResponse(BaseModel):
-    status: str
-    message: str

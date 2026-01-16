@@ -64,8 +64,3 @@ class CommentUpdateData(BaseModel):
 class CommentUpdateResponse(BaseModel):
     status: str
     data: CommentUpdateData
-
-
-class FailResponse(BaseModel):
-    status: str
-    message: str

@@ -1,9 +1,21 @@
 import json
 
-def read_users():
-    with open("data/users.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+from pathlib import Path
 
-def write_users(users):
-    with open("data/users.json", "w", encoding="utf-8") as f:
+# 모듈 위치 기준으로 데이터 파일 경로 설정
+BASE_DIR = Path(__file__).resolve().parent.parent
+USERS_FILE = BASE_DIR / "data" / "users.json"
+
+def read_users():
+    try:
+        with open(USERS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON format in users.json: {e}")
+
+def write_users(users: list[dict]) -> None:
+    """사용자 목록을 JSON 파일에 저장합니다."""
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=2)

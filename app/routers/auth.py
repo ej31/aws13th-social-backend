@@ -1,5 +1,4 @@
-from fastapi import APIRouter, FastAPI, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, HTTPException
 from passlib.context import CryptContext
 
 router = APIRouter(prefix="/auth",tags=["auth"])
@@ -7,8 +6,8 @@ pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto") #bcypt�
 
 @router.post("/token", summary= "로그인", description="사용자 인증 후 액세스 토큰을 발급함. 로그인은 토큰 리소스 생성으로 모델링",tags=["auth"])
 async def login_for_access_token():
-    return
-
+    # TODO: OAuth2PasswordRequestForm을 받아 토큰 발급 로직 구현
+    raise HTTPException(status_code=501, detail="Not implemented yet")
 # 비밀번호 해싱
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)

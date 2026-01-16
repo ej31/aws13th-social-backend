@@ -14,5 +14,13 @@
     "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$EVulugecVRD8O7JPZiiebu$8MoSh3wvLHpZAITphF5wbA5oeExISLS",
     "profile_image": "string",
     "created_at": "2026-01-15T05:33:34.136082Z"
+  },
+  {
+    "id": "b314e54a-9862-4ddd-8031-8b2b9c20ee14",
+    "email": "ss",
+    "nickname": "string",
+    "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$nnpNRBzY836xK4yYlW9Dy.$8NJU4BOy2XGwd2WuzRisDeNID6BXaXS",
+    "profile_image": "string",
+    "created_at": "2026-01-16T00:26:39.513280Z"
   }
 ]

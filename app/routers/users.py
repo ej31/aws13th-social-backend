@@ -1,8 +1,9 @@
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from app.routers.auth import hash_password
 from app.schemas.users import UserLoginRequest, UserSignupRequest
 from app.utils.data import read_users, write_users
-from datetime import datetime
+from datetime import datetime, timezone
+import uuid
 
 router = APIRouter(prefix="/users",tags=["users"])
 
@@ -11,12 +12,12 @@ async def post_user(new_user: UserSignupRequest):
     users = read_users()
 
     new_user = {
-        "id": len(users) + 1,
+        "id": str(uuid.uuid4()),
         "email": new_user.email,
         "nickname": new_user.nickname,
         "password_hash": hash_password(new_user.password),
         "profile_image": new_user.profile_image,
-        "created_at": datetime.utcnow().isoformat() + "Z"
+        "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     }
     users.append(new_user)
     write_users(users)
@@ -52,7 +53,7 @@ async def get_user_by_id(request: UserLoginRequest, user_id: int):
     return
 
 @router.get("/me/posts",summary="내가 쓴 게시글 목록", description="로그인한 사용자가 쓴 게시글을 조회하여 목록을 보여주는 리소스.", tags=["users"])
-async def get_user_by_id(request: UserLoginRequest, user_id: int):
+async def get_my_posts(request: UserLoginRequest, user_id: int):
     return
 
 @router.get("/me/comments", summary="내가 쓴 댓글 목록 조회", description="로그인 한 사용자의 댓글만 조회하여 목록을 보여주는 리소스.", tags=["users"])

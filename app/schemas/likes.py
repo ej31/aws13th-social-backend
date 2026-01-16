@@ -27,8 +27,3 @@ class LikedPostListResponse(BaseModel):
 class LikeStateResponse(BaseModel):
     liked: bool
     like_count: int
-
-
-class FailResponse(BaseModel):
-    status: str
-    message: str

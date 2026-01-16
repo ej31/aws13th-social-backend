@@ -77,7 +77,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM"))
 
-#----- Oauth 2.0 Bearer 선언 & 토큰 디코딩 및 로그인 인증 ---------
+#----- Oauth 2.0 Bearer 선언 & 토큰 디코딩 및 로그인 인증 --------- TODO : 추후 인증 미들웨어로 따로 분리 해야함!!
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 def auth_user_with_token_decoding(token: str = Depends(oauth2_scheme)):
     user_info = None
@@ -201,6 +201,50 @@ async def get_users_my_page(user : dict = Depends(auth_user_with_token_decoding)
     return {
         "status": "success",
         "message": "액세스 토큰 및 사용자 인증이 완료되었습니다.",
+        "data": {
+            "user_id": user["user_id"],
+            "email_address" : user["email_address"],
+            "nickname": user["nickname"],
+            "profile_image_url": user["profile_image_url"],
+            "users_created_time": user["users_created_time"],
+            "users_modified_time": user["users_modified_time"]
+        }
+    }
+
+# ----- 네번째, 내 프로필 수정 메서드 구현
+@app.patch("/users/my-page")
+async def patch_users_my_page(
+        nickname : Annotated[str | None, Form()] = None,
+        password : Annotated[str | None, Form()] = None,
+        profile_image : Annotated[UploadFile | None, File()] = None,
+        user : dict = Depends(auth_user_with_token_decoding)
+):
+    # 최소 1개가 요청되었는지 확인
+    if not any([nickname, password, profile_image]):
+        raise HTTPException(status_code=400, detail="닉네임, 비밀번호, 프로필 이미지 중 최소 1개는 선택해야 합니다.")
+    # 1. 닉네임 변경이 요청된 경우
+    if nickname:
+        for i in demo_db:
+            if i["nickname"] == nickname and i["user_id"] != user["user_id"]:
+                raise HTTPException(status_code=409, detail="해당 닉네임은 이미 존재합니다.")
+        user["nickname"] = nickname
+    # 2. 비밀번호 변경이 요청된 경우 -- 회원가입 로직과 동일함.
+    if password:
+        validate_password(password)
+        user["hashed_password"] = hash_password(password)
+    # 3. 이미지 변경이 요청된 경우 -- 회원가입 로직과 동일함.
+    if profile_image:
+        if profile_image.content_type not in ALLOWED_TYPES:
+            raise HTTPException(415, "지원하지 않는 이미지 파일 형식입니다. ")
+        #TODO : 파일 저장 및 이미지 크기 확인 로직
+        await validate_image_size(profile_image)
+        profile_image_url = f"/uploads/{profile_image.filename}"
+    # 4. 프로필 수정 시간 DB에 업데이트
+    user["users_modified_time"] = datetime.now(timezone.utc).strftime('%Y.%m.%d - %H:%M:%S')
+
+    return {
+        "status": "success",
+        "message": "프로필 수정이 완료되었습니다.",
         "data": {
             "user_id": user["user_id"],
             "email_address" : user["email_address"],

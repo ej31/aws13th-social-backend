@@ -24,14 +24,14 @@ def read_json(path: Path) -> Any:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while processing data.",
-        )
+        ) from e
 
     except OSError as e:
         logger.error("Failed to read JSON file: %s", path, exc_info=e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while processing data.",
-        )
+        ) from e
 
 
 def write_json(path: Path, data: Any) -> None:
@@ -47,4 +47,4 @@ def write_json(path: Path, data: Any) -> None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while processing data.",
-        )
+        ) from e

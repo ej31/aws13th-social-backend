@@ -21,5 +21,5 @@ class CommentResponse(CommentBase):
     post_id: int = Field(...,description="게시물의 ID")
     author: AuthorResponse = Field(...,description="댓글 작성자의 내용")
     created_at: datetime = Field(...,description="생성 시간")
-    updated_at: datetime = Field(None,description="수정 시간 (최초 생성시에는 null)")
+    updated_at: datetime | None = Field(None,description="수정 시간 (최초 생성시에는 null)")
 

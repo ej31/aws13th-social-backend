@@ -1,10 +1,7 @@
-from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from routers import users, posts, comments, likes
 from dotenv import load_dotenv
-
-load_dotenv()
 
 load_dotenv()
 

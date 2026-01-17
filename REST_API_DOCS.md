@@ -12,22 +12,22 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 내가 좋아요한 게시글 목록 }
 
-**GET** `/users/me/likes` 
+**GET** `/users/me/likes`
 
 내가 좋아요한 게시글의 목록을 조회합니다. 로그인을 하고 진행합니다.
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인 토큰으로 인증 |
+| 헤더            | 타입     | 필수 | 설명          |
+|---------------|--------|----|-------------|
+| Authorization | String | O  | 로그인 토큰으로 인증 |
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| page | integer | X | 페이지 번호(기본값 :  1) |
-| limit | integer | X | 페이지 크기 |
+| 파라미터  | 타입      | 필수 | 설명               |
+|-------|---------|----|------------------|
+| page  | integer | X  | 페이지 번호(기본값 :  1) |
+| limit | integer | X  | 페이지 크기           |
 
 **Response (200 OK)**
 
@@ -37,13 +37,13 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "data": [
     {
       "post_id": "1",
-	     "title": "내가 좋아요를 누른 게시글 제목",
-	     "author" : {
-		     "author_id" : "admin",
-		     "nickname" : "abc" 
-		    },
-		  "count_likes" : 12,
-		  "count_comment" : 90,
+      "title": "내가 좋아요를 누른 게시글 제목",
+      "author": {
+        "author_id": "admin",
+        "nickname": "abc"
+      },
+      "count_likes": 12,
+      "count_comment": 90,
       "created_at": "2026-01-04T12:00:00Z"
     }
   ],
@@ -83,33 +83,32 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 좋아요 상태 확인 }
 
-**GET** `/posts/{post_id}/likes` 
+**GET** `/posts/{post_id}/likes`
 
 특정 게시글의 총 좋아요 수와 현재 로그인한 사용자의 좋아요 여부를 확인합니다.
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
+| 헤더            | 타입     | 필수 | 설명          |
+|---------------|--------|----|-------------|
 | Authorization | string | O  | 로그인 토큰으로 인증 |
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| post_id | String | O | 게시글 ID |
+| 파라미터    | 타입     | 필수 | 설명     |
+|---------|--------|----|--------|
+| post_id | String | O  | 게시글 ID |
 
 **Response (200 OK)**
 
 ```json
 {
   "status": "success",
-  "data":
-    {
-      "post_id" : "1",
-      "count_likes" : 3,
-      "liked" : true
-    }
+  "data": {
+    "post_id": "1",
+    "count_likes": 3,
+    "liked": true
+  }
 }
 ```
 
@@ -135,17 +134,17 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | string | O | Bearer 토큰 |
+| 헤더            | 타입     | 필수 | 설명        |
+|---------------|--------|----|-----------|
+| Authorization | string | O  | Bearer 토큰 |
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| page | integer | X | 페이지 번호 (기본값: 1) |
-| limit | integer | X | 페이지당 댓글 수 (기본값: 20) |
-| sort | string | X | 정렬 기준 (created_at, updated_at) |
+| 파라미터  | 타입      | 필수 | 설명                             |
+|-------|---------|----|--------------------------------|
+| page  | integer | X  | 페이지 번호 (기본값: 1)                |
+| limit | integer | X  | 페이지당 댓글 수 (기본값: 20)            |
+| sort  | string  | X  | 정렬 기준 (created_at, updated_at) |
 
 **Response (200 OK)**
 
@@ -154,7 +153,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "success",
   "data": [
     {
-      "id": "comment_1",
+      "comment_id": "comment_1",
       "post": {
         "id": "1",
         "title": "게시글 제목"
@@ -194,16 +193,16 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| post_id | String | O | 특정 게시글을 나타내는 유일한 식별자 입니다. |
+| 파라미터    | 타입     | 필수 | 설명                        |
+|---------|--------|----|---------------------------|
+| post_id | String | O  | 특정 게시글을 나타내는 유일한 식별자 입니다. |
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| page | integer | X | 페이지 번호(기본값 : 1) |
-| limit | intger | X | 페이지당 댓글 수  |
+| 파라미터  | 타입      | 필수 | 설명              |
+|-------|---------|----|-----------------|
+| page  | integer | X  | 페이지 번호(기본값 : 1) |
+| limit | integer | X  | 페이지당 댓글 수       |
 
 **Response (200 OK)**
 
@@ -212,14 +211,14 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "success",
   "data": [
     {
-	    "comment_id" : "1",
-	    "content" : "댓글 내용입니다.",
-	    "author" : {
-	      "login_id" : "admin",
-	      "nickname" : "abc"
-    },
-      "created_at" : "2026-01-07T08:30:00+09:00",
-      "title" : "댓글을 작성한 게시글의 제목"
+      "comment_id": "1",
+      "content": "댓글 내용입니다.",
+      "author": {
+        "login_id": "admin",
+        "nickname": "abc"
+      },
+      "created_at": "2026-01-07T08:30:00+09:00",
+      "title": "댓글을 작성한 게시글의 제목"
     }
   ],
   "pagination": {
@@ -232,7 +231,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ---
 
-### { 내가 쓴 게시글 목록  }
+### { 내가 쓴 게시글 목록 }
 
 **GET** `/users/me/posts`
 
@@ -240,9 +239,9 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | string | O | 로그인한 토큰으로 사용자를 인증한다 |
+| 헤더            | 타입     | 필수 | 설명                  |
+|---------------|--------|----|---------------------|
+| Authorization | string | O  | 로그인한 토큰으로 사용자를 인증한다 |
 
 **Query Parameters**
 
@@ -273,7 +272,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "POST_GET_FORBIDDEN",
-    "message": "본인이 작성한 게시글만 조회할 수 있습니다.",
+    "message": "본인이 작성한 게시글만 조회할 수 있습니다."
   }
 }
 ```
@@ -282,31 +281,30 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 상세 조회 }
 
-**GET** `/posts/{post_id}` 
+**GET** `/posts/{post_id}`
 
 특정 게시글의 상세 정보를 조회 합니다. 해당 API 호출시 조회수가 1 증가합니다.
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| post_id | String | O | 조회할 게시글 ID |
+| 파라미터    | 타입     | 필수 | 설명         |
+|---------|--------|----|------------|
+| post_id | String | O  | 조회할 게시글 ID |
 
 **Response (200 OK)**
 
 ```json
 {
   "status": "success",
-  "data": 
-    {
-      "post_id": "1",
-      "title" : "게시글의 제목 입니다.",
-      "content" : "게시글 내용입니다.",
-      "author" : {
-	      "id" : "admin",
-	      "nickname" : "abc"
+  "data": {
+    "post_id": "1",
+    "title": "게시글의 제목 입니다.",
+    "content": "게시글 내용입니다.",
+    "author": {
+      "id": "admin",
+      "nickname": "abc"
     },
-  "created_at": "2026-01-04T12:00:00Z"
+    "created_at": "2026-01-04T12:00:00Z"
   }
 }
 ```
@@ -345,17 +343,17 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 정렬 }
 
-**GET** `/posts/sorted` 
+**GET** `/posts/sorted`
 
-게시글 목록을 조회 합니다. `sort`로 정렬 기준을 지정할 수 있습니다. 
+게시글 목록을 조회 합니다. `sort`로 정렬 기준을 지정할 수 있습니다.
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| page | integer | X | 페이지 번호 (기본값: 1) |
-| limit | integer | X | 페이지당 게시글 개수 (기본값: 20) |
-| sort | String | O | 정렬 기준(latest, views, likes)  |
+| 파라미터  | 타입      | 필수 | 설명                          |
+|-------|---------|----|-----------------------------|
+| page  | integer | X  | 페이지 번호 (기본값: 1)             |
+| limit | integer | X  | 페이지당 게시글 개수 (기본값: 20)       |
+| sort  | String  | O  | 정렬 기준(latest, views, likes) |
 
 **Response (200 OK)**
 
@@ -363,16 +361,15 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": [
-	    {
-      "post_id" : "1",
-      "title" : "게시글의 제목",
-			"sort" : "
-      "author" : {
-	      "author_id" : "admin",
-	      "nickname" : "abc"
-    },
-      "created_at" : "2026-01-07T08:30:00+09:00"
-      }
+    {
+      "post_id": "1",
+      "title": "게시글의 제목",
+      "author": {
+        "author_id": "admin",
+        "nickname": "abc"
+      },
+      "created_at": "2026-01-07T08:30:00+09:00"
+    }
   ],
   "pagination": {
     "page": 1,
@@ -389,7 +386,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "**BAD__REQUEST**",
-    "message" : "정렬 기준을 지원하지 않습니다."	  
+    "message": "정렬 기준을 지원하지 않습니다."
   }
 }
 ```
@@ -398,17 +395,17 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 검색 }
 
-**GET** `/posts/search` 
+**GET** `/posts/search`
 
 게시글은 제목/내용을 기준으로 검색하여 목록을 조회합니다.(로그인 없이 검색 가능)
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| keyword | String | O | 제목 또는 내용에 포함된 검색 키워드 |
-| page | integer | X | 페이지 번호 (기본값: 1) |
-| limit | integer | X | 페이지당 게시글 개수 (기본값: 20) |
+| 파라미터    | 타입      | 필수 | 설명                    |
+|---------|---------|----|-----------------------|
+| keyword | String  | O  | 제목 또는 내용에 포함된 검색 키워드  |
+| page    | integer | X  | 페이지 번호 (기본값: 1)       |
+| limit   | integer | X  | 페이지당 게시글 개수 (기본값: 20) |
 
 **Response (200 OK)**
 
@@ -416,15 +413,15 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": [
-	    {
-      "post_id" : "1",
-      "title" : "게시글 제목",
-      "author" : {
-	      "id" : "admin",
-	      "nickname" : "abc"
-    },
-    "created_at": "2026-01-04T12:00:00Z"
-      }
+    {
+      "post_id": "1",
+      "title": "게시글 제목",
+      "author": {
+        "id": "admin",
+        "nickname": "abc"
+      },
+      "created_at": "2026-01-04T12:00:00Z"
+    }
   ],
   "pagination": {
     "page": 1,
@@ -441,7 +438,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "**BAD__REQUEST**",
-    "message" : "검색어(keyword)가 없습니다."	  
+    "message": "검색어(keyword)가 없습니다."
   }
 }
 ```
@@ -450,16 +447,16 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 목록 조회 }
 
-**GET** `/posts` 
+**GET** `/posts`
 
 게시글 목록을 페이지네이션 하여 조회합니다.
 
 **Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| page | integer | X | 페이지 번호(1페이지 부터 시작) |
-| limit | integer | X | 페이지당 게시글 개수 |
+| 파라미터  | 타입      | 필수 | 설명                 |
+|-------|---------|----|--------------------|
+| page  | integer | X  | 페이지 번호(1페이지 부터 시작) |
+| limit | integer | X  | 페이지당 게시글 개수        |
 
 **Response (200 OK)**
 
@@ -490,28 +487,27 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 특정 회원 조회 }
 
-**GET** `/users/{user_id}` 
+**GET** `/users/{email}`
 
-입력한 id에 맞는 회원을 조회합니다. 
+입력한 이메일에 맞는 회원을 조회합니다.
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| user_id | String  | O  | 조회할 ID입니다. |
+| 파라미터  | 타입     | 필수 | 설명           |
+|-------|--------|----|--------------|
+| email | String | O  | 고유한 이메일 입니다. |
 
 **Response (200 OK)**
 
 ```json
 {
   "status": "success",
-  "data": 
-    {
-	    "id" : "admin",
-      "nickname": "abc",
-		  "profile_image": "image.123",
-		  "created_at": "2026-01-04T12:00:00Z"		  
-    }
+  "data": {
+    "email": "example@naver.com",
+    "nickname": "abc",
+    "profile_image": "image.123",
+    "created_at": "2026-01-04T12:00:00Z"
+  }
 }
 ```
 
@@ -520,11 +516,10 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 ```json
 {
   "status": "error",
-  "error": 
-    {
-	    "code" : "NOT_FOUND"
-	    "message" : "사용자를 찾을 수 없습니다."		  
-    }
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "사용자를 찾을 수 없습니다."
+  }
 }
 ```
 
@@ -532,14 +527,14 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 내 프로필 조회 }
 
-**GET** `/users/me` 
+**GET** `/users/me`
 
 로그인한 사용자 정보 조회
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
+| 헤더            | 타입     | 필수 | 설명                              |
+|---------------|--------|----|---------------------------------|
 | Authorization | string | O  | 토큰 형식의 인증 정보, 로그인 시 발급받은 토큰을 전달 |
 
 **Response (200 OK)**
@@ -547,14 +542,12 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 ```json
 {
   "status": "success",
-  "data": 
-    {
-      "email": "example@naver.com",
-	    "nickname" : "abc",
-	    "profile_image" : "image.123",
-	    "created_at": "2026-01-04T12:00:00Z",
-	    "id" : "admin"
-    }
+  "data": {
+    "email": "example@naver.com",
+    "nickname": "abc",
+    "profile_image": "image.123",
+    "created_at": "2026-01-04T12:00:00Z"
+  }
 }
 ```
 
@@ -574,15 +567,15 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 좋아요 취소 }
 
-**DELETE**`/posts/{post_id}/likes`
+**DELETE** `/posts/{post_id}/likes`
 
-등록한 좋아요를 취소합니다. 
+등록한 좋아요를 취소합니다.
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인 토큰으로 인증 |
+| 헤더            | 타입     | 필수 | 설명          |
+|---------------|--------|----|-------------|
+| Authorization | String | O  | 로그인 토큰으로 인증 |
 
 **Response (204 No Content)**
 
@@ -624,15 +617,15 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | string | O | Bearer 토큰 |
+| 헤더            | 타입     | 필수 | 설명        |
+|---------------|--------|----|-----------|
+| Authorization | string | O  | Bearer 토큰 |
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| post_id | string | O | 좋아요를 등록할 게시글 ID |
+| 파라미터    | 타입     | 필수 | 설명              |
+|---------|--------|----|-----------------|
+| post_id | string | O  | 좋아요를 등록할 게시글 ID |
 
 **Response (201 Created)**
 
@@ -693,9 +686,9 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인 토큰으로 인증 |
+| 헤더            | 타입     | 필수 | 설명          |
+|---------------|--------|----|-------------|
+| Authorization | String | O  | 로그인 토큰으로 인증 |
 
 **Response (204 No Content)**
 
@@ -722,7 +715,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "POST_DELETE_FORBIDDEN",
-    "message": "본인이 작성한 댓글만 삭제할 수 있습니다.",
+    "message": "본인이 작성한 댓글만 삭제할 수 있습니다."
   }
 }
 ```
@@ -750,16 +743,16 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인하고 생성된 토큰으로 식별 |
-| Content-type  | String | O | application/json |
+| 헤더            | 타입     | 필수 | 설명                |
+|---------------|--------|----|-------------------|
+| Authorization | String | O  | 로그인하고 생성된 토큰으로 식별 |
+| Content-type  | String | O  | application/json  |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| content | String | O | 수정된 댓글 내용  |
+| 필드      | 타입     | 필수 | 설명        |
+|---------|--------|----|-----------|
+| content | String | O  | 수정된 댓글 내용 |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
@@ -777,18 +770,18 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "data": {
     "post_id": "1",
     "id": "comment_1",
-    "author" : {
-	    "login_id" : "admin",
-	    "nickname" : "abc"
-	   },
-	   "content" : "수정된 댓글의 내용",
-	   "created_at": "2026-01-04T12:00:00Z",
-	   "updated_at" : "2026-01-05T12:00:00Z"
+    "author": {
+      "login_id": "admin",
+      "nickname": "abc"
+    },
+    "content": "수정된 댓글의 내용",
+    "created_at": "2026-01-04T12:00:00Z",
+    "updated_at": "2026-01-05T12:00:00Z"
   }
 }
 ```
 
-**Response (401 UNAUTHORIZED)** 
+**Response (401 UNAUTHORIZED)**
 
 ```json
 {
@@ -800,7 +793,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 }
 ```
 
-**Response (403 FORBIDDEN)** 
+**Response (403 FORBIDDEN)**
 
 ```json
 {
@@ -822,16 +815,16 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인하고 받은 토큰으로 인 |
-| Content-type  | String | O | application/json |
+| 헤더            | 타입     | 필수 | 설명               |
+|---------------|--------|----|------------------|
+| Authorization | String | O  | 로그인하고 받은 토큰으로 인  |
+| Content-type  | String | O  | application/json |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| content | String | O | 댓글의 내용 |
+| 필드      | 타입     | 필수 | 설명     |
+|---------|--------|----|--------|
+| content | String | O  | 댓글의 내용 |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
@@ -849,12 +842,12 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "data": {
     "post_id": "1",
     "id": "comment_1",
-    "author" : {
-	    "login_id" : "admin"
-	    "nickname" : "abc"
-	   },
-	   "content" : "댓글의 내용"
-	   "created_at": "2026-01-04T12:00:00Z"
+    "author": {
+      "login_id": "admin",
+      "nickname": "abc"
+    },
+    "content": "댓글의 내용",
+    "created_at": "2026-01-04T12:00:00Z"
   }
 }
 ```
@@ -869,15 +862,15 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| post_id | String | O | 조회할 게시글 ID |
+| 파라미터    | 타입     | 필수 | 설명         |
+|---------|--------|----|------------|
+| post_id | String | O  | 조회할 게시글 ID |
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인한 사용자 인증을 위한 헤더이다. |
+| 헤더            | 타입     | 필수 | 설명                    |
+|---------------|--------|----|-----------------------|
+| Authorization | String | O  | 로그인한 사용자 인증을 위한 헤더이다. |
 
 **Response (204 No Content)**
 
@@ -892,7 +885,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "POST_DELETE_FORBIDDEN",
-    "message": "본인이 작성한 게시글만 삭제할 수 있습니다.",
+    "message": "본인이 작성한 게시글만 삭제할 수 있습니다."
   }
 }
 ```
@@ -904,7 +897,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "**UNAUTHORIZED**",
-    "message": "본인이 작성한 게시글만 삭제할 수 있습니다.",
+    "message": "본인이 작성한 게시글만 삭제할 수 있습니다."
   }
 }
 ```
@@ -913,29 +906,29 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 ### { 게시글 수정 }
 
-**PUT** `/posts/{post_id}` 
+**PUT** `/posts/{post_id}`
 
 자신이 작성한 게시글을 수정합니다.
 
 **Path Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| post_id | String | O | 조회할 게시글 ID |
+| 파라미터    | 타입     | 필수 | 설명         |
+|---------|--------|----|------------|
+| post_id | String | O  | 조회할 게시글 ID |
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인할 때 생성된 로그인으로 본인의 게시글을 판단 |
-| Content-type  | String | O | application/json |
+| 헤더            | 타입     | 필수 | 설명                           |
+|---------------|--------|----|------------------------------|
+| Authorization | String | O  | 로그인할 때 생성된 로그인으로 본인의 게시글을 판단 |
+| Content-type  | String | O  | application/json             |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| title | String | X | 수정할 게시글의 제목 |
-| content | String | X | 수정할 게시글의 내용 |
+| 필드      | 타입     | 필수 | 설명          |
+|---------|--------|----|-------------|
+| title   | String | X  | 수정할 게시글의 제목 |
+| content | String | X  | 수정할 게시글의 내용 |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
@@ -952,50 +945,50 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": {
-	  "post_id" : "1"
+    "post_id": "1", 
     "title": "수정된 게시글의 제목",
     "content": "수정된 게시글의 내용",
-    "author" : {
-	    "id" : "admin",
-	    "nickname" : "abc"
-	    },
+    "author": {
+      "id": "admin",
+      "nickname": "abc"
+    },
     "updated_at": "2026-01-04T12:00:00Z"
   }
 }
 ```
 
-**Response (403 FORBIDDEN)** 
+**Response (403 FORBIDDEN)**
 
 ```json
 {
   "status": "error",
   "error": {
     "code": "POST_UPDATE_FORBIDDEN",
-    "message": "본인이 작성한 게시글만 수정할 수 있습니다.",
+    "message": "본인이 작성한 게시글만 수정할 수 있습니다."
   }
 }
 ```
 
-**Response (401 UNAUTHORIZED)** 
+**Response (401 UNAUTHORIZED)**
 
 ```json
 {
   "status": "error",
   "error": {
     "code": "**UNAUTHORIZED**",
-    "message": "로그인 후 게시글 수정이 가능합니다.",
+    "message": "로그인 후 게시글 수정이 가능합니다."
   }
 }
 ```
 
-**Response (404 NOT FOUND)** 
+**Response (404 NOT FOUND)**
 
 ```json
 {
   "status": "error",
   "error": {
     "code": "**NOT FOUND**",
-    "message": "게시글을 찾을 수 없습니다.",
+    "message": "게시글을 찾을 수 없습니다."
   }
 }
 ```
@@ -1010,17 +1003,17 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String  | O | 로그인 한 토큰으로 사용자를 인증한다. |
-| Content-type | String  | O  | application/json |
+| 헤더            | 타입     | 필수 | 설명                    |
+|---------------|--------|----|-----------------------|
+| Authorization | String | O  | 로그인 한 토큰으로 사용자를 인증한다. |
+| Content-type  | String | O  | application/json      |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| title | String | O | 게시글의 제목 |
-| content | String | O | 게시글의 내용  |
+| 필드      | 타입     | 필수 | 설명      |
+|---------|--------|----|---------|
+| title   | String | O  | 게시글의 제목 |
+| content | String | O  | 게시글의 내용 |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
@@ -1037,14 +1030,14 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": {
-	  "post_id" : "1",
+    "post_id": "1",
     "title": "게시글 제목",
     "content": "게시글 내용",
-    "created_at" : "2026-01-07T08:30:00+09:00",
-    "author" : {
-	    "id" : "admin",
-	    "nickname" : "abc" 
-  }
+    "created_at": "2026-01-07T08:30:00+09:00",
+    "author": {
+      "id": "admin",
+      "nickname": "abc"
+    }
   }
 }
 ```
@@ -1056,7 +1049,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "**UNAUTHORIZED**",
-    "message" : "로그인을 하지 않았습니다."	  
+    "message": "로그인을 하지 않았습니다."
   }
 }
 ```
@@ -1068,7 +1061,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "**BAD__REQUEST**",
-    "message" : "게시글의 제목 및 내용을 작성하지 않았습니다."	  
+    "message": "게시글의 제목 및 내용을 작성하지 않았습니다."
   }
 }
 ```
@@ -1079,13 +1072,13 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **DELETE** `/users/me`
 
-회원을 삭제합니다. 삭제된 회원은 복구할 수  없으므로 주의가 필요합니다. 
+회원을 삭제합니다. 삭제된 회원은 복구할 수 없으므로 주의가 필요합니다.
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String | O | 로그인 시 발급되 토큰 |
+| 헤더            | 타입     | 필수 | 설명           |
+|---------------|--------|----|--------------|
+| Authorization | String | O  | 로그인 시 발급되 토큰 |
 
 **Response (204 NoContent) → 상황에 맞게 바꿔서 쓰세요.**
 
@@ -1093,14 +1086,14 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 (응답 본문 없음)
 ```
 
-**Response (401 UNAUTHORIZED)** 
+**Response (401 UNAUTHORIZED)**
 
 ```json
 {
   "status": "error",
   "error": {
     "code": "**UNAUTHORIZED**",
-    "message" : "로그인이 필요합니다."	  
+    "message": "로그인이 필요합니다."
   }
 }
 ```
@@ -1115,19 +1108,19 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Authorization | String  | O | 로그인한 토큰을 전달 |
-| Content-type | String  | O | application/json |
+| 헤더            | 타입     | 필수 | 설명               |
+|---------------|--------|----|------------------|
+| Authorization | String | O  | 로그인한 토큰을 전달      |
+| Content-type  | String | O  | application/json |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| current_password | String | O  | 변경전 비밀번호 입니다. |
-| nickname | String | O | 변경할 닉네임입니다. |
-| profile_image | String | X | 변경할 프로필이미지 입니다. |
-| new_password | String | X | 변경 후 비밀번호입니다. |
+| 필드               | 타입     | 필수 | 설명              |
+|------------------|--------|----|-----------------|
+| current_password | String | O  | 변경전 비밀번호 입니다.   |
+| nickname         | String | O  | 변경할 닉네임입니다.     |
+| profile_image    | String | X  | 변경할 프로필이미지 입니다. |
+| new_password     | String | X  | 변경 후 비밀번호입니다.   |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
@@ -1145,35 +1138,34 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": {
-	  "id" : "admin",
     "nickname": "abc",
-		"email" : "example@naver.com",
-	  "profile_image": "image.123",
-    "updatedAt": "2026-01-07T08:30:00+09:00"
+    "email": "example@naver.com",
+    "profile_image": "image.123",
+    "updated_at": "2026-01-07T08:30:00+09:00"
   }
 }
 ```
 
-**Response (400 BAD_REQUEST)** 
+**Response (400 BAD_REQUEST)**
 
 ```json
 {
   "status": "error",
   "error": {
     "code": "**BAD_REQUEST**",
-    "message" : "필수 항목이 누락되었습니다."	  
+    "message": "필수 항목이 누락되었습니다."
   }
 }
 ```
 
-**Response (401 UNAUTHORIZED)** 
+**Response (401 UNAUTHORIZED)**
 
 ```json
 {
   "status": "error",
   "error": {
     "code": "UNAUTHORIZED",
-    "message" : "로그인이 필요합니다."	  
+    "message": "로그인이 필요합니다."
   }
 }
 ```
@@ -1184,26 +1176,26 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **POST** `/auth/tokens`
 
-이메일과 비밀번호로 사용자 인증을 수행하고 토큰을 발급한다. 
+이메일과 비밀번호로 사용자 인증을 수행하고 토큰을 발급한다.
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Content-type | String  | O | 요청 본문 형식(application/json) |
+| 헤더           | 타입     | 필수 | 설명                         |
+|--------------|--------|----|----------------------------|
+| Content-type | String | O  | 요청 본문 형식(application/json) |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| email | String | O | 가입한 이메일 |
-| password | String | O | 비밀번호(8자 이상, 영문/숫자/특수문자 포함) |
+| 필드       | 타입     | 필수 | 설명                         |
+|----------|--------|----|----------------------------|
+| email    | String | O  | 가입한 이메일                    |
+| password | String | O  | 비밀번호(8자 이상, 영문/숫자/특수문자 포함) |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
 ```json
 {
-  "id": "admin",
+  "email": "example@naver.com",
   "password": "admin123@"
 }
 ```
@@ -1214,8 +1206,8 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 {
   "status": "success",
   "data": {
-	  "token_type": "Bearer",
-	  "access_token" : "...",  // 실제 API 요청에 사용되는 토큰
+    "token_type": "Bearer",
+    "access_token": "...",
     "expires_in": 3600
   }
 }
@@ -1244,18 +1236,18 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Request Headers**
 
-| 헤더 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| Content-type | String | O | 요청 본문 형식(application/json) |
+| 헤더           | 타입     | 필수 | 설명                         |
+|--------------|--------|----|----------------------------|
+| Content-type | String | O  | 요청 본문 형식(application/json) |
 
 **Request Body**
 
-| 필드 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| email | String  | O | 이메일형식으로 작성해주세요 |
-| password | String | O  | 비밀번호(8자 이상, 영문/숫자/특수문자 포함) |
-| nickname | String | O | 사용자 닉네임 |
-| profile_image | String | X | 프로필 이미지 URL(선택) |
+| 필드            | 타입     | 필수 | 설명                         |
+|---------------|--------|----|----------------------------|
+| email         | String | O  | 이메일형식으로 작성해주세요             |
+| password      | String | O  | 비밀번호(8자 이상, 영문/숫자/특수문자 포함) |
+| nickname      | String | O  | 사용자 닉네임                    |
+| profile_image | String | X  | 프로필 이미지 URL(선택)            |
 
 **Request Example → Reqeust Body 가 있는 경우 작성 필**
 
@@ -1268,22 +1260,21 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 }
 ```
 
-**Response (201 Created)** 
+**Response (201 Created)**
 
 ```json
 {
   "status": "success",
   "data": {
     "email": "example@naver.com",
-    "nickname" : "abc",
-    "profile_image" : "image.123",
-    "created_at": "2026-01-04T12:00:00Z",
-    "id" : "admin"
+    "nickname": "abc",
+    "profile_image": "image.123",
+    "created_at": "2026-01-04T12:00:00Z"
   }
 }
 ```
 
-**Response (400 BAD_REQUEST)** 
+**Response (400 BAD_REQUEST)**
 
 ```json
 {

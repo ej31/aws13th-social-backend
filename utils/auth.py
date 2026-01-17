@@ -1,10 +1,13 @@
 import hmac
+import logging
 from datetime import datetime, UTC, timedelta
 
 import bcrypt
 import jwt
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _prehash(password: str) -> bytes:
@@ -31,7 +34,11 @@ DUMMY_HASH = hash_password("dummy_password_for_timing_attack_prevention")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     prehashed = _prehash(plain_password)
-    return bcrypt.checkpw(prehashed, hashed_password.encode())
+    try:
+        return bcrypt.checkpw(prehashed, hashed_password.encode())
+    except ValueError:
+        logger.warning("Invalid hash format detected")
+        return False
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

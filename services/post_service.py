@@ -17,7 +17,7 @@ class PostService:
         self.post_repo = post_repo
 
     @staticmethod
-    def _verify_author(post:dict, current_user_id: str):
+    def _verify_author(post:dict, current_user_id: str) -> None:
         """현재 사용자와 글쓴이가 맞는지 확인"""
         if post["author_id"] != current_user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,

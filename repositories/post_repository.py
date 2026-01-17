@@ -46,15 +46,20 @@ class PostRepository:
         else:
             #p에는 posts, post_data의 id와 비교해서 같은 값을 찾음
             for i,p in enumerate(posts):
-                if p["post_id"] == post_data["post_id"]:
+                if int(p["post_id"]) == int(post_data["post_id"]):
                     #찾게되면 현재 저장되어 있는 posts[i]번째를 현재 저장할려는 post_data로 변경함
                     posts[i] = post_data
                     break
+            else:
+                # 해당 post_id를 가진 게시글이 없으면 새로 추가
+                raise ValueError(f"수정하려는 게시글 {post_data['post_id']}가 존재하지 않습니다.",f"(요청 타입: {type(post_data['post_id'])})")
         self._save_all(posts)
         return post_data
 
     def delete(self, post_id: int) -> bool:
         posts = self._load_all()
+
+        #삭제하지 않을 포스트들만 걸러낸다.
         filtered_posts = [p for p in posts if p["post_id"] != post_id]
 
         if len(posts) == len(filtered_posts):

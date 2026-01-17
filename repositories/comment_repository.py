@@ -9,6 +9,7 @@ class CommentRepository:
         self.file_path = settings.comments_json_path
         if not os.path.exists(self.file_path):
             self._save_all([])
+
     def _load_all(self) -> list[dict]:
         with open(self.file_path, "r", encoding="utf-8") as f:
             try:
@@ -16,12 +17,12 @@ class CommentRepository:
             except json.JSONDecodeError:
                 return []
 
-    def _save_all(self,posts) -> None:
+    def _save_all(self,comments) -> None:
         with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(posts, f, indent=4, ensure_ascii=False)
+            json.dump(comments, f, indent=4, ensure_ascii=False)
 
-    #특정 게시글에 속한 모든 댓글 가져오기
     def find_all_by_post_id(self,post_id: int) -> list[dict]:
+        """특정 게시글에 속한 모든 댓글 가져오기"""
         comments = self._load_all()
         return [c for c in comments if int(c["post_id"]) == int(post_id)]
 
@@ -33,10 +34,11 @@ class CommentRepository:
         return None
 
     def save(self,comment_data:dict) -> dict:
+        """코멘트 id가 없을 시 새로 게시물 생성 만약 있을 시 수정된 데이터만 저장"""
         comments = self._load_all()
 
         if "comment_id" not in comment_data or comment_data["comment_id"] is None:
-            max_id = max((c["comment_id"] for c in comments), default=0)
+            max_id = max((int(c["comment_id"]) for c in comments), default=0)
             comment_data["comment_id"] = max_id + 1
             comments.append(comment_data)
 
@@ -51,10 +53,12 @@ class CommentRepository:
         return comment_data
 
     def delete(self,comment_id: int) -> bool:
+        """해당 코멘트 id와 다른 id만 저장"""
         comments = self._load_all()
-        filtered_data = [c for c in comments if c["comment_id"] == comment_id]
+        filtered_data = [c for c in comments if c["comment_id"] != comment_id]
 
         if len(comments) == len(filtered_data):
             return False
 
+        self._save_all(filtered_data)
         return True

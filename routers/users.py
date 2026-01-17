@@ -8,7 +8,7 @@ from config import settings
 from schemas.commons import UserId
 from schemas.user import (
     UserMyProfile,
-    UserUpdateRequest,
+    UserUpdateRequest, UserProfile,
 )
 from schemas.user import UserCreateRequest, UserCreateResponse, UserLoginRequest, UserLoginResponse
 from utils.auth import hash_password, verify_password, create_access_token, DUMMY_HASH, get_current_user_id
@@ -20,6 +20,7 @@ router = APIRouter(
 
 # 의존성 주입용 타입 별칭
 CurrentUserId = Annotated[str, Depends(get_current_user_id)]
+
 
 @router.post("/users", response_model=UserCreateResponse,
              status_code=status.HTTP_201_CREATED)
@@ -132,7 +133,20 @@ def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest):
     }
 
 
-# get a specific user
-@router.get("/users/{user_id}")
-async def get_specific_user(user_id: UserId):
-    return {"user_id": user_id}
+@router.get("/users/{user_id}", response_model=UserProfile)
+def get_specific_user(user_id: UserId):
+    """특정 유저 프로필 조회"""
+    users = read_json(settings.users_file)
+
+    user = next((u for u in users if u["id"] == user_id), None)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return {
+        "id": user["id"],
+        "nickname": user["nickname"],
+        "profile_img": user["profile_img"],
+    }

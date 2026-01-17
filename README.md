@@ -11,7 +11,7 @@
 ### 1. 의존성 설치
 
 ```bash
-uv sync
+  uv sync
 ```
 
 ### 2. 환경변수 설정
@@ -19,25 +19,25 @@ uv sync
 `.env` 파일 생성:
 
 ```bash
-SECRET_KEY=your-secret-key-here
-PASSWORD_PEPPER=your-pepper-key-here
+  SECRET_KEY=your-secret-key-here
+  PASSWORD_PEPPER=your-pepper-key-here
 ```
 
 키 생성 방법:
 ```bash
-python -c "import secrets; print(secrets.token_hex(32))"
+  python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
 ### 3. 테스트 데이터 생성
 
 ```bash
-python scripts/seed.py
+  python scripts/seed.py
 ```
 
 ### 4. 서버 실행
 
 ```bash
-fastapi dev main.py
+  fastapi dev main.py
 ```
 
 Swagger UI: http://127.0.0.1:8000/docs

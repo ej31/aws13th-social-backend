@@ -62,7 +62,7 @@ class UpdateUserResponse(BaseModel):
 # 회원 로그인 요청할때
 class LoginUserRequest(BaseModel):
     email: EmailStr = Field(..., description="가입한 이메일 주소")
-    password: str = Field(..., min_length=8, description="8자 이상, 영문/숫자/특수 문자 포함")
+    password: str = Field(..., min_length=8, description="비밀번호")
 
 
 class TokenData(BaseModel):
@@ -130,7 +130,7 @@ class PostInComment(BaseModel):
 
 
 class CommentSummary(BaseModel):
-    id: str
+    comment_id: str
     post: PostInComment
     content: str
     created_at: datetime

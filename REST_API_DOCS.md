@@ -153,7 +153,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "success",
   "data": [
     {
-      "id": "comment_1",
+      "comment_id": "comment_1",
       "post": {
         "id": "1",
         "title": "게시글 제목"
@@ -364,7 +364,6 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     {
       "post_id": "1",
       "title": "게시글의 제목",
-      "sort": "latest",
       "author": {
         "author_id": "admin",
         "nickname": "abc"

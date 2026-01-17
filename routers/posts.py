@@ -180,8 +180,54 @@ def search_posts(
     }
 
 @router.get("/me")
-def get_my_posts():
-    return {"message": "내가 쓴 게시글 목록"}
+def get_my_posts(
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1, le=100),
+        sort: str = Query("latest", pattern="^(latest|views|likes)$"),
+        current_user: dict = Depends(get_current_user),
+):
+    posts = load_data("posts")
+
+    # 내가 쓴 게시글  + 삭제 안된 게시글만
+    my_posts = [
+        p for p in posts
+        if p["userId"] == current_user["userId"]
+        and not p.get("is_deleted", False)
+    ]
+
+    # 정렬
+    if sort == "latest":
+        my_posts.sort(key=lambda p: p.get("created_at", ""), reverse=True)
+    elif sort == "views":
+        my_posts.sort(key=lambda p: p.get("viewCount", 0), reverse=True)
+    elif sort == "likes":
+        my_posts.sort(key=lambda p: p.get("likeCount", 0), reverse=True)
+
+    # 페이지네이션
+    total = len(my_posts)
+    start = (page - 1) * limit
+    end = start + limit
+    paged_posts = my_posts[start:end]
+
+    data = [
+        {
+            "postId": p["postId"],
+            "title": p["title"],
+            "created_at": p["created_at"],
+            "viewCount": p.get("viewCount", 0),
+            "likeCount": p.get("likeCount", 0),
+        }
+        for p in paged_posts
+    ]
+    return {
+        "status": "success",
+        "data": data,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+        }
+    }
 
 @router.get("/{postId}")
 def get_post(postId: int):

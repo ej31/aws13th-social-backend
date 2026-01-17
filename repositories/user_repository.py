@@ -7,7 +7,7 @@ from common.config import settings
 
 class UserRepository:
     def __init__(self) -> None:
-        self.file_path = settings.database_path
+        self.file_path = settings.users_json_path
         if not os.path.exists(self.file_path):
             self._save_all([])
 
@@ -49,7 +49,7 @@ class UserRepository:
                 users[i] = user_data
                 break
         else:
-            users.append(user_data)
+            raise ValueError(f"ID가 {user_data['id']}인 유저를 찾을 수 없어 수정할 수 없습니다.")
 
         self._save_all(users)
 

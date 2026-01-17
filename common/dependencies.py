@@ -2,13 +2,16 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException,status
 from fastapi.security import HTTPAuthorizationCredentials,HTTPBearer
-
-
-from common.security import decode_access_token
+from common.jwt import decode_access_token
 from repositories.user_repository import UserRepository
 from services.user_service import UserService
 
+#HTTP 헤더에서 Beare Token이 있는지 검사한다.
+#Sweager UI에 오른쪽에 Authorize 버튼이 생긴다.
 security = HTTPBearer()
+
+#비인증 사용자도 게시글이나 댓글을 조회할 수 있게 한다.
+optional_security = HTTPBearer(auto_error=False)
 
 def get_user_repo() -> UserRepository:
     return UserRepository()
@@ -18,24 +21,33 @@ def get_auth_service(
 ) -> UserService:
     return UserService(user_repo = repo)
 
-#jwt 인증된 사용자인지 확인
-async def get_current_user(
-        auth: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+async def get_current_optional_user(
+        auth: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],
         user_repo : Annotated[UserRepository, Depends(get_user_repo)]
-) -> dict:
-    token = auth.credentials
-    email = decode_access_token(token)
+) -> dict | None:
 
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="인증 토큰을 찾을 수 없습니다.",
-        )
+    #토큰 자체가 없는 경우 (비 인증 사용자)
+    if not auth:
+        return None
+
+    email = decode_access_token(auth.credentials)
+
     user = user_repo.find_by_email(email)
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="사용자를 찾을 수 없습니다."
+            detail="유저를 찾을 수 없습니다."
         )
+    return user
 
+#jwt 인증된 사용자인지 확인
+async def get_current_user(
+        user: Annotated[dict | None, Depends(get_current_optional_user)],
+) -> dict:
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="로그인이 필요한 서비스입니다."
+        )
     return user

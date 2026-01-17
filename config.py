@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     password_pepper: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    users_file: Path = Path("data/users.json")
+    users_file: Path = Path(__file__).resolve().parent / "data/users.json"
 
 
 settings = Settings()

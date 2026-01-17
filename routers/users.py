@@ -30,9 +30,11 @@ async def signup(form_data: Annotated[UserSignUp, Depends(UserSignUp.as_form)]):
     )
 
 @router.post("/auth/login",response_model=AuthResponse)
-async def login(data: Annotated[UserLogin, Depends(OAuth2PasswordRequestForm)],
-    form_data: OAuth2PasswordRequestForm = Depends()):
-    # data = UserLogin
+async def login(form_data : Annotated[OAuth2PasswordRequestForm,Depends()]):
+    data = UserLogin(
+        username=form_data.username,
+        password=form_data.password,
+    )
     user, token, expires = login_user(data)
     return AuthResponse(
         access_token=token,

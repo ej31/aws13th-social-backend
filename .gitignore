@@ -206,5 +206,5 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij+all,pycharm+all
 .env
 .venv
-.DB/users.json
-.DB/posts.json
+DB/users.json
+DB/posts.json

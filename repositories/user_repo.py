@@ -1,6 +1,7 @@
 import json, os
 from typing import Optional
-DB_FILE = "./DB/users.json"
+from pathlib import Path
+DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "users.json"
 
 def get_users():
     if not os.path.exists(DB_FILE):

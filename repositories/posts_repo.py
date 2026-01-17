@@ -1,7 +1,7 @@
 import json, os
 from typing import Optional
-
-DB_FILE = "./DB/posts.json"
+from pathlib import Path
+DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "posts.json"
 
 def get_post():
     if not os.path.exists(DB_FILE):

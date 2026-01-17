@@ -1,12 +1,16 @@
 import uuid
 from datetime import datetime, timezone
-
 from models.user import UserInternal
 from repositories.user_repo import get_users, save_users
 from services.jwt_service import create_access_token
 from models.auth import UserSignUp, UserLogin
 from fastapi import HTTPException
+from passlib.context import CryptContext
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
 def signup_user(data: UserSignUp):
     users = get_users()
@@ -34,7 +38,7 @@ def login_user(data: UserLogin):
     users = get_users()
     user = next((u for u in users if u["email"] == data.username), None)
 
-    if not user or user["password"] != data.password:
+    if not user or not verify_password(data.password, user["password"]):
         raise HTTPException(401, "인증 실패")
 
     return user, *create_access_token(user["user_id"])

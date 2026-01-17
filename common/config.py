@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     users_json_path: str = "data/users.json"
     posts_json_path: str = "data/posts.json"
+    comments_json_path: str= "data/comments.json"
     upload_dir: str = "static/profiles"
 
     SECRET_KEY: str

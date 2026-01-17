@@ -46,7 +46,7 @@ def get_posts(query: ListPostsQuery = Depends()):
 
     return ListPostsResponse(
         data=paginated_posts,
-        pagination=Pagination(page=query.page, total=total_pages)
+        pagination=Pagination(page=page, total=total_pages)
     )
 
 

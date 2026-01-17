@@ -56,7 +56,7 @@ def get_posts(query: ListPostsQuery = Depends()):
         ]
     # 정렬
     reverse = query.order == "desc"
-    posts.sort(key=lambda p: p[query.sort], reverse=reverse)
+    posts.sort(key=lambda p: p.get(query.sort, 0), reverse=reverse)
 
     # 페이지네이션
     page_size = PAGE_SIZE

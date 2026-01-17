@@ -15,6 +15,7 @@ router = APIRouter(
 )
 
 
+# TODO: 400 error 작동 안함 -> 422로 처리 됨
 @router.post("/users", response_model=UserCreateResponse,
              status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreateRequest):
@@ -74,7 +75,7 @@ def get_auth_tokens(user: UserLoginRequest):
 
     # 토큰 생성
     access_token = create_access_token(data={"sub": db_user["id"]})
-    return {"access_token": access_token}
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # edit profile

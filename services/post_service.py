@@ -50,7 +50,7 @@ class PostService:
         post_data["likes"] = 0
         post_data["comment_count"]=0
         post_data["author_id"] = author_id
-        saved_post = self.post_repo.save(post_data  )
+        saved_post = self.post_repo.save(post_data)
 
         return self._assemble_post_response(saved_post)
 

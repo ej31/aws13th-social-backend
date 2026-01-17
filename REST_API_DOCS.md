@@ -1610,8 +1610,10 @@
   "status": "success",
   "data": {
     "id": "user_123",
+    "email": "test123@gmail.com",
     "nickname": "new123",
-    "profile_img": "/images/profiles/new.png"
+    "profile_img": "/images/profiles/new.png",
+    "created_at": "2026-01-04T12:00:00Z"
   }
 }
 ```

@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter,status
 from fastapi.params import Depends, Query, Path
@@ -71,7 +71,7 @@ async def update_posts(post_service: Annotated[PostService,Depends(PostService)]
 #summary는 간단하게 한줄 요약, description은 길게 설명해야 할 때
 @router.post("/",response_model= CommonResponse[PostsResponse],status_code=status.HTTP_201_CREATED,summary="게시물 생성",description="게시물 생성에 대한 기능")
 async def create_posts(post_service: Annotated[PostService,Depends(PostService)],
-                       current_user_id: Annotated[dict | None, Depends(get_current_user)],
+                       current_user_id: Annotated[dict , Depends(get_current_user)],
                        user_create_post: PostsCreateRequest):
 
         author_id= current_user_id.get("id")

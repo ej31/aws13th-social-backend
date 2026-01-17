@@ -1,17 +1,39 @@
 import uuid
 from datetime import datetime, UTC
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Response
 
 from config import settings
 from routers.users import CurrentUserId
 from schemas.commons import Page, PostId, Pagination
-from schemas.post import ListPostsQuery, PostCreateRequest, PostListItem, PostUpdateRequest, ListPostsResponse
+from schemas.post import (
+    ListPostsQuery,
+    PostCreateRequest,
+    PostListItem,
+    PostUpdateRequest,
+    ListPostsResponse,
+    PostDetail)
 from utils.data import read_json, write_json
 
 router = APIRouter(
     tags=["POSTS"],
 )
+
+
+def _get_post_index_and_verify_author(posts: list, post_id: PostId, author_id: str) -> int:
+    post_index = next((i for i, p in enumerate(posts) if p["id"] == post_id), None)
+    if post_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="post not found"
+        )
+    post = posts[post_index]
+    if post["author"] != author_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="not authorized to modify this post"
+        )
+    return post_index
 
 
 @router.get("/posts", response_model=ListPostsResponse)
@@ -49,7 +71,7 @@ def get_posts(query: ListPostsQuery = Depends()):
         pagination=Pagination(page=page, total=total_pages)
     )
 
-
+# TODO: id가 아닌 닉네임이 표시되게 하기
 @router.post("/posts", response_model=PostListItem,
              status_code=status.HTTP_201_CREATED)
 def create_post(author_id: CurrentUserId, post: PostCreateRequest):
@@ -59,20 +81,20 @@ def create_post(author_id: CurrentUserId, post: PostCreateRequest):
     post_id = f"post_{uuid.uuid4().hex[:8]}"
     now = datetime.now(UTC)
 
-    new_post = {
-        "id": post_id,
-        "author": author_id,
-        "title": post.title,
-        "content": post.content,
-        "view_count": 0,
-        "like_count": 0,
-        "created_at": now.isoformat(),
-        "updated_at": now.isoformat(),
-    }
+    new_post_model = PostDetail(
+        id=post_id,
+        author=author_id,
+        title=post.title,
+        content=post.content,
+        view_count=0,
+        like_count=0,
+        created_at=now,
+        updated_at=now,
+    )
 
-    posts.append(new_post)
+    posts.append(new_post_model.model_dump(mode="json"))
     write_json(settings.posts_file, posts)
-    return new_post
+    return new_post_model
 
 
 # post list I wrote
@@ -87,22 +109,13 @@ async def get_single_post(post_id: PostId):
     return {"success": "get_single_post"}
 
 
-@router.patch("/posts/{post_id}")
+@router.patch("/posts/{post_id}", response_model=PostDetail)
 def update_post(author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest):
     """게시글 수정"""
     posts = read_json(settings.posts_file)
 
-    post_index = next((i for i, p in enumerate(posts) if p["id"] == post_id), None)
-    if post_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="post not found"
-        )
-    if posts[post_index]["author"] != author_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="not authorized to update this post"
-        )
+    post_index = _get_post_index_and_verify_author(posts, post_id, author_id)
+
     if update_data.title is not None:
         posts[post_index]["title"] = update_data.title
     if update_data.content is not None:
@@ -120,17 +133,8 @@ def delete_post(author_id: CurrentUserId, post_id: PostId):
     """게시글 삭제"""
     posts = read_json(settings.posts_file)
 
-    post_index = next((i for i, p in enumerate(posts) if p["id"] == post_id), None)
-    if post_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="post not found"
-        )
-    if posts[post_index]["author"] != author_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="not authorized to delete this post"
-        )
+    post_index = _get_post_index_and_verify_author(posts, post_id, author_id)
 
     posts.pop(post_index)
     write_json(settings.posts_file, posts)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

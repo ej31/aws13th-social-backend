@@ -1,3 +1,5 @@
+import hmac
+import os
 import uuid
 import hashlib
 from datetime import datetime, UTC
@@ -12,14 +14,27 @@ from utils.data import read_json, write_json
 
 USERS_FILE = Path("data/users.json")
 
+PEPPER = os.getenv("PASSWORD_PEPPER")
+
 router = APIRouter(
     tags=["USERS"],
 )
 
 
+def _prehash(password: str) -> bytes:
+    """
+    HMAC-SHA256으로 사전 해싱
+    - bcrypt 72바이트 제한 우회
+    - PEPPER로 password shucking 공격 방지
+    """
+    return hmac.new(
+        key=PEPPER.encode(),
+        msg=password.encode(),
+        digestmod="sha256"
+    ).hexdigest().encode()
+
 def hash_password(password: str) -> str:
-    # SHA-256으로 사전 해싱 (bcrypt 72바이트 제한 우회)
-    prehashed = hashlib.sha256(password.encode()).hexdigest().encode()
+    prehashed = _prehash(password)
     return bcrypt.hashpw(prehashed, bcrypt.gensalt()).decode()
 
 

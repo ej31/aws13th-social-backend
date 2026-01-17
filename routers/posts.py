@@ -100,10 +100,28 @@ def create_post(author_id: CurrentUserId, post: PostCreateRequest):
     return new_post_model
 
 
-# post list I wrote
-@router.get("/posts/me")
-async def get_posts_mine(page: Page):
-    return {"success": "get_posts_mine"}
+@router.get("/posts/me", response_model=ListPostsResponse)
+def get_posts_mine(user_id: CurrentUserId, page: Page = 1):
+    """내가 작성한 게시글 목록"""
+    posts = read_json(settings.posts_file)
+
+    my_posts = [p for p in posts if p["author"] == user_id]
+
+    my_posts.sort(key=lambda p: p["created_at"], reverse=True)
+
+    # 페이지네이션
+    total_posts = len(my_posts)
+    total_pages = max(1, (total_posts + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+
+    start = (page - 1) * PAGE_SIZE
+    end = start + PAGE_SIZE
+    paginated_posts = my_posts[start:end]
+
+    return ListPostsResponse(
+        data=[PostListItem(**p) for p in paginated_posts],
+        pagination=Pagination(page=page, total=total_pages)
+    )
 
 
 @router.get("/posts/{post_id}", response_model=PostDetail)

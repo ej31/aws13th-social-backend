@@ -1,18 +1,1 @@
-[
-  {
-    "id": "user_00000001",
-    "email": "test@example.com",
-    "nickname": "TestUser",
-    "password": "$2b$12$CfY7VqSlRjeJDXZrHlXfGOdYLPxeX6F7t/.nnRT1NyTM2Bz.nUQlS",
-    "profile_img": null,
-    "created_at": "2026-01-17T06:18:13.369780+00:00"
-  },
-  {
-    "id": "user_00000002",
-    "email": "test2@example.com",
-    "nickname": "lisa",
-    "password": "$2b$12$shp0M9Lfem6ap.Y0JAeBnOpVp6lqyjkiO7qmDtFGWelX6DfY2RbC2",
-    "profile_img": "string",
-    "created_at": "2026-01-17T06:18:13.602574+00:00"
-  }
-]
+[]

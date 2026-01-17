@@ -49,10 +49,11 @@ def get_posts(query: ListPostsQuery = Depends()):
     posts = read_json(settings.posts_file)
 
     # 검색
+    q_lower = query.q.lower()
     if query.q:
         posts = [
             p for p in posts
-            if query.q.lower() in p["title"].lower() or query.q.lower() in p["content"].lower()
+            if q_lower in p["title"].lower() or q_lower in p["content"].lower()
         ]
     # 정렬
     reverse = query.order == "desc"
@@ -105,10 +106,23 @@ async def get_posts_mine(page: Page):
     return {"success": "get_posts_mine"}
 
 
-# get a single post
-@router.get("/posts/{post_id}")
-async def get_single_post(post_id: PostId):
-    return {"success": "get_single_post"}
+@router.get("/posts/{post_id}", response_model=PostDetail)
+def get_single_post(post_id: PostId):
+    """게시글 상세 조회"""
+    posts = read_json(settings.posts_file)
+
+    post_index = next((i for i, p in enumerate(posts) if p["id"] == post_id), None)
+    if post_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+
+    # 조회수 증가
+    posts[post_index]["view_count"] += 1
+    write_json(settings.posts_file, posts)
+
+    return posts[post_index]
 
 
 @router.patch("/posts/{post_id}", response_model=PostDetail)

@@ -9,13 +9,11 @@ from schemas.user import UserCreateRequest, UserCreateResponse, UserLoginRequest
 from utils.auth import hash_password, verify_password, create_access_token, DUMMY_HASH
 from utils.data import read_json, write_json
 
-
 router = APIRouter(
     tags=["USERS"],
 )
 
 
-# TODO: 400 error 작동 안함 -> 422로 처리 됨
 @router.post("/users", response_model=UserCreateResponse,
              status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreateRequest):

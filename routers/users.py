@@ -1,15 +1,20 @@
 import hashlib
-from datetime import datetime, timezone
+import os
+from datetime import datetime, timezone, timedelta, UTC
 from pathlib import Path
 
 import bcrypt
+import jwt
 from fastapi import APIRouter, HTTPException, status
 
 from schemas.commons import UserId
-from schemas.user import UserCreateRequest, UserCreateResponse
+from schemas.user import UserCreateRequest, UserCreateResponse, UserLoginRequest, UserLoginResponse
 from utils.data import read_json, write_json
 
 USERS_FILE = Path("data/users.json")
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter(
     tags=["USERS"],
@@ -63,10 +68,38 @@ async def create_user(user: UserCreateRequest):
     }
 
 
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(UTC) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 # login
-@router.post("/auth/tokens")
-async def get_auth_tokens():
-    return {"success": "get_auth_tokens"}
+@router.post("/auth/tokens", response_model=UserLoginResponse,
+             status_code=status.HTTP_200_OK)
+async def get_auth_tokens(user: UserLoginRequest):
+    """로그인"""
+    users = read_json(USERS_FILE)
+
+    # 이메일로 유저 찾기
+    db_user = next((u for u in users if u["email"] == user.email), None)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+        )
+
+    # 비밀번호 검증
+    if not verify_password(user.password, db_user["password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+        )
+
+    # 토큰 생성
+    access_token = create_access_token(data={"sub": db_user["id"]})
+    return {"access_token": access_token}
 
 
 # edit profile

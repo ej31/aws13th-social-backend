@@ -21,6 +21,8 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 PEPPER = os.getenv("PASSWORD_PEPPER")
+if not PEPPER:
+    raise RuntimeError("PASSWORD_PEPPER is not set")
 
 router = APIRouter(
     tags=["USERS"],
@@ -45,7 +47,7 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    prehashed = hashlib.sha256(plain_password.encode()).hexdigest().encode()
+    prehashed = _prehash(plain_password)
     return bcrypt.checkpw(prehashed, hashed_password.encode())
 
 

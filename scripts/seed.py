@@ -26,14 +26,14 @@ LIKES_FILE = DATA_DIR / "likes.json"
 # 테스트 계정 (평문 비밀번호)
 TEST_USERS = [
     {
-        "id": "user_test0001",
+        "id": "user_00000001",
         "email": "test@example.com",
         "password": "Test1234!",
         "nickname": "TestUser",
         "profile_img": None,
     },
     {
-        "id": "user_test0002",
+        "id": "user_00000002",
         "email": "test2@example.com",
         "password": "Test1234!",
         "nickname": "TestUser2",

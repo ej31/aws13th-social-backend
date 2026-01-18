@@ -94,12 +94,12 @@ def create_like(post_id: PostId, user_id: CurrentUserId) -> LikeStatusResponse:
     likes.append(new_like)
     write_json(settings.likes_file, likes)
 
-    # 게시글 좋아요 수 증가 (이미 읽은 posts 재사용)
+    new_like_count = post.get("like_count", 0) + 1
     _update_post_like_count(posts, post_id, 1)
 
     return LikeStatusResponse(
         liked=True,
-        like_count=post.get("like_count", 0) + 1,
+        like_count=new_like_count,
     )
 
 

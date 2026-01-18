@@ -4,6 +4,7 @@ class Settings(BaseSettings):
     users_json_path: str = "data/users.json"
     posts_json_path: str = "data/posts.json"
     comments_json_path: str= "data/comments.json"
+    likes_json_path: str = "data/likes.json"
     upload_dir: str = "static/profiles"
 
     SECRET_KEY: str

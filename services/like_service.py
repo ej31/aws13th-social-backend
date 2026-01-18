@@ -43,7 +43,7 @@ class LikeService:
 
         # PostRepository를 통해 게시글의 like_count 업데이트 (정합성 유지)
         like_count = self.like_repo.count_by_post_id(post_id)
-        self.post_repo.update_like_count(post_id, like_count)
+        self.post_repo.update_like_count(int(post_id), like_count)
 
         # 정의한 스키마 구조에 맞춰 딕셔너리 반환
         return {

@@ -1,10 +1,10 @@
 from typing import Annotated
 from datetime import datetime
-from fastapi import FastAPI, Query, Body, status, Header, Response
+from fastapi import FastAPI, Query, Body, status, Header, Response, Path
 from enum import Enum
 from pydantic import EmailStr
-from schemas import user
-from schemas.user import CreateUser, UpdateUserRequest, LoginUserRequest, GetProfile, OtherUserProfileResponse
+from schemas import user, post
+from schemas.post import PostUpdateResponse, PostLikeCreateResponse
 
 
 class PostSortType(str, Enum):
@@ -38,7 +38,7 @@ async def read_users_me(
 
 
 # 특정 회원 조회
-@app.get("/users/{email}", response_model=OtherUserProfileResponse)
+@app.get("/users/{email}", response_model=user.OtherUserProfileResponse)
 async def get_user(
         email: EmailStr
 ):
@@ -125,7 +125,7 @@ async def get_user_likes(
                 "post_id": "1",
                 "title": "내가 좋아요를 누른 게시글 제목",
                 "author": {
-                    "author_id": "admin",
+                    "author_email": "example@naver.com",
                     "nickname": "abc"
                 },
                 "count_likes": 12,
@@ -144,7 +144,7 @@ async def get_user_likes(
 # 회원 가입
 @app.post("/users", response_model=user.ResponseUser, status_code=201)
 async def post_users(
-        user_data: Annotated[CreateUser, Body()]
+        user_data: Annotated[user.CreateUser, Body()]
 ):
     current_time = datetime.datetime.now().isoformat()
     return {"status": "success",
@@ -160,7 +160,7 @@ async def post_users(
 # 프로필 수정
 @app.put("/users/me", response_model=user.UpdateUserResponse)
 async def put_user(
-        update_data: Annotated[UpdateUserRequest, Body()],
+        update_data: Annotated[user.UpdateUserRequest, Body()],
         authorization: Annotated[str, Header(description="로그인 시 발급받은 토큰")]
 ):
     update_time = datetime.datetime.now().isoformat()
@@ -186,113 +186,273 @@ async def delete_user(
 ######Posts############
 # GET 먼저 생성
 # 게시글 목록 조회
-@app.get("/posts")
+@app.get("/posts", response_model=post.PostListResponse)
 async def get_posts(
         page: int = Query(default=1, ge=1, description="페이지 번호"),
         limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
-    return {"page": page, "limit": limit}
+    return {
+        "status": "success",
+        "data": [
+            {
+                "post_id": "1",
+                "title": "postname",
+                "author": {
+                    "author_email": "example@naver.com",
+                    "nickname": "abc"
+                },
+                "created_at": "2026-01-07T08:30:00+09:00"
+            }
+        ],
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": 100
+        }
+    }
 
 
 # 게시글 검색
-@app.get("/posts/search")
+@app.get("/posts/search", response_model=post.PostSearchResponse)
 async def get_posts_by_keyword(
-        keyword: str = Query(min_length=1),
+        keyword: Annotated[str, Query(description="검색 키워드")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
         limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
-    return {"keyword": keyword, "page": page, "limit": limit}
+    return {
+        "status": "success",
+        "data": [
+            {
+                "post_id": "1",
+                "title": f"'{keyword}' 검색 결과 제목",
+                "author": {
+                    "author_email": "example@naver.com",
+                    "nickname": "abc"
+                },
+                "created_at": "2026-01-04T12:00:00Z"
+            }
+        ],
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": 100
+        }
+    }
 
 
 # 게시글 정렬
-@app.get("/posts/sorted")
+@app.get("/posts/sorted", response_model=post.PostSearchResponse)
 async def get_posts_sorted(
-        sort: PostSortType,
+        sort: Annotated[PostSortType, Query(description="정렬 기준")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
         limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
-    return {"sort": sort, "page": page, "limit": limit}
+    print(f"선택된 정렬 기준: {sort.value}")
+
+    return {
+        "status": "success",
+        "data": [
+            {
+                "post_id": "1",
+                "title": f"[{sort.name}] 정렬 결과",
+                "author": {
+                    "author_email": "example@naver.com",
+                    "nickname": "abc"
+                },
+                "created_at": "2026-01-07T08:30:00+09:00"
+            }
+        ],
+        "pagination": {"page": page, "limit": limit, "total": 100}
+    }
 
 
 # 게시글 상세조회
-@app.get("/posts/{post_id}")
+@app.get("/posts/{post_id}", response_model=post.PostDetailResponse)
 async def get_post(
-        post_id: str
+        post_id: Annotated[str, Path(description="조회할 게시글 ID")]
 ):
-    return {"post_id": post_id}
+    return {
+        "status": "success",
+        "data": {
+            "post_id": post_id,
+            "title": "게시글의 제목 입니다.",
+            "content": "게시글 내용입니다. 상세 조회에서만 보이는 긴 본문입니다.",
+            "author": {
+                "author_email": "example@naver.com",
+                "nickname": "abc"
+            },
+            "created_at": "2026-01-04T12:00:00Z"
+        }
+    }
 
 
 # 댓글 목록 조회
-@app.get("/posts/{post_id}/comments")
+@app.get("/posts/{post_id}/comments", response_model=post.CommentListResponse)
 async def get_post_comments(
-        post_id: str,
+        post_id: Annotated[str, Path(description="특정 게시글을 나타내는 유일한 식별자")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
         limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
-    return {"post_id": post_id, "page": page, "limit": limit}
+    return {
+        "status": "success",
+        "data": [
+            {
+                "comment_id": "1",
+                "content": "댓글 내용입니다.",
+                "author": {
+                    "author_email": "example@naver.com",
+                    "nickname": "abc"
+                },
+                "created_at": "2026-01-07T08:30:00+09:00",
+                "title": f"ID {post_id} 게시물에 달린 댓글"
+            }
+        ],
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": 100
+        }
+    }
 
 
 # 좋아요 상태 확인
-@app.get("/posts/{post_id}/likes")
+@app.get("/posts/{post_id}/likes", response_model=post.PostLikeStatus)
 async def get_post_likes(
-        post_id: str
+        post_id: Annotated[str, Path(description="게시글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")]
 ):
-    return {"post_id": post_id}
+    return {
+        "status": "success",
+        "data": {
+            "post_id": post_id,
+            "count_likes": 3,
+            "liked": True  # 임시 데이터
+        }
+    }
 
 
 # 게시글 작성
-@app.post("/posts")
-async def post_post():
-    pass
+@app.post("/posts", response_model=post.CreationPostResponse, status_code=status.HTTP_201_CREATED)
+async def post_post(
+        authorization: Annotated[str, Header(description="로그인 토큰")],
+        post_in: Annotated[post.PostCreateRequest, Body()]
+
+):
+    return {
+        "status": "success",
+        "data": {
+            "post_id": "1",
+            "title": post_in.title,  # 사용자가 보낸 제목 그대로 사용
+            "content": post_in.content,  # 사용자가 보낸 내용 그대로 사용
+            "created_at": "2026-01-07T08:30:00+09:00",
+            "author": {
+                "author_email": "example@naver.com",
+                "nickname": "abc"
+            }
+        }
+    }
 
 
 # 게시글 수정
-@app.put("/posts/{post_id}")
+@app.put("/posts/{post_id}", response_model=post.PostUpdateResponse)
 async def put_post(
-        post_id: str
+        post_id: Annotated[str, Path(description="수정할 게시글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")],
+        post_update: Annotated[post.PostUpdateRequest, Body()]
 ):
-    return {"post_id": post_id}
+    return {
+        "status": "success",
+        "data": {
+            "post_id": post_id,
+            "title": post_update.title or "기존 제목 (수정 안 됨)",
+            "content": post_update.content or "기존 내용 (수정 안 됨)",
+            "author": {
+                "author_email": "example@naver.com",
+                "nickname": "abc"
+            },
+            "updated_at": "2026-01-04T12:00:00Z"
+        }
+    }
 
 
 # 게시글 삭제
-@app.delete("/posts/{post_id}")
+@app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(
-        post_id: str
+        post_id: Annotated[str, Path(description="삭제할 게시글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")]
 ):
-    return {"post_id": post_id}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # 댓글 작성 (특정 게시글에 댓글을 작성합니다.)
 @app.post("/posts/{post_id}/comments")
 async def post_comment(
-        post_id: str
+        post_id: Annotated[str, Path(description="게시글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")],
+        comment_in: Annotated[post.CommentCreateRequest, Body()]
 ):
-    return {"post_id": post_id}
+    return {
+        "status": "success",
+        "data": {
+            "post_id": post_id,
+            "id": "comment_1",
+            "author": {
+                "author_email": "example@naver.com",
+                "nickname": "abc"
+            },
+            "content": comment_in.content,
+            "created_at": "2026-01-04T12:00:00Z"
+        }
+    }
 
 
 # 댓글 수정
-@app.put("/posts/{post_id}/comments/{comment_id}")
+@app.put("/posts/{post_id}/comments/{comment_id}", response_model=PostUpdateResponse)
 async def change_comment(
-        post_id: str,
-        comment_id: str
+        post_id: Annotated[str, Path(description="게시글 ID")],
+        comment_id: Annotated[str, Path(description="수정할 댓글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")],
+        comment_update: Annotated[post.CommentUpdateRequest, Body()]
 ):
-    return {"post_id": post_id, "comment_id": comment_id}
+    return {
+        "status": "success",
+        "data": {
+            "post_id": post_id,
+            "id": comment_id,
+            "author": {
+                "author_email": "example@naver.com",
+                "nickname": "abc"
+            },
+            "content": comment_update.content,
+            "created_at": "2026-01-04T12:00:00Z",
+            "updated_at": "2026-01-05T12:00:00Z"
+        }
+    }
 
 
 # 좋아요 등록
-@app.post("/posts/{post_id}/likes")
+@app.post("/posts/{post_id}/likes", response_model=PostLikeCreateResponse)
 async def post_like(
-        post_id: str
+        post_id: Annotated[str, Path(description="좋아요를 등록할 게시글 ID")],
+        authorization: Annotated[str, Header(description="Bearer 토큰")]
 ):
-    return {"post_id": post_id}
+    return {
+        "status": "success",
+        "data": {
+            "post_id": post_id,
+            "author_email": "example@naver.com",
+            "created_at": "2026-01-04T12:00:00Z"
+        }
+    }
 
 
 # 좋아요 취소
-@app.delete("/posts/{post_id}/likes")
+@app.delete("/posts/{post_id}/likes", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_like(
-        post_id: str
+        post_id: Annotated[str, Path(description="좋아요를 취소할 게시글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")]
 ):
-    return {"post_id": post_id}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 ############Comments##################

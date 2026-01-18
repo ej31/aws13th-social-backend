@@ -39,7 +39,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
       "post_id": "1",
       "title": "내가 좋아요를 누른 게시글 제목",
       "author": {
-        "author_id": "admin",
+        "author_email": "example@naver.com",
         "nickname": "abc"
       },
       "count_likes": 12,
@@ -214,7 +214,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
       "comment_id": "1",
       "content": "댓글 내용입니다.",
       "author": {
-        "login_id": "admin",
+        "author_email": "example@naver.com",
         "nickname": "abc"
       },
       "created_at": "2026-01-07T08:30:00+09:00",
@@ -301,7 +301,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     "title": "게시글의 제목 입니다.",
     "content": "게시글 내용입니다.",
     "author": {
-      "id": "admin",
+      "author_email": "example@naver.com",
       "nickname": "abc"
     },
     "created_at": "2026-01-04T12:00:00Z"
@@ -365,7 +365,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
       "post_id": "1",
       "title": "게시글의 제목",
       "author": {
-        "author_id": "admin",
+        "author_email": "example@naver.com",
         "nickname": "abc"
       },
       "created_at": "2026-01-07T08:30:00+09:00"
@@ -417,7 +417,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
       "post_id": "1",
       "title": "게시글 제목",
       "author": {
-        "id": "admin",
+        "author_email": "example@naver.com",
         "nickname": "abc"
       },
       "created_at": "2026-01-04T12:00:00Z"
@@ -468,7 +468,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
       "post_id": "1",
       "title": "postname",
       "author": {
-        "author_id": "admin",
+        "author_email": "example@naver.com",
         "nickname": "abc"
       },
       "created_at": "2026-01-07T08:30:00+09:00"
@@ -634,7 +634,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "success",
   "data": {
     "post_id": "1",
-    "user_id": "admin",
+    "user_email": "example@naver.com",
     "created_at": "2026-01-04T12:00:00Z"
   }
 }
@@ -771,7 +771,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     "post_id": "1",
     "id": "comment_1",
     "author": {
-      "login_id": "admin",
+      "author_email": "example@naver.com",
       "nickname": "abc"
     },
     "content": "수정된 댓글의 내용",
@@ -843,7 +843,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     "post_id": "1",
     "id": "comment_1",
     "author": {
-      "login_id": "admin",
+      "author_email": "example@naver.com",
       "nickname": "abc"
     },
     "content": "댓글의 내용",
@@ -949,7 +949,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     "title": "수정된 게시글의 제목",
     "content": "수정된 게시글의 내용",
     "author": {
-      "id": "admin",
+      "author_email": "example@naver.com",
       "nickname": "abc"
     },
     "updated_at": "2026-01-04T12:00:00Z"
@@ -1035,7 +1035,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     "content": "게시글 내용",
     "created_at": "2026-01-07T08:30:00+09:00",
     "author": {
-      "id": "admin",
+      "author_email": "example@naver.com",
       "nickname": "abc"
     }
   }

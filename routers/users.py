@@ -19,7 +19,7 @@ async def get_my_profile():
     # TODO: 내 프로필 로직 구현
     return {
         "status": "success",
-        "date": {}
+        "data": {}
     }
 
 @router.patch("/me")

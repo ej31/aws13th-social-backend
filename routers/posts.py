@@ -41,7 +41,7 @@ async def get_post(postId: int):
     """게시글 상세 조회"""
     # TODO: 게시글 상세 조회 로직 구현, 조회수 1 증가 로직 추가
     return {
-        "status": postId,
+        "status": "success",
         "data": {
             "postId": postId,
             "title": "게시글 상세 제목",

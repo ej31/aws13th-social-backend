@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 from schemas.likes import LikeCreate
 
 router = APIRouter(prefix="/likes", tags=["likes"])
@@ -13,7 +13,11 @@ async def get_my_likes(
     return {
         "status": "success",
         "data": [],
-        "pagination": {}
+        "pagination": {
+        "page": page,
+        "limit": limit,
+        "total": 0
+        }
     }
 
 @router.get("/status")
@@ -36,14 +40,11 @@ async def create_like(like: LikeCreate):
     return {
         "status": "success",
         "message": "해당 게시글에 좋아요를 눌렀습니다.",
-        "data": {}
+        "data": {"postId": like.postId}
     }
 
 @router.delete("/posts/{postId}/likes/me", status_code=204)
 async def delete_like(postId: int):
     """좋아요 삭제"""
     # TODO: 실제 좋아요 삭제 로직 구현
-    return {
-        "status": "success",
-        "message": "좋아요가 취소되었습니다."
-    }
+    return Response(status_code=204)

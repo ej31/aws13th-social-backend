@@ -1,6 +1,8 @@
 # 의존성 패키지 목록
-fastapi[standard]
-pydantic
-python-jose[cryptography]  # JWT용
-passlib[bcrypt]            # 비밀번호 해싱용
-python-dotenv
+fastapi[standard]==0.115.6
+pydantic==2.10.6
+python-jose[cryptography]==3.3.0
+cryptography==44.0.0  # 최신 보안 패치 적용
+ecdsa>=0.19.0         # CVE-2024-23342 패치 버전
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.1

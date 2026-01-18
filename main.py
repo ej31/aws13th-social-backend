@@ -1,4 +1,4 @@
-# FastAPI 앱 진입점from fastapi import FastAPI
+# FastAPI 앱 진입점
 from fastapi import FastAPI
 from routers import auth, users, posts, comments, likes
 

@@ -54,7 +54,4 @@ async def update_comment(commentId: int, comment: CommentUpdate):
 async def delete_comment(commentId: int):
     """댓글 삭제"""
     # TODO: 실제 댓글 삭제 로직 구현
-    return {
-        "status": "success",
-        "message": "댓글이 성공적으로 삭제되었습니다."
-    }
+    return

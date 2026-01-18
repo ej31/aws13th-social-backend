@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -18,7 +18,9 @@ def load_json(filename):
             if not content:
                 return []
             return json.loads(content)
-    except:
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON content: {file_path}") from e
+    except OSError:
         return []
 
 
@@ -65,7 +67,7 @@ def add_item(filename, item, id_field="id"):
 
     # 생성 시간 추가
     if "createdAt" not in item:
-        item["createdAt"] = datetime.now().isoformat()
+        item["createdAt"] = datetime.now(timezone.utc).isoformat()
 
     data.append(item)
     save_json(filename, data)
@@ -80,7 +82,7 @@ def update_item(filename, id_value, updated_data, id_field="id"):
     for i, item in enumerate(data):
         if item.get(id_field) == id_value:
             data[i].update(updated_data)
-            data[i]["updatedAt"] = datetime.now().isoformat()
+            data[i]["updatedAt"] = datetime.now(timezone.utc).isoformat()
             save_json(filename, data)
             return data[i]
 

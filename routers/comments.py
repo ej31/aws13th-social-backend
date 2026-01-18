@@ -14,6 +14,7 @@ from schemas.comment import (
     CommentListResponse,
 )
 from utils.data import read_json, write_json
+from utils.pagination import paginate
 
 COMMENT_PAGE_SIZE = 10
 
@@ -22,7 +23,7 @@ router = APIRouter(
 )
 
 
-def _verify_post_exists(post_id: PostId):
+def _verify_post_exists(post_id: PostId) -> None:
     """게시글 존재 확인"""
     posts = read_json(settings.posts_file)
     if not any(p["id"] == post_id for p in posts):
@@ -45,13 +46,7 @@ def get_comments(post_id: PostId, page: Page = 1):
     post_comments.sort(key=lambda c: c["created_at"], reverse=True)
 
     # 페이지네이션
-    total_comments = len(post_comments)
-    total_pages = max(1, (total_comments + COMMENT_PAGE_SIZE - 1) // COMMENT_PAGE_SIZE)
-    page = min(page, total_pages)
-
-    start = (page - 1) * COMMENT_PAGE_SIZE
-    end = start + COMMENT_PAGE_SIZE
-    paginated_comments = post_comments[start:end]
+    paginated_comments, page, total_pages = paginate(post_comments, page, COMMENT_PAGE_SIZE)
 
     return CommentListResponse(
         data=[CommentBase(**c) for c in paginated_comments],
@@ -157,13 +152,7 @@ def get_comments_mine(user_id: CurrentUserId, page: Page = 1):
     my_comments.sort(key=lambda c: c["created_at"], reverse=True)
 
     # 페이지네이션
-    total_comments = len(my_comments)
-    total_pages = max(1, (total_comments + COMMENT_PAGE_SIZE - 1) // COMMENT_PAGE_SIZE)
-    page = min(page, total_pages)
-
-    start = (page - 1) * COMMENT_PAGE_SIZE
-    end = start + COMMENT_PAGE_SIZE
-    paginated_comments = my_comments[start:end]
+    paginated_comments, page, total_pages = paginate(my_comments, page, COMMENT_PAGE_SIZE)
 
     return CommentListResponse(
         data=[CommentBase(**c) for c in paginated_comments],

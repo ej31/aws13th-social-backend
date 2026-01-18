@@ -175,7 +175,7 @@ class TestGetSinglePost:
                 client.get("/posts/post_00000001")
 
                 # write_json이 호출되었는지 확인
-                assert mock_write.called
+                mock_write.assert_called_once()
                 # 저장된 데이터에서 view_count가 증가했는지 확인
                 saved_posts = mock_write.call_args[0][1]
                 saved_post = next(p for p in saved_posts if p["id"] == "post_00000001")

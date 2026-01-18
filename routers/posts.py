@@ -14,6 +14,7 @@ from schemas.post import (
     ListPostsResponse,
     PostDetail)
 from utils.data import read_json, write_json
+from utils.pagination import paginate
 
 PAGE_SIZE = 20
 
@@ -50,22 +51,17 @@ def get_posts(query: ListPostsQuery = Depends()):
 
     # 검색
     if query.q:
+        q_lower = query.q.lower()
         posts = [
             p for p in posts
-            if query.q.lower() in p["title"].lower() or query.q.lower() in p["content"].lower()
+            if q_lower in p["title"].lower() or q_lower in p["content"].lower()
         ]
     # 정렬
     reverse = query.order == "desc"
     posts.sort(key=lambda p: p.get(query.sort, 0), reverse=reverse)
 
     # 페이지네이션
-    total_posts = len(posts)
-    total_pages = max(1, (total_posts + PAGE_SIZE - 1) // PAGE_SIZE)
-    page = min(query.page, total_pages)
-
-    start = (page - 1) * PAGE_SIZE
-    end = start + PAGE_SIZE
-    paginated_posts = posts[start:end]
+    paginated_posts, page, total_pages = paginate(posts, query.page, PAGE_SIZE)
 
     return ListPostsResponse(
         data=[PostListItem(**p) for p in paginated_posts],
@@ -99,16 +95,41 @@ def create_post(author_id: CurrentUserId, post: PostCreateRequest):
     return new_post_model
 
 
-# post list I wrote
-@router.get("/posts/me")
-async def get_posts_mine(page: Page):
-    return {"success": "get_posts_mine"}
+@router.get("/posts/me", response_model=ListPostsResponse)
+def get_posts_mine(user_id: CurrentUserId, page: Page = 1):
+    """내가 작성한 게시글 목록"""
+    posts = read_json(settings.posts_file)
+
+    my_posts = [p for p in posts if p["author"] == user_id]
+
+    my_posts.sort(key=lambda p: p["created_at"], reverse=True)
+
+    # 페이지네이션
+    paginated_posts, page, total_pages = paginate(my_posts, page, PAGE_SIZE)
+
+    return ListPostsResponse(
+        data=[PostListItem(**p) for p in paginated_posts],
+        pagination=Pagination(page=page, total=total_pages)
+    )
 
 
-# get a single post
-@router.get("/posts/{post_id}")
-async def get_single_post(post_id: PostId):
-    return {"success": "get_single_post"}
+@router.get("/posts/{post_id}", response_model=PostDetail)
+def get_single_post(post_id: PostId):
+    """게시글 상세 조회"""
+    posts = read_json(settings.posts_file)
+
+    post_index = next((i for i, p in enumerate(posts) if p["id"] == post_id), None)
+    if post_index is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+
+    # 조회수 증가
+    posts[post_index]["view_count"] = posts[post_index].get("view_count", 0) + 1
+    write_json(settings.posts_file, posts)
+
+    return posts[post_index]
 
 
 @router.patch("/posts/{post_id}", response_model=PostDetail)

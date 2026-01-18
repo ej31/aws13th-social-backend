@@ -23,7 +23,7 @@ class PostService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="해당 게시글에 대한 수정/삭제 권한이 없습니다.")
 
-    def _assemble_post_response(self, post_data: dict) -> dict:
+    def _assemble_post_response(self, post_data: dict) -> dict | None:
         """게시글 데이터에 author 정보를 합쳐서 응답 규격을 맞추는 내부 메서드"""
         if not post_data:
             return None
@@ -91,8 +91,6 @@ class PostService:
         for key, value in update_data.items():
             post[key] = value
 
-        print(f"DEBUG {post}  ")
-        print(f"post['author_id'] type : {type(post['author_id'])}")
         updated_post = self.post_repo.save(post)
 
         return self._assemble_post_response(updated_post)

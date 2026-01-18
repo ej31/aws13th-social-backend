@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from pydantic import BaseModel, Field
 
@@ -10,4 +11,8 @@ class CommentInternal(BaseModel):
     content: Annotated[str, Field(min_length=1,max_length=100)]
 
 class CommentResponse(BaseModel):
-    content: Annotated[str, Field(min_length=1,max_length=100)]
+    content: str
+    comment_id: str
+    post_id: str
+    user_id: str
+    created_at: datetime

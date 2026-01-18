@@ -558,12 +558,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 
 **Response (204 No Content)**
 
-```json
-{
-  "status": "success",
-  "message": "좋아요가 취소되었습니다."
-}
-```
+**본문 없음**
 
 **Error Response (401 Unauthorized)**
 

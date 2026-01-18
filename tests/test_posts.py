@@ -140,9 +140,9 @@ class TestGetPostsMine:
         assert data["pagination"]["page"] == 1  # 마지막 페이지로 조정됨
 
     def test_get_posts_mine_unauthorized(self, client):
-        """인증 없이 요청 시 401"""
+        """인증 없이 요청 시 403"""
         response = client.get("/posts/me")
-        assert response.status_code == 401
+        assert response.status_code == 403
 
     def test_get_posts_mine_invalid_token(self, client):
         """잘못된 토큰으로 요청 시 401"""

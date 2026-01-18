@@ -125,7 +125,7 @@ class MyPostsResponse(BaseModel):
 
 # 내가 작성한 댓글
 class PostInComment(BaseModel):
-    id: str
+    post_id: str
     title: str
 
 
@@ -145,7 +145,7 @@ class MyCommentsResponse(BaseModel):
 
 # 내가 좋아요한 게시글 목록
 class AuthorInfo(BaseModel):
-    author_id: str
+    author_email: str
     nickname: str
 
 

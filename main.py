@@ -93,7 +93,7 @@ async def get_user_comments(
         "status": "success",
         "data": [
             {
-                "id": "comment_1",
+                "comment_id": "comment_1",
                 "post": {
                     "id": "1",
                     "title": "게시글 제목"
@@ -146,7 +146,7 @@ async def get_user_likes(
 async def post_users(
         user_data: Annotated[user.CreateUser, Body()]
 ):
-    current_time = datetime.datetime.now().isoformat()
+    current_time = datetime.now().isoformat()
     return {"status": "success",
             "data": {
                 "email": user_data.email,
@@ -163,14 +163,14 @@ async def put_user(
         update_data: Annotated[user.UpdateUserRequest, Body()],
         authorization: Annotated[str, Header(description="로그인 시 발급받은 토큰")]
 ):
-    update_time = datetime.datetime.now().isoformat()
+    update_time = datetime.now().isoformat()
     # 실제 구현시 토큰에서 사용자 이메일을 추출해야 함
     return {"status": "success",
             "data": {
-                "email": update_data.email,
-                "nickname": update_data.nickname,
-                "profile_image": update_data.profile_image,
-                "updated_at": update_time
+                "email": "example@naver.com",
+                "nickname": "abc",
+                "profile_image": "profile_image",
+                "updated_at": "2026-01-07T08:30:00+09:00"
             }
             }
 
@@ -241,7 +241,7 @@ async def get_posts_by_keyword(
 
 
 # 게시글 정렬
-@app.get("/posts/sorted", response_model=post.PostSearchResponse)
+@app.get("/posts/sorted", response_model=post.PostSortedResponse)
 async def get_posts_sorted(
         sort: Annotated[PostSortType, Query(description="정렬 기준")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
@@ -316,7 +316,7 @@ async def get_post_comments(
 
 
 # 좋아요 상태 확인
-@app.get("/posts/{post_id}/likes", response_model=post.PostLikeStatus)
+@app.get("/posts/{post_id}/likes", response_model=post.PostLikeResponse)
 async def get_post_likes(
         post_id: Annotated[str, Path(description="게시글 ID")],
         authorization: Annotated[str, Header(description="로그인 토큰")]
@@ -407,7 +407,7 @@ async def post_comment(
 
 
 # 댓글 수정
-@app.put("/posts/{post_id}/comments/{comment_id}", response_model=PostUpdateResponse)
+@app.put("/posts/{post_id}/comments/{comment_id}", response_model=post.CommentUpdateResponse)
 async def change_comment(
         post_id: Annotated[str, Path(description="게시글 ID")],
         comment_id: Annotated[str, Path(description="수정할 댓글 ID")],
@@ -457,18 +457,19 @@ async def delete_like(
 
 ############Comments##################
 # 댓글 삭제
-@app.delete("/comments/{comment_id}")
+@app.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(
-        comment_id: str
+        comment_id: Annotated[str, Path(description="삭제할 댓글 ID")],
+        authorization: Annotated[str, Header(description="로그인 토큰")]
 ):
-    return {"comment_id": comment_id}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 ######### auth ############
 # 회원 로그인
-@app.post("/auth/token", response_model=user.LoginUserResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/auth/tokens", response_model=user.LoginUserResponse, status_code=status.HTTP_201_CREATED)
 async def auth_token(
-        login_data: Annotated[LoginUserRequest, Body()]
+        login_data: Annotated[user.LoginUserRequest, Body()]
 ):
     return {"status": "success",
             "data": {

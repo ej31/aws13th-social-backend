@@ -155,7 +155,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
     {
       "comment_id": "comment_1",
       "post": {
-        "id": "1",
+        "post_id": "1",
         "title": "게시글 제목"
       },
       "content": "내가 작성한 댓글",
@@ -324,7 +324,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 ```json
 {
   "status": "error",
-  "code": "**NOT_FOUND**",
+  "code": "NOT_FOUND",
   "message": "게시글을 찾을 수 없습니다."
 }
 ```
@@ -769,7 +769,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "success",
   "data": {
     "post_id": "1",
-    "id": "comment_1",
+    "comment_id": "comment_1",
     "author": {
       "author_email": "example@naver.com",
       "nickname": "abc"
@@ -897,7 +897,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "error",
   "error": {
     "code": "**UNAUTHORIZED**",
-    "message": "본인이 작성한 게시글만 삭제할 수 있습니다."
+    "message": "로그인이 필요합니다."
   }
 }
 ```

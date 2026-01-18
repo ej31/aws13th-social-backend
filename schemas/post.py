@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List
+
 
 # 게시글 목록 조회
 # GET/posts
@@ -22,17 +22,17 @@ class Pagination(BaseModel):
 # 4. 출력 정보
 class PostListResponse(BaseModel):
     status: str = 'success'
-    posts: List[PostSummary]
+    data: List[PostSummary]
     pagination: Pagination
 # 게시글 검색
 class PostSearchResponse(BaseModel):
     status: str = 'success'
-    posts: List[PostSummary]
+    data: List[PostSummary]
     pagination: Pagination
 # 게시글 정렬
 class PostSortedResponse(BaseModel):
     status: str = 'success'
-    posts: List[PostSummary]
+    data: List[PostSummary]
     pagination: Pagination
 # 게시글 상세 조회
 # 게시글 상세 내역
@@ -44,20 +44,20 @@ class PostDetail(BaseModel):
     created_at: datetime
 class PostDetailResponse(BaseModel):
     status: str = 'success'
-    posts: List[PostSummary]
+    data: PostDetail
 # 댓글 목록 조회
 class CommentAuthor(BaseModel):
     author_email: str
     nickname: str
 class CommentItem(BaseModel):
-    post_id: str
+    comment_id: str
     content: str
     author: AuthorInfo
     created_at: datetime
     title: str
 class CommentListResponse(BaseModel):
     status: str = 'success'
-    posts: List[PostSummary]
+    data: List[CommentItem]
     pagination: Pagination
 # 좋아요 상태 확인
 class PostLikeStatus(BaseModel):
@@ -92,7 +92,7 @@ class PostUpdateData(BaseModel):
     title: str
     content: str
     author: AuthorInfo
-    created_at: datetime
+    updated_at: datetime
 # 응답데이터
 class PostUpdateResponse(BaseModel):
     status: str = 'success'
@@ -103,7 +103,7 @@ class CommentCreateRequest(BaseModel):
     content: str
 class CommentCreateData(BaseModel):
     post_id: str
-    id: str
+    comment_id: str
     author: AuthorInfo
     content: str
     created_at: datetime

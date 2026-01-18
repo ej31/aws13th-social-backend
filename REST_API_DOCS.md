@@ -1513,7 +1513,7 @@ path parameters
 
 ---
 
-### 회원가입
+_### 회원가입
 
 **POST** `/signup`
 
@@ -1534,7 +1534,7 @@ path parameters
 | nickname | string | ✅ | 1자 이상 13자 이하의 문자열,특수문자 사용 가능 |
 | profileImage | File | ❌ | 확장자는 jpg, jpeg,png만 가능 사이즈는 500x500px 이상만 가능 |
 
-**Request Example** 
+**Request Example**_ 
 
 ```json
 {

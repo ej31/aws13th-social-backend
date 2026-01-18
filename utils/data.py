@@ -1,31 +1,25 @@
 import json
 import os
+from typing import List, Dict, Any
 
 DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
 
+def get_file_path(filename: str) -> str:
+    return os.path.join(DATA_DIR, filename)
 
-def load_data(filename):
-    file_path = os.path.join(DATA_DIR, filename)
-
-    if not os.path.exists(file_path):
+def load_data(filename: str) -> List[Dict[str, Any]]:
+    path = get_file_path(filename)
+    if not os.path.exists(path):
         return []
-
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-            if not content:
-                return []
-            return json.loads(content)
-    except Exception as e:
-        print(f"{filename} 읽기 에러: {e}")
+            return json.loads(content) if content else []
+    except (json.JSONDecodeError, FileNotFoundError):
         return []
 
-
-def save_data(filename, data):
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
-    file_path = os.path.join(DATA_DIR, filename)
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+def save_data(filename: str, data: List[Dict[str, Any]]):
+    path = get_file_path(filename)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)

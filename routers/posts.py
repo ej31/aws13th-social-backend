@@ -15,11 +15,12 @@ async def get_posts(
     return {
         "status": "success",
         "data": [],
+        "query": {"search": search, "sort": sort},
         "pagination": {
             "page": page,
             "limit": limit,
             "totalCount": 0,
-            "totalPages": 0
+            "totalPages": 1
         }
     }
 

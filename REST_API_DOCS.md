@@ -143,7 +143,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
 **Response (200 OK)**
 
 ```json
-{
+{ 
   "status": "success",
   "data": [
     {

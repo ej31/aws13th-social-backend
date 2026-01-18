@@ -3,7 +3,7 @@
   - 비밀번호 해싱/검증
   - JWT 토큰 생성/검증
   """
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 import os
@@ -12,7 +12,9 @@ import os
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT 설정
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
++SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY 환경변수가 설정되지 않았습니다. 프로덕션 배포 전 반드시 설정하세요.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -41,9 +43,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -68,7 +70,7 @@ def verify_token(token: str) -> dict:
         return None
 
 
-def get_current_user_id(token: str) -> int:
+def get_current_user_id(token: str) -> int | None:
     """토큰에서 현재 사용자 ID를 추출합니다."""
     payload = verify_token(token)
     if payload:

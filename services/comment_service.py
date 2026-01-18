@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException,status
 
-from common.security import encode_id
+from common.security import encode_id, decode_id
 from repositories.comment_repository import CommentRepository
 from repositories.post_repository import PostRepository
 from repositories.user_repository import UserRepository
@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 class CommentService:
     def __init__(self,comment_repository: Annotated[CommentRepository,Depends(CommentRepository)],
                  post_repository: Annotated[PostRepository,Depends(PostRepository)],
-                 user_repository: Annotated[UserRepository,Depends(UserRepository)]):
+                 user_repository: Annotated[UserRepository,Depends(UserRepository)]) -> None:
 
         self.comment_repo = comment_repository
         self.post_repo = post_repository
@@ -21,12 +21,16 @@ class CommentService:
     def _assemble_comment_response(self, comment: dict) -> dict:
         """댓글 데이터에 작성자 정보를 결합하는 헬퍼 메서드"""
         author = self.user_repo.find_by_id(comment["author_id"])
-        return {
-            **comment, #딕셔너리 언패킹 즉 comment안에 있는 key,value에 해당하는 json을 붙여줌
-            "author": {
+        if author:
+            author_info = {
                 "id": encode_id(author["id"]),
                 "nickname": author["nickname"]
             }
+        else:
+            author_info = {"id": "unknown", "nickname": "탈퇴한 사용자"}
+        return {
+            **comment, #딕셔너리 언패킹 즉 comment안에 있는 key,value에 해당하는 json을 붙여줌
+            "author": author_info
         }
 
     async def create_comment(self,post_id: int, req: CommentCreateRequest,author_id: str):
@@ -59,18 +63,15 @@ class CommentService:
 
         return paged_comments_data,len(all_comments)
 
-    async def update_comment(self,commend_id:int,req: CommentUpdateRequest,author_id: str):
-        comment = self.comment_repo.find_by_id(commend_id)
+    async def update_comment(self,comment_id:int,req: CommentUpdateRequest,author_id: str):
+        comment = self.comment_repo.find_by_id(comment_id)
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="댓글이 존재하지 않습니다.")
 
-        if str(comment["author_id"]) != author_id:
+        if comment["author_id"] != author_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="댓글을 수정할 권한이 없습니다.")
-
-        comment["content"] = req.content
-        comment["updated_at"] = datetime.datetime.now()
 
         update_data= req.model_dump(exclude_none=True)
 
@@ -81,13 +82,13 @@ class CommentService:
         updated_comment = self.comment_repo.save(comment)
         return self._assemble_comment_response(updated_comment)
 
-    async def delete_comment(self,comment_id:int, author_id: str) -> None:
+    async def delete_comment(self,comment_id:int, author_id: str) -> bool:
         comment = self.comment_repo.find_by_id(comment_id)
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="댓글이 존재하지 않습니다.")
 
-        if str(comment["author_id"]) != author_id:
+        if comment["author_id"] != author_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="댓글 작성자가 아닙니다.")
 

@@ -30,7 +30,7 @@ def _get_post_or_404(post_id: PostId, posts: list[dict] | None = None) -> tuple[
     return post, posts
 
 
-def _update_post_like_count(posts: list, post_id: PostId, delta: int) -> None:
+def _update_post_like_count(posts: list[dict], post_id: PostId, delta: int) -> None:
     """게시글의 좋아요 수 업데이트 (posts 리스트를 받아서 처리)"""
     post_index = next((i for i, post in enumerate(posts) if post["id"] == post_id), None)
     if post_index is not None:

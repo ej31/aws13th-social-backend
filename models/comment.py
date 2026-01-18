@@ -1,0 +1,13 @@
+from typing import Annotated
+from pydantic import BaseModel, Field
+
+
+class Comment(BaseModel):
+    content: Annotated[str, Field(min_length=1,max_length=100)]
+
+class CommentInternal(BaseModel):
+    comment_id: str
+    content: Annotated[str, Field(min_length=1,max_length=100)]
+
+class CommentResponse(BaseModel):
+    content: Annotated[str, Field(min_length=1,max_length=100)]

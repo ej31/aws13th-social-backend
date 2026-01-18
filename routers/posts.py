@@ -1,16 +1,14 @@
-from datetime import datetime, timezone
 from fastapi import APIRouter, status, Query, Depends, HTTPException
 from schemas.post import PostCreate, PostUpdate
 from utils.auth import get_current_user
 from utils.data import load_data, save_data
-from typing import Optional
-
+from datetime import datetime, timezone
 router = APIRouter(prefix="/posts",tags=["Posts"])
 
 @router.get("")
 def get_posts(
-        page: int = Query(1, ge=1),
-        limit: int = Query(20, ge=1, le=100),
+        page: int = Query(1, ge=1),      # 기본값 1페이지, 1보다 커야됌
+        limit: int = Query(20, ge=1, le=100), # 한 페이지당 20개, 최대 100개
         sort: str = Query("latest", pattern="^(latest|views|likes)$"),
 ):
     """
@@ -20,7 +18,7 @@ def get_posts(
         - 목록에서는 제목 + 작성자 닉네임만 반환
     """
     #데이터 로드
-    posts = load_data("posts")
+    posts = load_data("posts")    # 데이터베이스 대신 json 로드
     users = load_data("users")
 
     #삭제되지 않은 게시글만 필터링
@@ -74,11 +72,12 @@ def get_posts(
     }
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_post(
+    # 새 게시글 작성 (로그인 필수)
     data: PostCreate,
     current_user: dict = Depends(get_current_user)
 ):
     # 제목 / 본문 검증
-    if not data.title.strip() or not data.content.strip():
+    if not data.title.strip() or not data.content.strip():  # strip()으로 양끝 공백 제거
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -90,9 +89,8 @@ def create_post(
         )
     # 게시글 데이터 로드
     posts = load_data("posts")
-    users = load_data("users")
     #postId 생성
-    new_post_Id = (
+    new_post_Id = (    # 마지막 게시글 ID에 1 추가해 고우 ID 생성
         max([p["postId"] for p in posts], default=0) + 1
     )
     #현재 시간
@@ -113,14 +111,8 @@ def create_post(
     posts.append(new_post)  # 게시글 목록에 추가
     save_data("posts", posts)  # 파일에 저장
 
-    #작성자 닉네임 찾기
-    user_map = {
-        u["userId"]: u.get("nickname")
-        for u in users
-        if u.get("is_deleted") is not True
-    }
+    #작성자 닉네임(current_user에 이미 있음)
     nickname = current_user.get("nickname", "알 수 없음")
-
     return {
         "status": "success",
         "data": {
@@ -230,8 +222,63 @@ def get_my_posts(
     }
 
 @router.get("/{postId}")
-def get_post(postId: int):
-    return {"message": f"{postId}번 상세 조회 (조회수 증가 로직 예정)"}
+def get_post(
+        postId: int,
+        current_user: dict = Depends(get_current_user)
+):
+    """
+    게시글 상세 조회
+    - 조회 시마다 조회수 1 증가
+    - 삭제된 게시글은 조회 불가
+    """
+    # 데이터 로드
+
+    posts = load_data("posts")
+    users = load_data("users")
+
+    # 해당 postId를 가진 게시글 찾기
+    post = next(
+        (p for p in posts if p["postId"] == postId),
+        None
+    )
+
+    # 게시글이 없거나 삭제된 경우 체크
+    if post is None or post.get("is_deleted") is True:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "status": "error",
+                "data": {
+                    "message": "존재하지 않는 게시글입니다."
+                }
+            }
+        )
+    # 조회수 증가 및 저장
+    post["viewCount"] = post.get("viewCount", 0) + 1
+    save_data("posts", posts)
+
+    # 작성자 닉네임 찾기
+    user_map = {
+        u["userId"]: u.get("nickname")
+        for u in users
+        if not u.get("is_deleted")
+    }
+    nickname = user_map.get(post["userId"], "알 수 없음")
+
+    # 응답
+    return {
+        "status": "success",
+        "data": {
+            "postId": post["postId"],
+            "title": post["title"],
+            "content": post["content"],
+            "nickname": nickname,
+            "created_at": post.get("created_at"),
+            "updated_at": post.get("updated_at"),
+            "viewCount": post["viewCount"],
+            "likeCount": post.get("likeCount", 0)
+        }
+    }
 
 @router.patch("/{postId}")
 def update_post(

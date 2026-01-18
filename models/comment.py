@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, List
 from pydantic import BaseModel, Field
 
 
@@ -16,3 +16,6 @@ class CommentResponse(BaseModel):
     post_id: str
     user_id: str
     created_at: datetime
+
+class AllComments(BaseModel):
+    comments: List[CommentResponse]

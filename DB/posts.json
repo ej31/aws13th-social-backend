@@ -16,5 +16,14 @@
         "content": "stringㄹㄹㄹㅀㅂㅈㄷㅂㄷㅂㅈ",
         "media": null,
         "created_at": "2026-01-17T13:51:38.626839"
+    },
+    {
+        "user_id": "7bbbd1e0-971b-4fb2-9084-7445113b495d",
+        "post_id": "9b7ab684-a9b0-4ca3-9749-bdbb336ad38a",
+        "view_count": 0,
+        "title": "코멘트 확인용이다",
+        "content": "stringㅇㅇㅇstringㅇㅇㅇ",
+        "media": null,
+        "created_at": "2026-01-18T13:28:19.635075"
     }
 ]

@@ -4,7 +4,7 @@ from pathlib import Path
 
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "comments.json"
 
-def get_comments() -> list[dict]:
+def get_comments():
     if not os.path.exists(DB_FILE):
         return []
     with open(DB_FILE, "r", encoding="utf-8") as f:

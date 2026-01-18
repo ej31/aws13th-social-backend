@@ -1,12 +1,9 @@
-from typing import Optional
-
 import uuid
-from websockets.legacy.server import HTTPResponse
-
+from typing import Annotated, List, Optional
 from models.post import Post, PostInternal, PostQuery
 from fastapi import HTTPException
 from repositories.posts_repo import get_post, save_post
-from datetime import datetime
+from datetime import datetime,timezone
 
 def write_posts(data: Post, current_user: dict):
     posts = get_post()
@@ -14,7 +11,7 @@ def write_posts(data: Post, current_user: dict):
     if any(u["title"] == data.title for u in posts):
         raise HTTPException(400, "이미 존재하는 게시물 타이틀")
 
-    post_created_at = datetime.now()
+    post_created_at = datetime.now(timezone.utc)
 
     my_post = PostInternal(
         user_id=current_user["user_id"],
@@ -88,9 +85,9 @@ def query_post(param: PostQuery, get_optional_user: Optional[dict]) -> dict:
 
     if param.search:
         search_item = param.search.lower()
-        data = [post for post in data if search_item in post.get("title","")]
+        data = [post for post in data if search_item in post.get("title","").lower]
 
-    if data is None:
+    if not data:
         raise HTTPException(
             status_code=404,
             detail= f"검색어 {param.search}에 해당하는 게시물을 찾을수 없습니다."
@@ -102,7 +99,6 @@ def query_post(param: PostQuery, get_optional_user: Optional[dict]) -> dict:
 
     return {
         "total": len(data),
-        "data": paged_data,
         "page": param.page,
         "size": param.size,
         "results": paged_data

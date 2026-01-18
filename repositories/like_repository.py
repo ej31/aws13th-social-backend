@@ -2,10 +2,12 @@ import json
 import os
 from typing import List, Optional
 
+from common.config import settings
+
 
 class LikeRepository:
     def __init__(self):
-        self.file_path = "data/likes.json"
+        self.file_path = settings.likes_json_path
         # 데이터 폴더가 없으면 생성
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         # 파일이 없으면 빈 리스트로 초기화

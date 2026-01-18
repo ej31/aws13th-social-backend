@@ -92,7 +92,7 @@ def get_auth_tokens(user: UserLoginRequest, response: Response) -> UserLoginResp
         key=REFRESH_TOKEN_COOKIE_KEY,
         value=refresh_token,
         httponly=True,
-        secure=True,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         path="/",

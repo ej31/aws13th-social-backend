@@ -1,0 +1,23 @@
+[
+    {
+        "content": "코맨트1",
+        "comment_id": "438b8e16-dd5f-4858-b4a8-1ce3c5ebe415",
+        "post_id": "9b7ab684-a9b0-4ca3-9749-bdbb336ad38a",
+        "user_id": "7bbbd1e0-971b-4fb2-9084-7445113b495d",
+        "created_at": "2026-01-18T04:55:43.723558Z"
+    },
+    {
+        "content": "코맨트3",
+        "comment_id": "f0ce185c-870d-48af-9fe5-6e9a16ee7447",
+        "post_id": "9b7ab684-a9b0-4ca3-9749-bdbb336ad38a",
+        "user_id": "7bbbd1e0-971b-4fb2-9084-7445113b495d",
+        "created_at": "2026-01-18T04:55:52.204046Z"
+    },
+    {
+        "content": "코맨트4",
+        "comment_id": "b654a9b3-dc5e-4721-a5ad-89eacf40a55f",
+        "post_id": "14a6766-73c4-48f8-a0ad-38a0a90a5410",
+        "user_id": "7bbbd1e0-971b-4fb2-9084-7445113b495d",
+        "created_at": "2026-01-18T04:59:23.571682Z"
+    }
+]

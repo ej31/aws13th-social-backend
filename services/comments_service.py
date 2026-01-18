@@ -1,6 +1,5 @@
 from datetime import datetime,timezone
 import uuid
-
 from models.comment import Comment, CommentResponse
 from repositories.comments_repo import get_comments, save_comments
 from fastapi import HTTPException
@@ -13,7 +12,7 @@ def write_comments(post_id:str, data: Comment, current_user : dict):
     posts = get_post()
     comments = get_comments()
 
-    if not (p["post_id"] == post_id for p in posts):
+    if not any(p["post_id"] == post_id for p in posts):
         raise HTTPException(400, "Post ID not valid")
     #
     # if any(u["comment_id"] ==  for data. u in comments):
@@ -57,7 +56,7 @@ def update_user_comments(comment_id:str, data: Comment, current_user : dict):
         raise HTTPException(status_code=403, detail=" 댓글을 수정할 권한이 없습니다.")
 
     index = all_data.index(user_comments)
-    all_data[index].update(data)
+    all_data[index]["content"] = data.content
     save_comments(all_data)
     return all_data[index]
 
@@ -78,10 +77,7 @@ def delete_user_comments(comment_id:str, current_user : dict ):
 
 def get_my_comment(current_user : dict):
     all_data = get_comments()
-
-    if current_user:
-        user_id = current_user.get("user_id")
-        mine_only = [c for c in all_data if c.get("user_id") == user_id]
-        return mine_only
-
-    return all_data
+    user_id = current_user.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="인증이 필요합니다")
+    return [c for c in all_data if c.get("user_id") == user_id]

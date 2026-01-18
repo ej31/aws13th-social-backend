@@ -1,5 +1,5 @@
-from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, Query
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends
 from dependencies.auth import get_current_user, get_optional_user
 from models.post import PostPublic, Post, post_form_reader, PostQuery
 from services.post_service import write_posts, get_user_post, update_my_post, delete_my_post, query_post

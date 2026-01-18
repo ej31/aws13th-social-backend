@@ -1,5 +1,4 @@
 import json, os
-from typing import Optional
 from pathlib import Path
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "posts.json"
 

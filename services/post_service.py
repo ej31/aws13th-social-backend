@@ -85,7 +85,7 @@ def query_post(param: PostQuery, get_optional_user: Optional[dict]) -> dict:
 
     if param.search:
         search_item = param.search.lower()
-        data = [post for post in data if search_item in post.get("title","").lower]
+        data = [post for post in data if search_item in post.get("title","").lower()]
 
     if not data:
         raise HTTPException(

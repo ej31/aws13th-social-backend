@@ -8,15 +8,6 @@ from services.user_service import get_my_profile,get_user_profile,update_my_prof
 from dependencies.auth import get_current_user
 from datetime import datetime, timezone
 
-"""
-Users리소스 유의사항
-- 개발 편의상 비밀번호 생성의 검증규칙(대문자, 특수문자 등등)은 자릿수값(최소2자, 최대50자)만 체크하도록 간소화한다.
-- 개발 편의상 요청으로 들어온 비밀번호는 평문화 한다.(원래는 요청값 전송 즉시 해쉬화 하고, 평문 비밀번호는 삭제)
-- DB저장 로직을 제외함으로, 해쉬된 비밀번호 및 users의 필드는 저장되지 않는다.
-- JWT토큰은 임의로 생성된 secret값을 가진다. 
-- UUID사용 하여 users구분값인 무작위 user_id생성 이후 user_id로 토큰 생성
-"""
-
 router = APIRouter(tags=["users"])
 
 @router.post("/auth/signup",response_model=AuthResponse,status_code=status.HTTP_201_CREATED)

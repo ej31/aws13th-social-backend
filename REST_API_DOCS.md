@@ -1420,7 +1420,7 @@ path parameters
 
 ### 로그인
 
-**POST** `/login`
+**POST** `/signup`
 
 **로그인**: 이메일/비밀번호로 인증 후 토큰 발급
 

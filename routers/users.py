@@ -4,17 +4,24 @@ import re
 import io
 from datetime import datetime
 from typing import Optional
-
-from fastapi import APIRouter, Form, UploadFile, File, status, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Form, UploadFile, File, status, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from PIL import Image
 from email_validator import validate_email, EmailNotValidError
 
 from utils.data import load_data, save_data
-from utils.auth import get_password_hash, verify_password, create_access_token
-from schemas.user import SignupResponse, UserLogin, LoginResponse
+from utils.auth import get_password_hash, verify_password, create_access_token, get_current_user
+from schemas.user import (
+    SignupResponse,
+    UserLogin,
+    LoginResponse,
+    ProfileResponse,
+    UpdateProfileResponse,
+    PublicUserResponse
+)
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(tags=["users"])
 
 # 이미지 저장 경로 설정
 UPLOAD_DIR = "static/uploads"
@@ -151,16 +158,19 @@ async def signup(
     }
 
 
+
+
+
 @router.post("/login", response_model=LoginResponse)
-async def login(login_data: UserLogin):
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+
     # 1. 데이터 로드
     users = load_data("users.json")
 
-    # 2. 유저 찾기
-    user = next((u for u in users if u["email"] == login_data.email), None)
+    user = next((u for u in users if u["email"] == form_data.username), None)
 
     # 3. 인증 실패 처리
-    if not user or not verify_password(login_data.password, user["password"]):
+    if not user or not verify_password(form_data.password, user["password"]):
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={
@@ -185,5 +195,175 @@ async def login(login_data: UserLogin):
                 "email": user["email"],
                 "nickname": user["nickname"]
             }
+        }
+    }
+
+
+@router.get("/users/me", response_model=ProfileResponse)
+async def read_users_me(current_user: dict = Depends(get_current_user)):
+    return {
+        "status": "success",
+        "data": {
+            "id": current_user["id"],
+            "email": current_user["email"],
+            "nickname": current_user["nickname"],
+            "profileImage": current_user["profileImage"],
+
+            "joinedAt": current_user["createdAt"]
+        }
+    }
+
+
+
+@router.patch("/users/me", response_model=UpdateProfileResponse)
+async def update_user_profile(
+        nickname: Optional[str] = Form(None),
+        password: Optional[str] = Form(None),
+        profileImage: Optional[UploadFile] = File(None),
+        current_user: dict = Depends(get_current_user)
+):
+    users = load_data("users.json")
+    validation_errors = []
+
+
+    # 1-1. 닉네임 검사
+    if nickname is not None:
+        if not (1 <= len(nickname) <= 13):
+            validation_errors.append({"field": "nickname", "issue": "닉네임은 13자 이하이어야 합니다."})
+
+    # 1-2. 비밀번호 검사
+    if password is not None:
+        special_char_regex = r"[!@#$%^&*(),.?\":{}|<>]"
+        if len(password) < 8 or not re.search(special_char_regex, password):
+            validation_errors.append({"field": "password", "issue": "비밀번호는 8자 이상이어야 합니다."})
+
+    # 1-3. 프로필 이미지 검사
+    if profileImage is not None:
+        filename = profileImage.filename
+        if "." not in filename:
+            validation_errors.append({"field": "profileImage", "issue": "확장자가 없습니다."})
+        else:
+            ext = filename.split(".")[-1].lower()
+            if ext not in ['jpg', 'jpeg', 'png']:
+                validation_errors.append({"field": "profileImage", "issue": "확장자는 jpg, jpeg, png만 가능합니다."})
+
+        # 이미지 내용 검사
+        try:
+            contents = await profileImage.read()
+            img = Image.open(io.BytesIO(contents))
+
+            if img.format.lower() not in ['jpeg', 'png']:
+                validation_errors.append({"field": "profileImage", "issue": "유효하지 않은 이미지 포맷입니다."})
+
+            if img.width < 500 or img.height < 500:
+                validation_errors.append({"field": "profileImage", "issue": "사이즈는 500x500px 이상만 가능합니다."})
+
+            await profileImage.seek(0)  # 파일 포인터 초기화
+        except Exception:
+            validation_errors.append({"field": "profileImage", "issue": "유효하지 않은 이미지 파일입니다."})
+
+    # 에러가 하나라도 있으면 422 리턴
+    if validation_errors:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "status": "error",
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "잘못된 형식의 값입니다.",
+                    "details": validation_errors
+                }
+            }
+        )
+
+
+    # 전체 유저 목록에서 현재 로그인한 유저 찾기 (수정하기 위해)
+    user_idx = next((index for (index, u) in enumerate(users) if u["id"] == current_user["id"]), None)
+
+    if user_idx is None:
+        return JSONResponse(
+            status_code=404,
+            content={"status": "error", "error": {"code": "NOT_FOUND", "message": "사용자를 찾을 수 없습니다."}}
+        )
+
+    # 2-1. 닉네임 업데이트
+    if nickname:
+        users[user_idx]["nickname"] = nickname
+
+    # 2-2. 비밀번호 업데이트 (해싱 필수!)
+    if password:
+        users[user_idx]["password"] = get_password_hash(password)
+
+    # 2-3. 이미지 업데이트
+    if profileImage:
+        ext = profileImage.filename.split(".")[-1]
+        safe_filename = f"{users[user_idx]['id']}_{int(datetime.now().timestamp())}.{ext}"
+        file_path = os.path.join(UPLOAD_DIR, safe_filename)
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(profileImage.file, buffer)
+
+        users[user_idx]["profileImage"] = f"/static/uploads/{safe_filename}"
+
+    # --- 3. 저장 및 응답 ---
+    save_data("users.json", users)
+    updated_user = users[user_idx]
+
+    return {
+        "status": "success",
+        "data": {
+            "id": updated_user["id"],
+            "nickname": updated_user["nickname"],
+            "profileImage": updated_user["profileImage"],
+            "createdAt": updated_user["createdAt"]
+        }
+    }
+
+
+# [1] 회원 탈퇴 API
+@router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_me(current_user: dict = Depends(get_current_user)):
+
+    users = load_data("users.json")
+
+    # 현재 로그인한 유저(current_user["id"])를 제외한 나머지 리스트 생성
+    new_users = [u for u in users if u["id"] != current_user["id"]]
+
+    # 저장
+    save_data("users.json", new_users)
+
+    # 204 No Content는 본문(Body) 없이 상태 코드만 보냅니다.
+    return
+
+
+# [2] 특정 회원 조회 API
+@router.get("/users/{user_id}", response_model=PublicUserResponse)
+async def read_user_by_id(user_id: int):
+
+    users = load_data("users.json")
+
+    # 유저 찾기
+    user = next((u for u in users if u["id"] == user_id), None)
+
+    # 없으면 404 에러
+    if user is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "status": "error",
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "요청하신 데이터를 찾을 수 없습니다."
+                }
+            }
+        )
+
+    # 성공 시 공개 데이터 반환
+    return {
+        "status": "success",
+        "data": {
+            "id": user["id"],
+            "nickname": user["nickname"],
+            "profileImage": user["profileImage"]
         }
     }

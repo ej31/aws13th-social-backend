@@ -10,8 +10,8 @@ venv/
 env/
 ENV/
 
-+data/*
-+!data/users.json
+data/*
+!data/users.json
 
 .idea/
 .vscode/

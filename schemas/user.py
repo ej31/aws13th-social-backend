@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 
 # 응답용 사용자 데이터 모델
@@ -35,3 +35,38 @@ class LoginData(BaseModel):
 class LoginResponse(BaseModel):
     status: str
     data: LoginData
+
+# [1] 프로필 내부 데이터 모델
+class UserProfile(BaseModel):
+    id: int
+    email: str
+    nickname: str
+    profileImage: Optional[str]
+    joinedAt: str  # 명세서에는 joinedAt으로 되어있음
+
+# [2] 전체 응답 감싸개
+class ProfileResponse(BaseModel):
+    status: str
+    data: UserProfile
+
+
+#프로필 수정 응답용 데이터 모델
+class UpdatedUserProfile(BaseModel):
+    id: int
+    nickname: str
+    profileImage: Optional[str]
+    createdAt: str
+
+class UpdateProfileResponse(BaseModel):
+    status: str
+    data: UpdatedUserProfile
+
+#공개 프로필 조회용 데이터 모델 (특정 회원 조회)
+class PublicUserProfile(BaseModel):
+    id: int
+    nickname: str
+    profileImage: Optional[str]
+
+class PublicUserResponse(BaseModel):
+    status: str
+    data: PublicUserProfile

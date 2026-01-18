@@ -1,10 +1,10 @@
 [
   {
     "id": 1,
-    "email": "test@test.com",
-    "password": "$2b$12$qBQpk9qmQdNoOZuxOVNps.CRemgCzpwtC0VuW1gU87uKJPc6qTaWm",
-    "nickname": "테스터",
+    "email": "final_test@test.com",
+    "password": "$2b$12$aloNI3wQKanrvfD289PeuuPAhXokL1ruAgMKvvi.CPBRGx5V/r0p.",
+    "nickname": "테스트맨",
     "profileImage": null,
-    "createdAt": "2026-01-18T22:19:12.876468"
+    "createdAt": "2026-01-18T23:28:17.847507"
   }
 ]

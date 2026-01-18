@@ -6,10 +6,13 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from dotenv import load_dotenv
 from utils.data import load_data
+import bcrypt
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback_secret")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY 환경 변수가 설정되지 않았습니다.")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
@@ -17,7 +20,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 # 1. 비밀번호 해싱/검증 함수 (기존 코드 유지)
-import bcrypt
+
 
 
 def get_password_hash(password: str) -> str:

@@ -2,11 +2,12 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.post("/{postId}/likes")
-def do_like(postId: int):
+@router.post("/")
+def do_like(post_id: int):
     return{
         "status": "success",
         "data": {
+            "postId": post_id,
             "likeCount": 2
         }
     }

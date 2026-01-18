@@ -124,10 +124,9 @@ def refresh_access_token(refresh_token: str | None = Cookie(None)):
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response):
+def logout(response: Response) -> None:
     """로그아웃 (refresh_token 쿠키 삭제)"""
     response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/users/me", response_model=UserMyProfile)

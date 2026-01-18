@@ -1,18 +1,20 @@
-from fastapi import APIRouter, Form, UploadFile, File, status
-from fastapi.responses import JSONResponse
-from typing import Optional
-from datetime import datetime
 import os
 import shutil
 import re
-from PIL import Image
 import io
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Form, UploadFile, File, status, HTTPException
+from fastapi.responses import JSONResponse
+from PIL import Image
+from email_validator import validate_email, EmailNotValidError
 
 from utils.data import load_data, save_data
-from utils.auth import get_password_hash
-from schemas.user import SignupResponse
+from utils.auth import get_password_hash, verify_password, create_access_token
+from schemas.user import SignupResponse, UserLogin, LoginResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 # 이미지 저장 경로 설정
 UPLOAD_DIR = "static/uploads"
@@ -30,8 +32,10 @@ async def signup(
     validation_errors = []
 
     # 1-1. 이메일 형식 검사
-    email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-    if not re.match(email_regex, email):
+    try:
+        # [수정] 상단에 import 되어 있으므로 중복 import 제거함
+        validate_email(email, check_deliverability=False)
+    except EmailNotValidError:
         validation_errors.append({"field": "email", "issue": "이메일 형식이 아닙니다."})
 
     # 1-2. 비밀번호 검사 (8자 이상, 특수문자 포함)
@@ -44,23 +48,32 @@ async def signup(
         validation_errors.append({"field": "nickname", "issue": "닉네임은 1자 이상 13자 이하이어야 합니다."})
 
     # 1-4. 프로필 이미지 검사 (확장자, 500x500px 이상)
+    # [수정] 이미지가 있을 때만 검사하도록 들여쓰기(Indentation) 수정!
     if profileImage:
         filename = profileImage.filename
-        ext = filename.split(".")[-1].lower() if "." in filename else ""
-
-        # 확장자 체크
-        if ext not in ["jpg", "jpeg", "png"]:
-            validation_errors.append({"field": "profileImage", "issue": "확장자는 jpg, jpeg, png만 가능합니다."})
+        # 확장자 체크 로직 (간단한 버전)
+        if "." not in filename:
+            validation_errors.append({"field": "profileImage", "issue": "파일 확장자가 없습니다."})
         else:
-            # 사이즈 체크
-            try:
-                contents = await profileImage.read()
-                img = Image.open(io.BytesIO(contents))
-                if img.width < 500 or img.height < 500:
-                    validation_errors.append({"field": "profileImage", "issue": "사이즈는 500x500px 이상만 가능합니다."})
-                await profileImage.seek(0)  # 파일 포인터 초기화
-            except Exception:
-                validation_errors.append({"field": "profileImage", "issue": "유효하지 않은 이미지 파일입니다."})
+            ext = filename.split(".")[-1].lower()
+            if ext not in ['jpg', 'jpeg', 'png']:
+                validation_errors.append({"field": "profileImage", "issue": "확장자는 jpg, jpeg, png만 가능합니다."})
+
+        # 사이즈 및 실제 이미지 형식 체크
+        try:
+            contents = await profileImage.read()
+            img = Image.open(io.BytesIO(contents))
+
+            # PIL을 통한 포맷 재확인
+            if img.format.lower() not in ['jpeg', 'png']:
+                validation_errors.append({"field": "profileImage", "issue": "유효하지 않은 이미지 포맷입니다."})
+
+            if img.width < 500 or img.height < 500:
+                validation_errors.append({"field": "profileImage", "issue": "사이즈는 500x500px 이상만 가능합니다."})
+
+            await profileImage.seek(0)  # [중요] 파일 포인터 초기화 (저장하기 위해)
+        except (IOError, Image.UnidentifiedImageError):
+            validation_errors.append({"field": "profileImage", "issue": "유효하지 않은 이미지 파일입니다."})
 
     # 유효성 에러 발생 시 422 반환
     if validation_errors:
@@ -100,6 +113,7 @@ async def signup(
     # 이미지 파일 저장
     image_url = None
     if profileImage:
+        # 파일명 안전하게 생성
         ext = profileImage.filename.split(".")[-1]
         safe_filename = f"{new_id}_{int(datetime.now().timestamp())}.{ext}"
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
@@ -107,7 +121,8 @@ async def signup(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(profileImage.file, buffer)
 
-        image_url = f"http://localhost:8000/static/uploads/{safe_filename}"
+        # [중요] 윈도우 역슬래시(\) 문제를 방지하기 위해 URL 형식(/)으로 통일
+        image_url = f"/static/uploads/{safe_filename}"
 
     # 사용자 객체 생성 (비밀번호 해싱 필수)
     new_user = {
@@ -132,5 +147,43 @@ async def signup(
             "nickname": new_user["nickname"],
             "profileImage": new_user["profileImage"],
             "createdAt": new_user["createdAt"]
+        }
+    }
+
+
+@router.post("/login", response_model=LoginResponse)
+async def login(login_data: UserLogin):
+    # 1. 데이터 로드
+    users = load_data("users.json")
+
+    # 2. 유저 찾기
+    user = next((u for u in users if u["email"] == login_data.email), None)
+
+    # 3. 인증 실패 처리
+    if not user or not verify_password(login_data.password, user["password"]):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "status": "error",
+                "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "인증 실패"
+                }
+            }
+        )
+
+    # 4. 토큰 발급
+    access_token = create_access_token(data={"sub": user["email"]})
+
+    # 5. 성공 응답
+    return {
+        "status": "success",
+        "data": {
+            "accessToken": access_token,
+            "user": {
+                "id": user["id"],
+                "email": user["email"],
+                "nickname": user["nickname"]
+            }
         }
     }

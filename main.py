@@ -9,7 +9,7 @@ app = FastAPI()
 os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-app.include_router(users.router, prefix="", tags=["Users"])
+app.include_router(users.router)
 app.include_router(posts.router, prefix="/posts", tags=["Posts"])
 app.include_router(comments.router, prefix="/posts/{post_id}/comments", tags=["Comments"])
 app.include_router(likes.router, prefix="/posts/{post_id}/likes", tags=["Likes"])

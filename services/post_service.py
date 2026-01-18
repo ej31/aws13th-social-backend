@@ -1,6 +1,7 @@
 from typing import Optional
 
 import uuid
+from websockets.legacy.server import HTTPResponse
 
 from models.post import Post, PostInternal, PostQuery
 from fastapi import HTTPException
@@ -86,7 +87,14 @@ def query_post(param: PostQuery, get_optional_user: Optional[dict]) -> dict:
         pass
 
     if param.search:
-        data = [post for post in data if param.search in data["title"]]
+        search_item = param.search.lower()
+        data = [post for post in data if search_item in post.get("title","")]
+
+    if data is None:
+        raise HTTPException(
+            status_code=404,
+            detail= f"검색어 {param.search}에 해당하는 게시물을 찾을수 없습니다."
+        )
 
     reverse = True if param.sort_order == "desc" else False
     data = sorted(data, key=lambda x: x[param.sort_by], reverse=reverse)
@@ -94,6 +102,7 @@ def query_post(param: PostQuery, get_optional_user: Optional[dict]) -> dict:
 
     return {
         "total": len(data),
+        "data": paged_data,
         "page": param.page,
         "size": param.size,
         "results": paged_data

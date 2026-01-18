@@ -2,16 +2,20 @@ import uuid
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status, Depends, Response
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie
 
 from config import settings
 from schemas.commons import UserId
 from schemas.user import (
     UserMyProfile,
     UserUpdateRequest, UserProfile,
+    UserCreateRequest, UserCreateResponse, UserLoginRequest, UserLoginResponse,
+    TokenRefreshResponse,
 )
-from schemas.user import UserCreateRequest, UserCreateResponse, UserLoginRequest, UserLoginResponse
-from utils.auth import hash_password, verify_password, create_access_token, DUMMY_HASH, get_current_user_id
+from utils.auth import (
+    hash_password, verify_password, create_access_token, create_refresh_token,
+    _decode_token, DUMMY_HASH, get_current_user_id
+)
 from utils.data import read_json, write_json
 
 router = APIRouter(
@@ -58,8 +62,11 @@ def create_user(user: UserCreateRequest):
     }
 
 
+REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
+
+
 @router.post("/auth/tokens", response_model=UserLoginResponse)
-def get_auth_tokens(user: UserLoginRequest):
+def get_auth_tokens(user: UserLoginRequest, response: Response):
     """로그인"""
     users = read_json(settings.users_file)
 
@@ -77,8 +84,50 @@ def get_auth_tokens(user: UserLoginRequest):
         )
 
     # 토큰 생성
-    access_token = create_access_token(data={"sub": db_user["id"]})
+    token_data = {"sub": db_user["id"]}
+    access_token = create_access_token(data=token_data)
+    refresh_token = create_refresh_token(data=token_data)
+
+    # Refresh token을 HttpOnly 쿠키로 설정
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/auth/tokens/refresh", response_model=TokenRefreshResponse)
+def refresh_access_token(refresh_token: str | None = Cookie(None)):
+    """Access Token 갱신 (쿠키에서 refresh_token 읽음)"""
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="refresh token not found",
+        )
+
+    payload = _decode_token(refresh_token, "refresh")
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid token",
+        )
+
+    # 새 access token 발급
+    access_token = create_access_token(data={"sub": user_id})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response):
+    """로그아웃 (refresh_token 쿠키 삭제)"""
+    response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/users/me", response_model=UserMyProfile)

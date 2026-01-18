@@ -95,7 +95,6 @@ def create_like(post_id: PostId, user_id: CurrentUserId):
     likes.append(new_like)
     write_json(settings.likes_file, likes)
 
-    # 게시글 좋아요 수 증가 (이미 읽은 posts 재사용)
     _update_post_like_count(posts, post_id, 1)
 
     return {"message": "Liked successfully"}

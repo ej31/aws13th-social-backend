@@ -45,8 +45,7 @@ def get_posts_liked(user_id: CurrentUserId, page: Page = 1) -> ListPostILiked:
     posts = read_json(settings.posts_file)
 
     # 내가 좋아요한 post_id 목록 (최신순 정렬)
-    my_likes = [like for like in likes if like["user_id"] == user_id]
-    my_likes.sort(key=lambda like: like["created_at"], reverse=True)
+    my_likes = sorted((like for like in likes if like['user_id'] == user_id), key=lambda like: like['created_at'], reverse=True)
     liked_post_ids = [like["post_id"] for like in my_likes]
 
     # 좋아요한 게시글 정보 가져오기 (좋아요 순서 유지)

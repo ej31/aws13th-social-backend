@@ -104,7 +104,6 @@ def get_posts_mine(user_id: CurrentUserId, page: Page = 1) -> ListPostsResponse:
 
     my_posts.sort(key=lambda post: post["created_at"], reverse=True)
 
-    # 페이지네이션
     paginated_posts, page, total_pages = paginate(my_posts, page, PAGE_SIZE)
 
     return ListPostsResponse(

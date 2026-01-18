@@ -68,3 +68,28 @@ class PostRepository:
 
         self._save_all(filtered_posts)
         return True
+
+    def update_like_count(self, post_id: int, like_count: int) -> bool:
+        """특정 게시글의 좋아요 숫자를 업데이트 (데이터 정합성 유지)"""
+        posts = self._load_all()
+
+        for post in posts:
+            if int(post["post_id"]) == int(post_id):
+                post["likes"] = like_count
+                self._save_all(posts)
+                return True
+
+        return False
+
+    def increment_views(self, post_id: int) -> bool:
+        """특정 게시글의 조회수를 1 증가시킴"""
+        posts = self._load_all()
+
+        for post in posts:
+            if int(post["post_id"]) == int(post_id):
+                # 기존 views가 없을 경우를 대비해 get() 사용 후 +1
+                post["views"] = post.get("views", 0) + 1
+                self._save_all(posts)
+                return True
+
+        return False

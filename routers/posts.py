@@ -14,8 +14,12 @@ router = APIRouter(prefix="/posts",tags=["posts"])
 @router.get("/",response_model=CommonResponse[PaginatedResponse[PostsResponse]],status_code=status.HTTP_200_OK)
 async def get_posts(post_service: Annotated[PostService,Depends(PostService)],
                     page: Annotated[int,Query(ge=1)] = 1,# 페이지 번호 1 이상
-                    size: Annotated[int,Query(ge=1,le=100)]=10):
-        posts,total = await post_service.get_posts(page=page,limit=size)
+                    size: Annotated[int,Query(ge=1,le=100)]=10,
+                    current_user_info: Annotated[dict | None, Depends(get_current_optional_user)] = None):
+
+        extracted_user_id = current_user_info.get("id") if current_user_info else None
+
+        posts,total = await post_service.get_posts(page=page,limit=size,current_user_id=extracted_user_id)
         meta = PaginationMeta(
             page=page,
             limit=size,
@@ -34,11 +38,11 @@ async def get_posts(post_service: Annotated[PostService,Depends(PostService)],
 @router.get("/{post_id}",response_model=CommonResponse[PostsResponseDetail],status_code=status.HTTP_200_OK)
 async def get_posts_detail(post_service: Annotated[PostService,Depends(PostService)],
                            post_id: int = Path(...,description="조회할 게시글의 ID"),
-                           current_user_id: Annotated[dict | None, Depends(get_current_optional_user)] = None):
+                           current_user_info: Annotated[dict | None, Depends(get_current_optional_user)] = None):
     #현재 current_user가 비인증 사용자가 아니라면 dict에서 id를 꺼냄
-    user_id = current_user_id.get("id") if current_user_id else None
+    extracted_user_id = current_user_info.get("id") if current_user_info else None
 
-    posts_detail_data = await post_service.get_posts_detail(post_id=post_id,user_id=user_id)
+    posts_detail_data = await post_service.get_posts_detail(post_id=post_id,current_user_id=extracted_user_id)
     return CommonResponse(
         status = "success",
         message = "게시물 상세 조회에 성공하였습니다.",

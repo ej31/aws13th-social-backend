@@ -7,7 +7,7 @@ from services.comments_service import write_comments, get_usr_comments, update_u
 
 router = APIRouter(tags=["comments"])
 
-@router.post("/posts/{post_id}/comments",response_model=CommentResponse)
+@router.post("/posts/{post_id}/comments", response_model=CommentResponse)
 def post_comments(
         post_id: str,
         comment_data: Annotated[Comment, Depends(Comment)],
@@ -16,7 +16,7 @@ def post_comments(
     return write_comments(post_id, comment_data, current_user)
 
 
-@router.get("/posts/{post_id}/comments",response_model=AllComments)
+@router.get("/posts/{post_id}/comments", response_model=AllComments)
 def get_comments(
         post_id: str,
         current_user: Annotated[dict, Depends(get_optional_user)]
@@ -28,7 +28,7 @@ def get_comments(
         "comments": all_comment
     }
 
-@router.patch("/comments/{comment_id}")
+@router.patch("/comments/{comment_id}", response_model=CommentResponse)
 def update_comments(
         comment_id: str,
         comment_data: Annotated[Comment, Depends(Comment)],
@@ -36,7 +36,7 @@ def update_comments(
 ):
     return update_user_comments(comment_id, comment_data, current_user)
 
-@router.delete("/comments/{comment_id}")
+@router.delete("/comments/{comment_id}", response_model=CommentResponse)
 def delete_comments(
         comment_id: str,
         current_user: Annotated[dict, Depends(get_current_user)],):

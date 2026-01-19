@@ -1,9 +1,7 @@
 import json, os
-from typing import Optional
 from pathlib import Path
 
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "likes.json"
-
 
 def get_likes() -> list[dict]:
     if not os.path.exists(DB_FILE):

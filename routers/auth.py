@@ -116,7 +116,16 @@ async def refresh_access_token(request: Request):
     # 사용자 정보 조회
     user = find_by_id(users, token_data["userId"], id_field="userId")
     if not user:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "code": "NOT_FOUND",
+                "message": "사용자를 찾을 수 없습니다."
+            }
+        )
+
+
     # 새로운 AccessToken 발급
     new_access_token = create_access_token(
         data={"userId": user["userId"], "email": user["email"]}

@@ -1,5 +1,8 @@
 # FastAPI 앱 진입점
 from fastapi import FastAPI
+from dotenv import load_dotenv
+load_dotenv()
+
 from routers import auth, users, posts, comments, likes
 
 app = FastAPI(title="클라우드 커뮤니티 API")

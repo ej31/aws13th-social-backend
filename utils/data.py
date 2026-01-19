@@ -32,10 +32,11 @@ def load_json(filename: str) -> List[Dict[str, Any]]:
         return []
 
 
-def save_json(filename: str, data: List[Dict[str, Any]]) -> None:
+def save_json(filename: str, data: list[dict[str, Any]]) -> None:
     """
     리스트 데이터를 JSON 파일로 저장.
     디렉토리가 없으면 자동으로 생성함.
+    성공 시 True, 실패 시 False 반환.
     """
     file_path = DATA_DIR / filename
 
@@ -43,8 +44,10 @@ def save_json(filename: str, data: List[Dict[str, Any]]) -> None:
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
     except Exception as e:
-        logger.error(f"파일 저장 중 에러 발생: {e}")
+        logger.exception("파일 저장 중 에러 발생")
+        return False
 
 
 def generate_id(prefix: str, current_data: List[Dict[str, Any]]) -> str:

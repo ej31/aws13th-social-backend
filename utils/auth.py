@@ -83,7 +83,7 @@ def create_refresh_token(user_id: int) -> dict:
     토큰은 평문으로 반환되고, 해시는 DB에 저장됩니다.
     """
     token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    token_hash = hash_refresh_token(token)
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
     return {

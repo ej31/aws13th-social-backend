@@ -59,7 +59,8 @@ async def login(user: UserLogin, response: Response):
         httponly=True,  # JavaScript에서 접근 불가 (XSS 방지)
         secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",  # 개발환경에서는 False, 프로덕션에서는 True (HTTPS)
         samesite="lax",  # CSRF 방지
-        max_age=7 * 24 * 60 * 60  # 7일
+        max_age=7 * 24 * 60 * 60,  # 7일
+        path="/auth/tokens/refresh"
     )
 
     return {

@@ -3,7 +3,6 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from starlette.requests import Request
 from typing import Optional
-
 from core.config import jwt_settings
 from repositories.user_repo import get_users
 

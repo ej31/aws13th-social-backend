@@ -208,3 +208,4 @@ $RECYCLE.BIN/
 .venv
 DB/users.json
 DB/posts.json
+.env_DB

@@ -5,6 +5,7 @@ from repositories.posts_repo import get_post
 from services.likes_service import toggle_like_service, get_likes_service, get_my_likes
 from dependencies.auth import get_current_user
 from repositories.comments_repo import get_comments
+from fastapi import HTTPException
 
 router = APIRouter(tags=["likes"])
 
@@ -17,27 +18,25 @@ def toggle_like(
 
 
 @router.post("/posts/{post_id}/likes", response_model=LikeResponse)
-def like_post(post_id: str,
+def post_like_post(post_id: str,
               current_user: Annotated[dict, Depends(get_current_user)]
     ):
     posts = get_post()
-    target_comment = next((u for u in posts if u["post_id"] == post_id), None)
-    if not target_comment:
-        from fastapi import HTTPException
+    target_posts = next((u for u in posts if u["post_id"] == post_id), None)
+    if not target_posts:
         raise HTTPException(status_code=404, detail="해당 게시물을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="PostLike", target_id=post_id)
     return toggle_like_service(user_id,like_in)
 
 @router.post("/comments/{comment_id}/likes", response_model=LikeResponse)
-def like_comment(
+def post_like_comment(
     comment_id: str,
     current_user: Annotated[dict, Depends(get_current_user)]
 ):
     comments = get_comments()
     target_comment = next((u for u in comments if u["comment_id"] == comment_id), None)
     if not target_comment:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="해당 댓글을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="CommentLike", target_id=comment_id)
@@ -45,14 +44,14 @@ def like_comment(
 
 
 @router.get("/posts/{post_id}/likes", response_model=LikeResponse)
-def like_post(post_id: str,
+def get_likes_post(post_id: str,
               current_user: Annotated[dict, Depends(get_current_user)]):
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="PostLike", target_id=post_id)
     return get_likes_service(user_id,like_in)
 
 @router.get("/comments/{comment_id}/likes", response_model=LikeResponse)
-def like_comment(comment_id: str,
+def get_like_comment(comment_id: str,
                  current_user: Annotated[dict, Depends(get_current_user)]):
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="CommentLike", target_id=comment_id)

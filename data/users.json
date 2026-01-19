@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "email": "user2@example.com",
+    "nickname": "string",
+    "hashed_password": "$2b$12$y3dN8JN1WhG8711yxBOqAOrqRli6o4lPR2BoLQhu4XoeYx9v75bTa",
+    "created_at": "2026-01-19T17:27:03.307699"
+  },
+  {
+    "id": 2,
+    "email": "user@example.com",
+    "nickname": "string",
+    "hashed_password": "$2b$12$9QpFaYu.p5GV6tjEd6XV3.dVRhU40/TVGs.OQrXQah87LlGXE.ZkK",
+    "created_at": "2026-01-19T17:36:38.879236"
+  },
+  {
+    "id": 3,
+    "email": "user1@example.com",
+    "nickname": "string",
+    "hashed_password": "$2b$12$tQtkGwJI0I1YGD0mENa6seRVZMSDy9jCfzvVSzCO9gZIWIdrAv5bi",
+    "created_at": "2026-01-19T17:37:09.648959"
+  }
+]

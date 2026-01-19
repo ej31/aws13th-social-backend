@@ -19,6 +19,7 @@ def _ensure_file(path: Path, default: Any) -> None :
 def read_json(filename: str, default: Any) -> Any:
     path = DATA_DIR / filename
     _ensure_file(path, default)
+    return json.loads(path.read_text(encoding="utf-8"))
 
 def write_json(filename: str, data: Any):
     path = DATA_DIR / filename

@@ -1,7 +1,10 @@
 from fastapi import APIRouter, status, HTTPException
 from schemas.user import UserCreate, UserRegistrationResponse
 from utils.data import load_json, save_json, generate_id
+from utils.auth import hash_password
 from datetime import datetime
+
+
 
 router = APIRouter(
     prefix="/users",
@@ -30,7 +33,7 @@ def register_user(user: UserCreate):
         "email": user.email,
         "nickname": user.nickname,
         "profile_image_url": user.profile_image_url,
-        "password": user.password,  # 2단계에서 해싱 처리 예정
+        "password": hash_password(user.password),
         "created_at": datetime.now().isoformat()
     }
 

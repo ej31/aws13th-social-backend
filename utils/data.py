@@ -54,21 +54,21 @@ def generate_id(prefix: str, current_data: List[Dict[str, Any]]) -> str:
     기존 데이터가 삭제되어도 중복되지 않는 안전한 ID 생성.
     ex) user_1, user_5 -> user_6
     """
-    if not current_data:
-        return f"{prefix}_1"
+    max_id = 0
 
-    try:
-        # 기존 ID들에서 숫자 부분만 추출하여 최대값 탐색
-        existing_ids = []
-        for item in current_data:
-            id_val = item.get("id", "")
-            if "_" in id_val:
-                num_part = id_val.split("_")[-1]
-                if num_part.isdigit():
-                    existing_ids.append(int(num_part))
+    for item in current_data:
+        item_id = item.get("id")
 
-        max_id = max(existing_ids) if existing_ids else 0
-        return f"{prefix}_{max_id + 1}"
-    except Exception:
-        # 예외 발생 시 안전을 위해 리스트 길이를 활용하거나 임의 생성
-        return f"{prefix}_{len(current_data) + 1}"
+        # prefix가 다르면 무시
+        if not item_id or not item_id.startswith(f"{prefix}_"):
+            continue
+
+        try:
+            num_part = int(item_id.split("_")[-1])
+            if num_part > max_id:
+                max_id = num_part
+        except (ValueError, IndexError):
+            logger.warning(f"잘못된 형식의 ID를 발견했습니다: {item_id}")
+            continue
+
+    return f"{prefix}_{max_id + 1}"

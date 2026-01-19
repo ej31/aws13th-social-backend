@@ -753,7 +753,7 @@ GET /posts?page=0&size=10
 "status": "success",
 "data": {
 	"id": "user_123",
-	"email": "[user@example.com](mailto:user@example.com)",
+	"email": "user@example.com",
 	"nickname": "cloud_jay",
 	"profile_image_url": "https://cdn.example.com/profile/1.png",
 	"created_at": "2026-01-07T12:00:00Z"

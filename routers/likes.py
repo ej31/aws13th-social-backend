@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 from typing import Annotated
 from models.like import LikeResponse, LikeCreate
-from services.likes_service import toggle_like_service
+from repositories.posts_repo import get_post
+from services.likes_service import toggle_like_service, get_likes_service, get_my_likes
 from dependencies.auth import get_current_user
+from repositories.comments_repo import get_comments
 
 router = APIRouter(tags=["likes"])
 
@@ -18,36 +20,46 @@ def toggle_like(
 def like_post(post_id: str,
               current_user: Annotated[dict, Depends(get_current_user)]
     ):
+    posts = get_post()
+    target_comment = next((u for u in posts if u["post_id"] == post_id), None)
+    if not target_comment:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="해당 게시물을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="PostLike", target_id=post_id)
     return toggle_like_service(user_id,like_in)
-
 
 @router.post("/comments/{comment_id}/likes", response_model=LikeResponse)
 def like_comment(
     comment_id: str,
     current_user: Annotated[dict, Depends(get_current_user)]
 ):
+    comments = get_comments()
+    target_comment = next((u for u in comments if u["comment_id"] == comment_id), None)
+    if not target_comment:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="해당 댓글을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="CommentLike", target_id=comment_id)
     return toggle_like_service(user_id, like_in)
 
-# @router.get("/likes/me")
-# def like_me(current_user: Annotated[dict, Depends(get_current_user)]):
-#     return get_my_likes(current_user)
-#
-# @router.get("posts/{post_id}/likes", response_model=LikesResponsePost)
-# def like_post(post_id: str,current_user: Annotated[dict, Depends(get_current_user)]):
-#     return get_like_post(post_id,current_user)
-#
-# @router.get("/comments/{comment_id}/likes", response_model=LikesResponseComment)
-# def like_comment(comment_id: str,current_user: Annotated[dict, Depends(get_current_user)]):
-#     return get_like_comment(comment_id,current_user)
-#
-# @router.delete("/posts/{post_id}/likes", response_model=LikesResponsePost)
-# def like_post(post_id: str, current_user: Annotated[dict, Depends(get_current_user)]):
-#     return delete_post_commet(post_id,current_user)
-#
-# @router.delete("/comments/{comment_id}/likes", response_model=LikesResponseComment)
-# def like_comment(comment_id: str, current_user: Annotated[dict, Depends(get_current_user)]):
-#     return delete_like_comment(comment_id,current_user)
+
+@router.get("/posts/{post_id}/likes", response_model=LikeResponse)
+def like_post(post_id: str,
+              current_user: Annotated[dict, Depends(get_current_user)]):
+    user_id = current_user["user_id"]
+    like_in = LikeCreate(target_type="PostLike", target_id=post_id)
+    return get_likes_service(user_id,like_in)
+
+@router.get("/comments/{comment_id}/likes", response_model=LikeResponse)
+def like_comment(comment_id: str,
+                 current_user: Annotated[dict, Depends(get_current_user)]):
+    user_id = current_user["user_id"]
+    like_in = LikeCreate(target_type="CommentLike", target_id=comment_id)
+    return get_likes_service(user_id,like_in)
+
+@router.get("/likes/me")
+def like_me(current_user: Annotated[dict, Depends(get_current_user)]):
+    user_id = current_user["user_id"]
+    return get_my_likes(user_id)
+

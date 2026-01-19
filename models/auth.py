@@ -92,8 +92,8 @@ def signup_form_reader(
     email: Annotated[EmailStr, Form(...)],
     password: Annotated[str, Form(...)],
     password_confirm: Annotated[str, Form(...)],
-    nickname: Optional[Annotated[str, Form(None)]] = None,
-    profile_image_url: Optional[Annotated[HttpUrl, Form(None)]] = None
+    nickname: Annotated[Optional[str], Form(...)] = None,
+    profile_image_url: Annotated[Optional[HttpUrl], Form(...)] = None
 ) -> UserSignUp:
     return UserSignUp(
         email=email,
@@ -110,10 +110,10 @@ def login_form_reader(
     return UserLogin(username=email, password=password)
 
 def update_form_reader(
-    email: Optional[Annotated[EmailStr, Form(None)]] = None,
-    password: Optional[Annotated[str, Form(None)]] = None,
-    nickname: Optional[Annotated[str, Form(None)]] = None,
-    profile_image_url: Optional[Annotated[HttpUrl, Form(None)]] = None
+    email: Annotated[Optional[EmailStr], Form(...)] = None,
+    password: Annotated[Optional[str], Form(...)] = None,
+    nickname: Annotated[Optional[str], Form(...)] = None,
+    profile_image_url: Annotated[Optional[HttpUrl], Form(...)] = None
 ) -> UserUpdate:
     return UserUpdate(
         email=email,

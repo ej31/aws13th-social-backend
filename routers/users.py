@@ -47,7 +47,7 @@ async def update_user(
         update_data : Annotated[UserUpdate, Depends(update_form_reader)],
         current_user:  Annotated[dict, Depends(get_current_user)]
 ):
-    patch_dict = update_data.model_dump(exclude_unset=True, mode="json")
+    patch_dict = update_data.model_dump(exclude_unset=True, exclude_none=True,mode="json")
     return update_my_profile(current_user, patch_dict)
 
 @router.delete("/users/me",status_code=status.HTTP_200_OK)

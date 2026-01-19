@@ -110,7 +110,7 @@ async def update_user(user: UserUpdate, current_user: dict = Depends(get_current
 
     if user.nickname:
         update_data["nickname"] = user.nickname
-    if user.profileImage is not None:
+    if "profileImage" in user.model_fields_set:
         update_data["profileImage"] = user.profileImage
 
     # 업데이트

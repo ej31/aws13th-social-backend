@@ -95,7 +95,7 @@ def find_user_by_email(email: str) -> dict | None:
 #----- Oauth 2.0 Bearer 선언 & 토큰 디코딩 및 로그인 인증 --------- TODO : 추후 인증 미들웨어로 따로 분리 해야함!!
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 def auth_user_with_token_decoding(token: str = Depends(oauth2_scheme)):
-    user_info = None
+
     try:
         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
 
@@ -114,7 +114,10 @@ def auth_user_with_token_decoding(token: str = Depends(oauth2_scheme)):
     if user_id is None:
         raise HTTPException(status_code=401, detail="토큰 인증 정보가 유효하지 않습니다. ")
 
-    return find_user_by_id(user_id)
+    user = find_user_by_id(user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="일치하는 회원 정보가 없습니다. ")
+    return user
 
 
 # ----- 첫번째. 회원 가입 메서드 시작
@@ -245,9 +248,11 @@ async def patch_users_my_page(
     if not any([nickname, password, profile_image]):
         raise HTTPException(status_code=400, detail="닉네임, 비밀번호, 프로필 이미지 중 최소 1개는 선택해야 합니다.")
     # 1. 닉네임 변경이 요청된 경우 -- 일단 규칙 확인 후 중복 검사 (코드 리뷰에서 pythonic하게 변경)
-    if any(i["nickname"] == nickname and i["user_id"] != user["user_id"] for i in demo_db):
-        raise HTTPException(status_code=409, detail="해당 닉네임은 이미 존재합니다.")
-    user["nickname"] = nickname
+    if nickname:
+        validate_nickname(nickname) # 코드리뷰 반영 - 추가 검증 로직
+        if any(i["nickname"] == nickname and i["user_id"] != user["user_id"] for i in demo_db):
+            raise HTTPException(status_code=409, detail="해당 닉네임은 이미 존재합니다.")
+        user["nickname"] = nickname
     # 2. 비밀번호 변경이 요청된 경우 -- 회원가입 로직과 동일함.
     if password:
         validate_password(password)
@@ -290,7 +295,6 @@ async def delete_users_my_page(
     return {
         "status": "success",
         "message": "유저가 탈퇴처리 되었습니다.",
-        "user_id": user["user_id"],
         "data": {
             "user_id": user["user_id"]
         }

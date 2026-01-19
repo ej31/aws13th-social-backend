@@ -1,7 +1,19 @@
 import json, os
 from typing import Optional
 from pathlib import Path
+from pymysql.cursors import DictCursor
+
+from core.db_connection import get_db_connection
+
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "users.json"
+
+
+def get_users_db():
+    conn = get_db_connection()
+    with conn:
+        with DictCursor(conn) as cursor:
+            cursor.execute("SELECT * FROM users")
+            return cursor.fetchall()
 
 def get_users():
     if not os.path.exists(DB_FILE):

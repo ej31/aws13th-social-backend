@@ -17,5 +17,5 @@ class CommentResponse(BaseModel):
     created_at: datetime
 
 class AllComments(BaseModel):
-    total :int
+    total: int
     comments: List[CommentResponse]

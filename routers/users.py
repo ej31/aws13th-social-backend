@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
-from models.auth import UserSignUp, UserLogin, UserUpdate
+from models.auth import UserSignUp, UserLogin, UserUpdate, signup_form_reader, update_form_reader
 from models.user import AuthResponse, UserPublic
 from services.auth_service import signup_user, login_user
 from services.user_service import get_my_profile,get_user_profile,update_my_profile,delete_my_account
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 router = APIRouter(tags=["users"])
 
 @router.post("/auth/signup",response_model=AuthResponse,status_code=status.HTTP_201_CREATED)
-async def signup(form_data: Annotated[UserSignUp, Depends(UserSignUp.as_form)]):
+async def signup(form_data: Annotated[UserSignUp, Depends(signup_form_reader)]):
     user, token, expires = signup_user(form_data)
     return AuthResponse(
         access_token=token,
@@ -44,7 +44,7 @@ async def get_user(user_id: str):
 
 @router.patch("/users/me",response_model=UserPublic)
 async def update_user(
-        update_data : Annotated[UserUpdate, Depends(UserUpdate.as_form)],
+        update_data : Annotated[UserUpdate, Depends(update_form_reader)],
         current_user:  Annotated[dict, Depends(get_current_user)]
 ):
     patch_dict = update_data.model_dump(exclude_unset=True, mode="json")

@@ -7,7 +7,6 @@
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -18,8 +17,8 @@ from utils.data import read_json
 
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM" , "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60)
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES","60"))
 # os.getenv(a,b) .env or 환경변수에 a 이름 있으면 앞에꺼 없으면 뒤에꺼(기본값)
 # 그리고 os.getenv 쓰려면 환경변수 등록하거나 .env 파일에 정의해두고 main 에서 앱 실행 후 load_dotenv() 한번만 해주면 됨.
 
@@ -40,12 +39,13 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed_password: str) -> bool:
     return pwd_context.verify(password, hashed_password)
 
-def create_access_token(subject: str, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
+def create_access_token(subject: str, expired_in = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": subject,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=expires_minutes)).timestamp()),
+        "exp": int((now + timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))).timestamp())
+
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 

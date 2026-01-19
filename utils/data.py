@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, List, Dict, Optional
 
 # 로깅 설정 (디버깅 및 에러 추적 용도)
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 프로젝트 루트 기준 data 디렉토리 설정

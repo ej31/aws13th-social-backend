@@ -2,8 +2,10 @@ import uuid
 from datetime import datetime,timezone
 from models.like import LikeCreate, LikeResponse
 from repositories.likes_repo import get_likes, save_likes
+from typing import Optional, Annotated, Any, Generator,List
 
-def toggle_like_service(user_id: str , like_in: LikeCreate):
+
+def toggle_like_service(user_id: str, like_in: LikeCreate):
     likes = get_likes()
 
     existing_like = next((l for l in likes if l["user_id"] == user_id
@@ -27,8 +29,8 @@ def toggle_like_service(user_id: str , like_in: LikeCreate):
 
     save_likes(likes)
 
-    current_total = len([l for l in likes if l["target_id"] == like_in.target_id
-                         and l["target_type"] == like_in.target_type])
+    current_total = len([like for like in likes if like["target_id"] == like_in.target_id
+                         and like["target_type"] == like_in.target_type])
 
     return LikeResponse(
         target_type=like_in.target_type,
@@ -39,28 +41,43 @@ def toggle_like_service(user_id: str , like_in: LikeCreate):
         total_likes=current_total
     )
 
+
 #
-# def write_like_post(post_id :str, current_user:dict) -> dict:
+# def get_likes_service(user_id: str , like_in: LikeCreate) -> dict:
+#     likes = get_likes()
 #
-#     return
-#
-# def write_like_comment(comment_id: str, current_user: dict) -> dict:
-#
-#     return
-#
-# def get_like_post(post_id: str, current_user: dict) -> dict:
-#
-#     return
-#
-# def get_like_comment(comment_id: str, current_user: dict) -> dict:
-#
-#     return
-#
-# def delete_post_commet(post_id: str, current_user: dict) -> dict:
-#     return
-#
-# def delete_like_comment(comment_id: str, current_user: dict) -> dict:
-#     return
-#
-# def get_my_likes(current_user: dict) -> dict:
-#     return
+#     existing_like = next((l for l in likes if l["user_id"] == user_id
+#                           and l["target_type"] == like_in.target_type
+#                           and l["target_id"] == like_in.target_id), None)
+#     # print(existing_like)
+#     return existing_like
+
+def get_likes_service(user_id: str, like_in: LikeCreate ) -> Optional[LikeResponse]:
+    likes = get_likes()
+    existing = next((like for like in likes if like["user_id"] == user_id
+                     and like["target_type"] == like_in.target_type
+                     and like["target_id"] == like_in.target_id), None)
+    current_total = len([like for like in likes if like["target_id"] == like_in.target_id])
+    if not existing:
+        # 좋아요 정보가 없더라도 기본값을 채워서 반환해야 에러가 안 납니다.
+        return LikeResponse(
+            target_type=like_in.target_type,
+            target_id=like_in.target_id,
+            like_id="",  # 혹은 None (모델 설정에 따라 다름)
+            user_id=user_id,
+            is_liked=False,
+            total_likes=current_total
+        )
+
+        # 3. 모델에 필요한 모든 데이터를 합쳐서 반환
+    return LikeResponse(
+        **existing,
+        is_liked=True,
+        total_likes=current_total
+    )
+
+def get_my_likes(user_id: str) -> List[LikeResponse]:
+    likes = get_likes()
+    existing = (like for like in likes if like["user_id"] == user_id)
+    return existing
+

@@ -32,7 +32,7 @@ def load_json(filename: str) -> List[Dict[str, Any]]:
         return []
 
 
-def save_json(filename: str, data: list[dict[str, Any]]) -> None:
+def save_json(filename: str, data: list[dict[str, Any]]) -> bool:
     """
     리스트 데이터를 JSON 파일로 저장.
     디렉토리가 없으면 자동으로 생성함.

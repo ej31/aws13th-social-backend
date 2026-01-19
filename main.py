@@ -1,6 +1,6 @@
 import re
 from typing import Annotated
-from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends, status
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File, Depends
 from pydantic import EmailStr
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
@@ -264,5 +264,46 @@ async def patch_users_my_page(
             "profile_image_url": user["profile_image_url"],
             "users_created_time": user["users_created_time"],
             "users_modified_time": user["users_modified_time"]
+        }
+    }
+
+# ----- 다섯번째, 내 프로필 삭제 메서드 구현
+@app.delete("/users/my-page")
+async def delete_users_my_page(
+        user: dict = Depends(auth_user_with_token_decoding)
+):
+    # 데모 db에서 현재 사용자 제거
+    for i, j in enumerate(demo_db):
+        if j["user_id"] == user["user_id"]:
+            del demo_db[i]
+            break
+
+    return {
+        "status": "success",
+        "message": "유저가 탈퇴처리 되었습니다.",
+        "user_id": user["user_id"]
+    }
+
+# ----- 여섯번째, 다른 사용자의 프로필 조회 메서드 구현
+@app.get("/users/{user_id}")
+async def get_users_user_id(user_id : str):
+    #로그인 인증 함수와 동일한 로직 적용
+    user = None
+    for i in demo_db:
+        if i["user_id"] == user_id:
+            user = i
+            break
+    if user is None:
+        raise HTTPException(status_code=404, detail="일치하는 회원 정보가 없습니다.")
+
+    return {
+        "status": "success",
+        "message": "요청한 회원 프로필 정보 조회에 성공했습니다.",
+        "data": {
+            "user_id": user_id,
+            "email_address": user["email_address"],
+            "nickname": user["nickname"],
+            "profile_image_url": user["profile_image_url"],
+            "users_created_time": user["users_created_time"]
         }
     }

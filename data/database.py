@@ -1,9 +1,15 @@
+import os
+from dotenv import load_dotenv
+
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-#데이터 베이스 창구...? 여는법이라는데
-SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:kst500132*@localhost:3306/fastapi_assignment"
+
+load_dotenv()
+
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

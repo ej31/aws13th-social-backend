@@ -13,10 +13,8 @@ class DuplicateResourceError(Exception):
     def __init__(self, field: str):
         self.field = field
 
-
 class UserCreateFailedError(Exception):
     pass
-
 
 def create_user(user: UserCreate) -> Dict[str, Any]:
     users = load_json("users.json")
@@ -47,11 +45,5 @@ def create_user(user: UserCreate) -> Dict[str, Any]:
 
         return new_user
     except Exception as e:
-        logger.exception(
-            "회원 생성 중 예외 발생",
-            extra={
-                "email": user.email,
-                "nickname": user.nickname,
-            },
-        )
+        logger.exception("회원 생성 중 예외 발생")
         raise UserCreateFailedError()

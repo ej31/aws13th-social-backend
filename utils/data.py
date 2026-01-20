@@ -10,13 +10,25 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 
+ALLOWED_FILES = {"users.json", "posts.json", "comments.json", "likes.json"}
 
+def safe_path(filename: str) -> Path:
+    if filename not in ALLOWED_FILES:
+        raise ValueError("허용되지 않은 파일 접근")
+
+    file_path = (DATA_DIR / filename).resolve()
+
+    # DATA_DIR 밖으로 나가는지 검사
+    if not str(file_path).startswith(str(DATA_DIR.resolve())):
+        raise ValueError("Path Traversal 감지됨")
+
+    return file_path
 def load_json(filename: str) -> List[Dict[str, Any]]:
     """
     JSON 파일을 읽어 리스트 형태로 반환.
     파일이 없거나 손상된 경우 빈 리스트 반환.
     """
-    file_path = DATA_DIR / filename
+    file_path = safe_path(filename)
 
     if not file_path.exists():
         return []
@@ -24,12 +36,14 @@ def load_json(filename: str) -> List[Dict[str, Any]]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
+
     except json.JSONDecodeError as e:
-        logger.error(f"JSON 파싱 에러 ({filename}): {e}")
-        return []
-    except Exception as e:
-        logger.error(f"파일 로드 중 알 수 없는 에러: {e}")
-        return []
+        logger.critical(f"JSON 파일 손상: {filename}")
+        raise RuntimeError("데이터 파일 손상")
+
+    except Exception:
+        logger.exception("파일 로드 실패")
+        raise
 
 
 def save_json(filename: str, data: list[dict[str, Any]]) -> bool:

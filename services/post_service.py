@@ -20,11 +20,11 @@ class PostService:
         self.like_repo = like_repo
 
     @staticmethod
-    def _verify_author(post: dict, current_user_id: int) -> None:
+    def _post_verify_author(post: dict, current_user_id: int) -> None:
         """현재 사용자와 글쓴이가 맞는지 확인"""
         if post["author_id"] != current_user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="해당 댓글에 대한 수정/삭제 권한이 없습니다.")
+                                detail="해당 게시글에 대한 수정/삭제 권한이 없습니다.")
 
     def _assemble_post_response(self, post_data: dict, current_user_id: int | None = None) -> dict | None:
         """게시글 데이터에 author 및 실시간 좋아요 정보를 합쳐 응답 규격을 맞춤"""
@@ -63,7 +63,7 @@ class PostService:
         # 생성 직후에는 본인이 좋아요를 누른 상태가 아니므로 author_id를 넘기지 않거나 로직에 따라 처리
         return self._assemble_post_response(saved_post, author_id)
 
-    async def get_posts(self, page: int = 1, limit: int = 10, current_user_id: str | None = None):
+    async def get_post(self, page: int = 1, limit: int = 10, current_user_id: int | None = None):
         all_posts = self.post_repo.find_all()
         all_posts.sort(key=lambda x: x["created_at"], reverse=True)
 
@@ -75,7 +75,7 @@ class PostService:
         paged_post_data = [self._assemble_post_response(post, current_user_id) for post in paged_post]
         return paged_post_data, len(all_posts)
 
-    async def get_posts_detail(self, post_id: int, current_user_id: str | None = None) -> dict:
+    async def get_post_detail(self, post_id: int, current_user_id: int | None = None) -> dict:
         self.post_repo.increment_views(post_id)
         posts_data = self.post_repo.find_by_id(post_id)
         if not posts_data:
@@ -85,13 +85,13 @@ class PostService:
         # 상세 조회 시에도 현재 유저 ID를 넘겨야 is_liked가 계산됨
         return self._assemble_post_response(posts_data, current_user_id)
 
-    async def update_posts(self, post_id: int, req: PostsUpdateRequest, author_id: int):
+    async def update_post(self, post_id: int, req: PostsUpdateRequest, author_id: int):
         post = self.post_repo.find_by_id(post_id)
         if not post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="게시글이 존재하지 않습니다.")
 
-        self._verify_author(post, author_id)
+        self._post_verify_author(post, author_id)
 
         update_data = req.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -100,11 +100,11 @@ class PostService:
         updated_post = self.post_repo.save(post)
         return self._assemble_post_response(updated_post, author_id)
 
-    async def delete_posts(self, post_id: int, author_id: int) -> bool:
+    async def delete_post(self, post_id: int, author_id: int) -> bool:
         post = self.post_repo.find_by_id(post_id)
         if not post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="게시글이 존재하지 않습니다.")
-        self._verify_author(post, author_id)
+        self._post_verify_author(post, author_id)
 
         return self.post_repo.delete(post_id)

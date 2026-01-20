@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException,status
 
-from common.security import encode_id, decode_id
+from common.security import encode_id
 from repositories.comment_repository import CommentRepository
 from repositories.post_repository import PostRepository
 from repositories.user_repository import UserRepository
@@ -34,7 +34,7 @@ class CommentService:
         }
 
     @staticmethod
-    def _verify_author(comment: dict, current_user_id: str) -> None:
+    def _comment_verify_author(comment: dict, current_user_id: str) -> None:
         """현재 사용자와 댓글 글쓴이가 맞는지 확인"""
         if comment["author_id"] != current_user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -76,7 +76,7 @@ class CommentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="댓글이 존재하지 않습니다.")
 
-        self._verify_author(comment, author_id)
+        self._comment_verify_author(comment, author_id)
 
         update_data= req.model_dump(exclude_none=True)
 
@@ -92,12 +92,11 @@ class CommentService:
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="댓글이 존재하지 않습니다.")
-        self._verify_author(comment, author_id)
+        self._comment_verify_author(comment, author_id)
 
         is_deleted = self.comment_repo.delete(comment_id)
 
         if not is_deleted:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                                 detail="서버 오류가 발생했습니다.")
-
         return True

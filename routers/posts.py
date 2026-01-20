@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, Form, UploadFile, File, Depends
 
-from database import demo_db, generate_post_id, find_user_by_id, find_user_by_email
+from database import demo_db_posts, generate_post_id, find_user_by_id, find_user_by_email
 from utils.auth import hash_password, verify_password, create_access_token, get_current_user, REFRESH_TOKEN_EXPIRE_DAYS, ACCESS_TOKEN_EXPIRE_MINUTES
 from utils.data_validator import validate_and_process_image
 
@@ -22,13 +22,16 @@ async def post_posts(
         contents_image_url = await validate_and_process_image(contents_image)
     # post_id 부여
     post_id = generate_post_id()
+    # ----- 코드 리뷰 반영, 게시물 생성 시간 통일
+    posts_created_time = datetime.now(timezone.utc).strftime('%Y.%m.%d - %H:%M:%S')
     # DB 저장 ------------------------- 지금은 임시 데모용 DB에 등록 ---------
-    demo_db.append({
+    demo_db_posts.append({
         "post_id" : post_id,
         "title" : title,
         "contents" : contents,
         "contents_image_url" : contents_image_url,
-        "posts_created_time" : datetime.now(timezone.utc).strftime('%Y.%m.%d - %H:%M:%S'),
+        "author_id" : user["user_id"], # ----- 코드리뷰 반영, 추후 작성자 정보 반환 필요함
+        "posts_created_time" : posts_created_time,
         "posts_modified_time" : None
     })
     return {
@@ -44,6 +47,6 @@ async def post_posts(
                 "email_address" : user["email_address"],
                 "nickname" : user["nickname"]
             },
-            "posts_created_time": datetime.now(timezone.utc).strftime('%Y.%m.%d - %H:%M:%S'),
+            "posts_created_time": posts_created_time,
         }
     }

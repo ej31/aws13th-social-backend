@@ -3,7 +3,6 @@
 - 좋아요 등록
 - 좋아요 취소
 - 좋아요 상태 확인
-- 내가 좋아요한 게시글 목록
 """
 from fastapi import APIRouter, HTTPException, status, Query
 from math import ceil
@@ -137,59 +136,4 @@ def get_like_status(
             total_likes=total_likes,
             is_liked=is_liked
         )
-    )
-
-
-@router.get("/users/me/likes", response_model=APIResponse[dict])
-def get_my_likes(
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    current_user: CurrentUser = None,
-    like_repo: LikeRepo = None,
-    post_repo: PostRepo = None
-):
-    """
-    내가 좋아요한 게시글 목록
-    """
-    # 내 좋아요 조회
-    likes, total = like_repo.find_by_user_id_with_pagination(
-        user_id=current_user["user_id"],
-        page=page,
-        limit=limit
-    )
-    
-    # 게시글 정보 조회
-    post_responses = []
-    for like in likes:
-        post = post_repo.find_by_post_id(like["post_id"])
-        if post:  # 게시글이 삭제되지 않은 경우만
-            post_responses.append(PostResponse(
-                post_id=post["post_id"],
-                title=post["title"],
-                content=post["content"],
-                author=PostAuthorInfo(
-                    user_id=post["author_id"],
-                    nickname=post["author_nickname"],
-                    profile_image=post["author_profile_image"]
-                ),
-                views=post["views"],
-                likes=post["likes"],
-                comments_count=post["comments_count"],
-                created_at=post["created_at"],
-                updated_at=post["updated_at"]
-            ))
-    
-    total_pages = ceil(total / limit) if total > 0 else 0
-    
-    return APIResponse(
-        status="success",
-        data={
-            "data": post_responses,
-            "pagination": PaginationResponse(
-                page=page,
-                limit=limit,
-                total=total,
-                total_pages=total_pages
-            )
-        }
     )

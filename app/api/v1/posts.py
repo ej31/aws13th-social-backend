@@ -5,7 +5,6 @@
 - 게시글 작성
 - 게시글 수정
 - 게시글 삭제
-- 내가 쓴 게시글 목록
 """
 from typing import Literal
 from fastapi import APIRouter, HTTPException, status, Query
@@ -275,66 +274,3 @@ def delete_post(
         )
     
     return None
-
-
-@router.get("/users/me/posts", response_model=APIResponse[dict])
-def get_my_posts(
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    sort: Literal["latest", "views", "likes"] = Query(default="latest"),
-    current_user: CurrentUser = None,
-    post_repo: PostRepo = None
-):
-    """
-    내가 쓴 게시글 목록
-    """
-    # 내 게시글 조회
-    my_posts = post_repo.find_by_author_id(current_user["user_id"])
-    
-    # 정렬
-    if sort == "latest":
-        my_posts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    elif sort == "views":
-        my_posts.sort(key=lambda x: x.get("views", 0), reverse=True)
-    elif sort == "likes":
-        my_posts.sort(key=lambda x: x.get("likes", 0), reverse=True)
-    
-    # 페이지네이션
-    total = len(my_posts)
-    start = (page - 1) * limit
-    end = start + limit
-    paginated_posts = my_posts[start:end]
-    
-    # 응답 데이터 변환
-    post_responses = []
-    for post in paginated_posts:
-        post_responses.append(PostResponse(
-            post_id=post["post_id"],
-            title=post["title"],
-            content=post["content"],
-            author=PostAuthorInfo(
-                user_id=post["author_id"],
-                nickname=post["author_nickname"],
-                profile_image=post["author_profile_image"]
-            ),
-            views=post["views"],
-            likes=post["likes"],
-            comments_count=post["comments_count"],
-            created_at=post["created_at"],
-            updated_at=post["updated_at"]
-        ))
-    
-    total_pages = ceil(total / limit) if total > 0 else 0
-    
-    return APIResponse(
-        status="success",
-        data={
-            "data": post_responses,
-            "pagination": PaginationResponse(
-                page=page,
-                limit=limit,
-                total=total,
-                total_pages=total_pages
-            )
-        }
-    )

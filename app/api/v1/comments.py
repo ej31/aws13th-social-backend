@@ -4,7 +4,6 @@
 - 댓글 작성
 - 댓글 수정
 - 댓글 삭제
-- 내가 쓴 댓글 목록
 """
 from fastapi import APIRouter, HTTPException, status, Query
 from math import ceil
@@ -230,52 +229,3 @@ def delete_comment(
     post_repo.decrement_comments_count(post_id)
     
     return None
-
-
-@router.get("/users/me/comments", response_model=APIResponse[dict])
-def get_my_comments(
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    current_user: CurrentUser = None,
-    comment_repo: CommentRepo = None
-):
-    """
-    내가 쓴 댓글 목록
-    """
-    # 내 댓글 조회
-    comments, total = comment_repo.find_by_author_id_with_pagination(
-        author_id=current_user["user_id"],
-        page=page,
-        limit=limit
-    )
-    
-    # 응답 데이터 변환
-    comment_responses = []
-    for comment in comments:
-        comment_responses.append(CommentResponse(
-            comment_id=comment["comment_id"],
-            post_id=comment["post_id"],
-            content=comment["content"],
-            author=UserAuthorInfo(
-                user_id=comment["author_id"],
-                nickname=comment["author_nickname"],
-                profile_image=comment["author_profile_image"]
-            ),
-            created_at=comment["created_at"],
-            updated_at=comment["updated_at"]
-        ))
-    
-    total_pages = ceil(total / limit) if total > 0 else 0
-    
-    return APIResponse(
-        status="success",
-        data={
-            "data": comment_responses,
-            "pagination": PaginationResponse(
-                page=page,
-                limit=limit,
-                total=total,
-                total_pages=total_pages
-            )
-        }
-    )

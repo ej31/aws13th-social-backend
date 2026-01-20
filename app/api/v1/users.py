@@ -5,8 +5,13 @@
 - 프로필 수정
 - 회원 탈퇴
 - 특정 회원 조회
+- 내가 쓴 게시글 목록
+- 내가 쓴 댓글 목록
+- 내가 좋아요한 게시글 목록
 """
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query
+from typing import Literal
+from math import ceil
 
 from app.schemas.user import (
     UserSignupRequest,
@@ -14,8 +19,11 @@ from app.schemas.user import (
     UserProfileResponse,
     UserPublicResponse
 )
-from app.schemas.common import APIResponse
-from app.api.deps import UserRepo, CurrentUser
+from app.schemas.post import PostResponse, PostAuthorInfo
+from app.schemas.comment import CommentResponse
+from app.schemas.common import APIResponse, PaginationResponse
+from app.schemas.user import UserAuthorInfo
+from app.api.deps import UserRepo, CurrentUser, PostRepo, CommentRepo, LikeRepo
 
 router = APIRouter()
 
@@ -171,4 +179,173 @@ def get_user_profile(
     return APIResponse(
         status="success",
         data=user_response
+    )
+    
+@router.get("/me/posts", response_model=APIResponse[dict])
+def get_my_posts(
+    current_user: CurrentUser,
+    post_repo: PostRepo,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    sort: Literal["latest", "views", "likes"] = Query(default="latest")
+):
+    # 기본값이 없는 매개변수는 기본값이 있는 매개변수보다 앞에 와야 함
+    
+    """
+    내가 쓴 게시글 목록
+    """
+    # 내 게시글 조회
+    my_posts = post_repo.find_by_author_id(current_user["user_id"])
+    
+    # 정렬
+    if sort == "latest":
+        my_posts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    elif sort == "views":
+        my_posts.sort(key=lambda x: x.get("views", 0), reverse=True)
+    elif sort == "likes":
+        my_posts.sort(key=lambda x: x.get("likes", 0), reverse=True)
+    
+    # 페이지네이션
+    total = len(my_posts)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated_posts = my_posts[start:end]
+    
+    # 응답 데이터 변환
+    post_responses = []
+    for post in paginated_posts:
+        post_responses.append(PostResponse(
+            post_id=post["post_id"],
+            title=post["title"],
+            content=post["content"],
+            author=PostAuthorInfo(
+                user_id=post["author_id"],
+                nickname=post["author_nickname"],
+                profile_image=post["author_profile_image"]
+            ),
+            views=post["views"],
+            likes=post["likes"],
+            comments_count=post["comments_count"],
+            created_at=post["created_at"],
+            updated_at=post["updated_at"]
+        ))
+    
+    total_pages = ceil(total / limit) if total > 0 else 0
+    
+    return APIResponse(
+        status="success",
+        data={
+            "data": post_responses,
+            "pagination": PaginationResponse(
+                page=page,
+                limit=limit,
+                total=total,
+                total_pages=total_pages
+            )
+        }
+    )
+
+
+@router.get("/me/comments", response_model=APIResponse[dict])
+def get_my_comments(
+    current_user: CurrentUser,
+    comment_repo: CommentRepo,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100)
+):
+    """
+    내가 쓴 댓글 목록
+    """
+    # 내 댓글 조회
+    comments, total = comment_repo.find_by_author_id_with_pagination(
+        author_id=current_user["user_id"],
+        page=page,
+        limit=limit
+    )
+    
+    # 응답 데이터 변환
+    comment_responses = []
+    for comment in comments:
+        comment_responses.append(CommentResponse(
+            comment_id=comment["comment_id"],
+            post_id=comment["post_id"],
+            content=comment["content"],
+            author=UserAuthorInfo(
+                user_id=comment["author_id"],
+                nickname=comment["author_nickname"],
+                profile_image=comment["author_profile_image"]
+            ),
+            created_at=comment["created_at"],
+            updated_at=comment["updated_at"]
+        ))
+    
+    total_pages = ceil(total / limit) if total > 0 else 0
+    
+    return APIResponse(
+        status="success",
+        data={
+            "data": comment_responses,
+            "pagination": PaginationResponse(
+                page=page,
+                limit=limit,
+                total=total,
+                total_pages=total_pages
+            )
+        }
+    )
+
+
+@router.get("/me/likes", response_model=APIResponse[dict])
+def get_my_likes(
+    current_user: CurrentUser,
+    like_repo: LikeRepo,
+    post_repo: PostRepo,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100)
+  
+):
+    """
+    내가 좋아요한 게시글 목록
+    """
+    # 내 좋아요 조회
+    likes, total = like_repo.find_by_user_id_with_pagination(
+        user_id=current_user["user_id"],
+        page=page,
+        limit=limit
+    )
+    
+    # 게시글 정보 조회
+    post_responses = []
+    for like in likes:
+        post = post_repo.find_by_post_id(like["post_id"])
+        if post:  # 게시글이 삭제되지 않은 경우만
+            post_responses.append(PostResponse(
+                post_id=post["post_id"],
+                title=post["title"],
+                content=post["content"],
+                author=PostAuthorInfo(
+                    user_id=post["author_id"],
+                    nickname=post["author_nickname"],
+                    profile_image=post["author_profile_image"]
+                ),
+                views=post["views"],
+                likes=post["likes"],
+                comments_count=post["comments_count"],
+                created_at=post["created_at"],
+                updated_at=post["updated_at"]
+            ))
+    
+    total_pages = ceil(total / limit) if total > 0 else 0
+    
+    return APIResponse(
+        status="success",
+        data={
+            "data": post_responses,
+            "pagination": PaginationResponse(
+                page=page,
+                limit=limit,
+                total=total,
+                total_pages=total_pages
+            )
+        }
     )

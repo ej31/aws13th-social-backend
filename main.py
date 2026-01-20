@@ -435,8 +435,6 @@ def create_comment(
     def post_exists(post_id):
         posts = load_data(POSTS_FILE)
 
-
-        posts = load_data(POSTS_FILE)
         if len(posts) == 0:
             raise HTTPException(status_code=404, detail="게시글이 없습니다.")
 

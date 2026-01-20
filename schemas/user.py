@@ -111,7 +111,7 @@ class OtherUserProfileResponse(BaseModel):
 
 
 # 내가쓴 게시글 목록
-class PostSummary(BaseModel):
+class UserPostSummary(BaseModel):
     post_id: str
     title: str
     created_at: datetime
@@ -125,7 +125,7 @@ class Pagination(BaseModel):
 
 class MyPostsResponse(BaseModel):
     status: str = "success"
-    data: list[PostSummary]
+    data: list[UserPostSummary]
     pagination: Pagination
 
 

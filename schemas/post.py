@@ -9,7 +9,7 @@ class AuthorInfo(BaseModel):
     author_email: str
     nickname: str
 # 2. 게시글 요약정보
-class PostSummary(BaseModel):
+class PostPostSummary(BaseModel):
     post_id: str
     title: str
     author: AuthorInfo
@@ -22,17 +22,17 @@ class Pagination(BaseModel):
 # 4. 출력 정보
 class PostListResponse(BaseModel):
     status: str = 'success'
-    data: List[PostSummary]
+    data: list[PostPostSummary]
     pagination: Pagination
 # 게시글 검색
 class PostSearchResponse(BaseModel):
     status: str = 'success'
-    data: List[PostSummary]
+    data: list[PostPostSummary]
     pagination: Pagination
 # 게시글 정렬
 class PostSortedResponse(BaseModel):
     status: str = 'success'
-    data: List[PostSummary]
+    data: list[PostPostSummary]
     pagination: Pagination
 # 게시글 상세 조회
 # 게시글 상세 내역
@@ -57,7 +57,7 @@ class CommentItem(BaseModel):
     title: str
 class CommentListResponse(BaseModel):
     status: str = 'success'
-    data: List[CommentItem]
+    data: list[CommentItem]
     pagination: Pagination
 # 좋아요 상태 확인
 class PostLikeStatus(BaseModel):

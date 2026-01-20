@@ -432,7 +432,21 @@ def create_comment(
     comment: CommentCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    comments = load_data(COMMENTS_FILE)
+    def post_exists(post_id):
+        posts = load_data(POSTS_FILE)
+
+
+        posts = load_data(POSTS_FILE)
+        if len(posts) == 0:
+            raise HTTPException(status_code=404, detail="게시글이 없습니다.")
+
+        for p in posts:
+            if p.get("postId") == post_id:
+                return
+
+        raise HTTPException(status_code=404, detail="게시글이 없습니다.")
+
+        comments = load_data(COMMENTS_FILE)
 
     if len(comments) == 0:
         new_id = 1
@@ -518,7 +532,5 @@ def get_user_comments(current_user: dict = Depends(get_current_user)):
     return my_comments
 
 # 여기까지 Comments
-
-
 
 # Likes

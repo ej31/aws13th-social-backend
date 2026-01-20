@@ -396,7 +396,7 @@ async def post_comment(
         "status": "success",
         "data": {
             "post_id": post_id,
-            "id": "comment_1",
+            "comment_id": "comment_1",
             "author": {
                 "author_email": "example@naver.com",
                 "nickname": "abc"

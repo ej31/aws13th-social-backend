@@ -4,7 +4,7 @@ from jose import jwt, JWTError
 from starlette.requests import Request
 from typing import Optional
 from core.config import jwt_settings
-from repositories.user_repo import get_users
+from repositories.user_repo import get_users, get_all_users_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -17,9 +17,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         )
     except JWTError as err:
         raise HTTPException(status_code=401, detail="토큰 오류") from err
-
     user_id = payload.get("sub")
-    user = next((u for u in get_users() if u["user_id"] == user_id), None)
+    users = get_all_users_db()
+    list_users = list(users)
+    user = next((u for u in list_users if u["user_id"] == user_id), None)
 
     if not user:
         raise HTTPException(status_code=401, detail="유저 없음")
@@ -34,7 +35,6 @@ def get_optional_user(request: Request) -> Optional[dict]:
         return None
 
     token = auth_header.split(" ")[1]
-
     try:
         payload = jwt.decode(
             token,

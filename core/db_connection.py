@@ -21,6 +21,5 @@ def get_db_connection():
     password=os.getenv("MYSQL_PASSWORD"),
     db=os.getenv("MYSQL_DB"),
     charset=os.getenv("MYSQL_CHARSET"),
-
     cursorclass=DictCursor
     )

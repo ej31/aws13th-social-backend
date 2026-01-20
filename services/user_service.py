@@ -1,35 +1,67 @@
 from fastapi import HTTPException
-from repositories.user_repo import get_users, save_users,find_user_by_id
+
+from core.db_connection import get_db_connection
+from repositories.user_repo import get_users, save_users, get_all_users_db, get_user_by_id
+from services.auth_service import get_password_hash
+
 
 def get_my_profile(current_user: dict) -> dict:
     return current_user
 
 def get_user_profile(user_id: str) -> dict:
-    user = find_user_by_id(user_id)
-    if not user:
+    users = get_user_by_id(user_id)
+    if not users:
         raise HTTPException(status_code=404, detail="해당 사용자를 찾을 수 없습니다")
-    return user
+    return users
 
 def update_my_profile(current_user: dict, patch_data: dict) -> dict:
-    users = get_users()
+    if not patch_data:
+        raise HTTPException(status_code=400, detail="수정할 데이터가 없습니다.")
 
-    index = next(
-        (i for i, u in enumerate(users) if u["user_id"] == current_user["user_id"]),
-        None,
-    )
+    if "password" in patch_data:
+        patch_data["password"] = get_password_hash(patch_data["password"])
 
-    if index is None:
-        raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+    con = None
+    try:
+        con = get_db_connection()
+        with con.cursor() as cursor:
+            filed = [f"{key} = %s" for key in patch_data.keys()]
+            update_sql = f"UPDATE users SET {','.join(filed)} WHERE user_id = %s"
 
-    users[index].update(patch_data)
-    save_users(users)
-    return users[index]
+            param = list(patch_data.values())+[current_user["user_id"]]
+            cursor.execute(update_sql, tuple(param))
+
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+        con.commit()
+
+        with con.cursor() as cursor:
+            cursor.execute("SELECT email,nickname,profile_image_url FROM users WHERE user_id = %s", (current_user["user_id"],))
+            update_user = cursor.fetchone()
+
+        return update_user
+
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        if con:
+            con.close()
 
 def delete_my_account(current_user: dict) -> None:
-    users = get_users()
-    new_users = [u for u in users if u["user_id"] != current_user["user_id"]]
+    users = get_all_users_db()
+    list_users = list(users)
+    user = next((u for u in list_users if u["user_id"] == current_user["user_id"]), None)
+    if user is None:
+        raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+    con = None
+    try:
+        con = get_db_connection()
+        with con.cursor() as cursor:
+            delete_sql = "DELETE FROM users WHERE user_id = %s"
+            cursor.execute(delete_sql, (current_user["user_id"],))
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
 
-    if len(users) == len(new_users):
-        raise HTTPException(status_code=404, detail="삭제할 유저를 찾을 수 없습니다")
-
-    save_users(new_users)

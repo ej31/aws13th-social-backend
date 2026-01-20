@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime,timezone
-
 from core.db_connection import get_db_connection
 from models.user import UserInternal
-from repositories.user_repo import get_users
 from services.jwt_service import create_access_token
 from models.auth import UserSignUp, UserLogin
 from fastapi import HTTPException
@@ -61,23 +59,20 @@ def signup_user(data: UserSignUp):
             con.close()
 
 def login_user(data: UserLogin):
-    con = get_db_connection()
+    con = None
     try:
+        con = get_db_connection()
         with con.cursor() as cursor:
             check_sql = "SELECT user_id,email, password, nickname, profile_image_url FROM users where email = %s"
             cursor.execute(check_sql, (data.username,))
             user_record = cursor.fetchone()
-            print(user_record)
             if user_record is None:
-                raise HTTPException(status_code=401, detail="유저 정보(이메일 혹은 비밀번호)가 없습니다.")
+                raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다.")
 
             if not verify_password(data.password, user_record["password"]):
-                raise HTTPException(401, "인증 실패")
-
+                raise HTTPException(401, "이메일 또는 비밀번호가 올바르지 않습니다.")
             token, expires = create_access_token(user_record["user_id"])
-            return user_record, token, expires
-    except Exception as ex:
-        con.rollback()
-        raise ex
+            safe_user = {k: v for k, v in user_record.items() if k != "password"}
+            return safe_user, token, expires
     finally:
         con.close()

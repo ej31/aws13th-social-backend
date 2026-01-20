@@ -1,10 +1,19 @@
 from pydantic import BaseModel
 import re
+from enum import Enum
+
 
 class Pagination(BaseModel):
     page: int
     limit: int
     total: int
+
+
+class PostSortType(str, Enum):
+    LATEST = "latest"
+    VIEWS = "views"
+    LIKES = "likes"
+
 
 def validate_password_logic(v: str) -> str:
     """

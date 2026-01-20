@@ -64,24 +64,6 @@ class UpdateUserResponse(BaseModel):
     data: Userinfo
 
 
-# 회원 로그인 요청할때
-class LoginUserRequest(BaseModel):
-    email: EmailStr = Field(..., description="가입한 이메일 주소")
-    password: str = Field(..., min_length=8, description="비밀번호")
-
-
-class TokenData(BaseModel):
-    token_type: str = "Bearer"  # "token" 대신 "token_type" 권장
-    access_token: str
-    expires_in: int
-
-
-# 회원 로그인 응답
-class LoginUserResponse(BaseModel):
-    status: str = "success"
-    data: TokenData
-
-
 # 내 프로필 조회
 # 요청할께 없다
 class GetProfile(BaseModel):

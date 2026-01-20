@@ -1,10 +1,10 @@
-
-from fastapi import APIRouter, status, Body,HTTPException
+from fastapi import APIRouter, status, Body, HTTPException
 from typing import Annotated
 from datetime import datetime, timezone
 from schemas import user
 from utils.data import load_data, save_data
 from utils.auth import hash_password
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 
@@ -18,14 +18,15 @@ async def post_users(
     hashed_password = hash_password(user_data.password)
 
     # 중복 가입 방지 로직
-    if any(u['email'] == user_data.email for u in users):
+    emails = {u['email'] for u in users}
+    if user_data.email in emails:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "status": "error",
                 "error": {
                     "code": "BAD_REQUEST",
-                    "message": "요청 형식이 올바르지 않습니다."
+                    "message": "이미 가입된 이메일입니다."
                 }
             }
         )
@@ -40,11 +41,11 @@ async def post_users(
         "created_at": current_time
     }
 
-    # 4. 리스트에 추가하고 파일로 씁니다.
+    # 리스트에 추가하고 파일로 씁니다.
     users.append(new_user_entry)
     save_data(users, "users.json")
 
-    # 5. 명세서(Docs) 응답 규격에 맞춰 리턴합니다.
+    # 명세서(Docs) 응답 규격에 맞춰 리턴합니다.
     return {
         "status": "success",
         "data": {

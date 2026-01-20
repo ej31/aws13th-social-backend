@@ -1,9 +1,9 @@
   [
       {
-          "email": "user@example.com",
-          "password": "$2b$12$XOXzznFTeI2sNNH5bqj5hOEZgUlHAVymxSEZUw.MV3HUHGYC/QTGu",
-          "nickname": "admin",
-          "profile_image": "string",
-          "created_at": "2026-01-20T03:43:52.153518+00:00"
+        "email": "user@example.com",
+        "password": "$2b$12$XOXzznFTeI2sNNH5bqj5hOEZgUlHAVymxSEZUw.MV3HUHGYC/QTGu",
+        "nickname": "admin",
+        "profile_image": "string",
+        "created_at": "2026-01-20T03:43:52.153518+00:00"
       }
   ]

@@ -10,6 +10,7 @@ from routers import users, posts
 
 app = FastAPI()
 app.include_router(users.router)
+@app.post('/')
 async def root():
     return {"message": "Cloud Community API Server is Running!"}
 

@@ -387,4 +387,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+data/*.json
+!data/.gitkeep
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij+all,pycharm+all,venv,python

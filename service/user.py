@@ -19,17 +19,17 @@ class UserCreateFailedError(Exception):
 
 
 def create_user(user: UserCreate) -> Dict[str, Any]:
+    users = load_json("users.json")
+
+    # 이메일 중복 검사
+    if any(u["email"] == user.email for u in users):
+        raise DuplicateResourceError(field="email")
+
+    # 닉네임 중복 검사
+    if any(u["nickname"] == user.nickname for u in users):
+        raise DuplicateResourceError(field="nickname")
+
     try:
-        users = load_json("users.json")
-
-        # 이메일 중복 검사
-        if any(u["email"] == user.email for u in users):
-            raise DuplicateResourceError(field="email")
-
-        #닉네임 중복 검사
-        if any(u["nickname"] == user.nickname for u in users):
-            raise DuplicateResourceError(field="nickname")
-
         new_user = {
             "id": generate_id("user", users),
             "email": user.email,
@@ -46,10 +46,12 @@ def create_user(user: UserCreate) -> Dict[str, Any]:
             raise UserCreateFailedError()
 
         return new_user
-
-    except DuplicateResourceError:
-        raise
-
     except Exception as e:
-        logger.exception("회원 생성 중 예외 발생")
+        logger.exception(
+            "회원 생성 중 예외 발생",
+            extra={
+                "email": user.email,
+                "nickname": user.nickname,
+            },
+        )
         raise UserCreateFailedError()

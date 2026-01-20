@@ -1,16 +1,22 @@
 from fastapi import APIRouter, HTTPException, status
 from schemas.user import UserCreate, UserRegistrationResponse, UserInfo
 from service.user import create_user, DuplicateResourceError, UserCreateFailedError
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from main import limiter
 
 router = APIRouter(
     prefix="/users", tags=["Users"]
 )
-
-@router.post("", response_model=UserRegistrationResponse, status_code=201)
+@router.post("",
+             response_model=UserRegistrationResponse,
+             status_code=201
+             )
+#동일 ip 1분에 최대 5번 회원가입 시도 초과 시 429에러 발생
+@limiter.limit("5/minute")
 def register_user(user: UserCreate):
     try:
         new_user = create_user(user)
-
         return {
             "status": "success",
             "data": {
@@ -21,13 +27,11 @@ def register_user(user: UserCreate):
                 "created_at": new_user["created_at"],
             }
         }
-
     except DuplicateResourceError as e:
         message_map = {
             "email": "이미 사용 중인 이메일 입니다.",
             "nickname": "이미 사용 중인 닉네임 입니다"
         }
-
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
@@ -40,9 +44,7 @@ def register_user(user: UserCreate):
                     }
                 }
             }
-
         )
-
     except UserCreateFailedError:
         raise HTTPException(
             status_code=500,

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "27d1daca-5d80-4195-8ac9-416c629faa08",
+    "title": "욱정",
+    "content": "정욱",
+    "created_at": "2026-01-20T06:26:11.264059Z",
+    "author": {
+      "id": "5689fc28-8125-451d-8622-f47762a1d51b",
+      "nickname": "jeonguk",
+      "profile_image": "qqq"
+    }
+  },
+  {
+    "id": "043426bc-a488-41ee-930b-8f4baf2e2fc1",
+    "title": "qweqweqweqweqwe",
+    "content": "wqrqwrqwrqwrqwrqwrwqr",
+    "created_at": "2026-01-20T07:28:28.752259Z",
+    "author": {
+      "id": "5689fc28-8125-451d-8622-f47762a1d51b",
+      "nickname": "jeonguk",
+      "profile_image": "qqq"
+    }
+  },
+  {
+    "id": "46fa19f6-68ef-43bd-bb1a-be262fa3ec47",
+    "title": "정수정수정",
+    "content": "발제",
+    "created_at": "2026-01-20T07:33:08.508197Z",
+    "author": {
+      "id": "5689fc28-8125-451d-8622-f47762a1d51b",
+      "nickname": "jeonguk",
+      "profile_image": "qqq"
+    }
+  }
+]

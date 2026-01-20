@@ -59,7 +59,7 @@ async def add_item(filename, item, id_field="id"):
         item[id_field] = get_next_id(data, id_field)
     # 생성 시간 추가
     if "createdAt" not in item:
-        item["createdAt"] = datetime.now().isoformat()
+        item["createdAt"] = datetime.now(timezone.utc).isoformat()
     data.append(item)
     await save_json(filename, data)
     return item
@@ -70,7 +70,7 @@ async def update_item(filename, id_value, updated_data, id_field="id"):
     for i, item in enumerate(data):
         if item.get(id_field) == id_value:
             data[i].update(updated_data)
-            data[i]["updatedAt"] = datetime.now().isoformat()
+            data[i]["updatedAt"] = datetime.now(timezone.utc).isoformat()
             await save_json(filename, data)
             return data[i]
     return None
@@ -93,3 +93,15 @@ def filter_items(data, filters):
     for key, value in filters.items():
         result = [item for item in result if item.get(key) == value]
     return result
+
+async def delete_items_by_field(filename, field, value):
+    """특정 필드 값으로 여러 아이템을 삭제합니다."""
+    data = await load_json(filename)
+    original_length = len(data)
+    data = [item for item in data if item.get(field) !=
+            value]
+
+    if len(data) < original_length:
+        await save_json(filename, data)
+        return original_length - len(data)  # 삭제된 개수 반환
+    return 0

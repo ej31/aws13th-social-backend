@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from schemas.users import UserCreate, UserResponse, UserUpdate, UserDelete, UserPublicResponse
-from utils.data import load_json, add_item, find_by_field, find_by_id, update_item, delete_item
+from utils.data import load_json, add_item, find_by_field, find_by_id, update_item, delete_item, delete_items_by_field
 from utils.auth import hash_password, verify_password, get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -62,7 +62,14 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
     user = find_by_id(users, current_user["userId"], id_field="userId")
 
     if not user:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "code": "NOT_FOUND",
+                "message": "사용자를 찾을 수 없습니다."
+            }
+        )
 
     return {
         "status": "success",
@@ -83,7 +90,14 @@ async def update_user(user: UserUpdate, current_user: dict = Depends(get_current
     current_user_data = find_by_id(users, current_user["userId"], id_field="userId")
 
     if not current_user_data:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "code": "NOT_FOUND",
+                "message": "사용자를 찾을 수 없습니다."
+            }
+        )
 
     # 닉네임 변경 시 중복 체크
     if user.nickname and user.nickname != current_user_data["nickname"]:
@@ -135,7 +149,14 @@ async def delete_user(user: UserDelete, current_user: dict = Depends(get_current
     current_user_data = find_by_id(users, current_user["userId"], id_field="userId")
 
     if not current_user_data:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "status": "error",
+                "code": "NOT_FOUND",
+                "message": "사용자를 찾을 수 없습니다."
+            }
+        )
 
     # 비밀번호 확인
     if not verify_password(user.password, current_user_data["password"]):
@@ -150,6 +171,9 @@ async def delete_user(user: UserDelete, current_user: dict = Depends(get_current
 
     # 사용자 삭제
     await delete_item("users.json", current_user["userId"], id_field="userId")
+
+    # 해당 사용자의 모든 refreshToken 삭제
+    await delete_items_by_field("refresh_tokens.json", "userId", current_user["userId"])
 
     return {
         "status": "success",

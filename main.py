@@ -5,9 +5,7 @@ from json import JSONDecodeError
 from typing import Optional
 import bcrypt
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
-from fastapi import FastAPI
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
@@ -247,6 +245,18 @@ def delete_user_me(current_user: dict = Depends(get_current_user)):
 
     return {"status": "success", "message": "회원 탈퇴 완료"}
 
+@app.get("/users/me/posts")
+def get_my_posts(current_user: dict = Depends(get_current_user)):
+    posts = load_data(POSTS_FILE)
+
+    my_posts = []
+    for p in posts:
+        if p.get("writerId") == current_user.get("userId"):
+            my_posts.append(p)
+
+    sort_desc_by_int_key(my_posts, "id")
+    return {"count": len(my_posts), "data": my_posts}
+
 @app.get("/users/{user_id}")
 def get_user_by_id(user_id: int):
     users = load_data(USERS_FILE)
@@ -267,17 +277,7 @@ def get_user_by_id(user_id: int):
 
     raise HTTPException(status_code=404, detail="유저 없음")
 
-@app.get("/users/me/posts")
-def get_my_posts(current_user: dict = Depends(get_current_user)):
-    posts = load_data(POSTS_FILE)
 
-    my_posts = []
-    for p in posts:
-        if p.get("writerId") == current_user.get("userId"):
-            my_posts.append(p)
-
-    sort_desc_by_int_key(my_posts, "id")
-    return {"count": len(my_posts), "data": my_posts}
 
 # 여기까지 Users
 

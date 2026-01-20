@@ -1,19 +1,11 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-import os
-
-from routers import users, posts, comments, likes
+from routers import users
 
 app = FastAPI()
 
-os.makedirs("static/uploads", exist_ok=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-app.include_router(users.router)
-app.include_router(posts.router, prefix="/posts", tags=["Posts"])
-app.include_router(comments.router, prefix="/posts/{post_id}/comments", tags=["Comments"])
-app.include_router(likes.router, prefix="/posts/{post_id}/likes", tags=["Likes"])
 
+app.include_router(users.router,prefix="/users",tags=["Users"])
 @app.get("/")
 def read_root():
     return {"message": "Cloud Community Server is Running!"}

@@ -1,10 +1,1 @@
-[
-  {
-    "id": 1,
-    "email": "final_test@test.com",
-    "password": "$2b$12$aloNI3wQKanrvfD289PeuuPAhXokL1ruAgMKvvi.CPBRGx5V/r0p.",
-    "nickname": "테스트맨",
-    "profileImage": null,
-    "createdAt": "2026-01-18T23:28:17.847507"
-  }
-]
+[]

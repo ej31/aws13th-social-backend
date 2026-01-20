@@ -48,13 +48,6 @@ def update_my_post(post_id:str, post_dict: dict, current_user: dict) -> dict:
     if user_post["user_id"] != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="게시물을 수정할 권한이 없습니다.")
 
-    # index = next(
-    #     (i for i, u in enumerate(posts) if u["user_id"] == current_user["user_id"]),
-    #     None,
-    # )
-    # if index is None:
-    #     raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
-
     index = posts.index(user_post)
     posts[index].update(post_dict)
     save_post(posts)

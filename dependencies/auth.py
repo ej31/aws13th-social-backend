@@ -28,11 +28,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 def get_optional_user(request: Request) -> Optional[dict]:
-    # 헤더에서 직접 Authorization 토큰 추출 시도
     auth_header = request.headers.get("Authorization")
 
     if not auth_header or not auth_header.startswith("Bearer "):
-        return None  # 토큰이 없으면 그냥 None 반환
+        return None
 
     token = auth_header.split(" ")[1]
 
@@ -42,6 +41,6 @@ def get_optional_user(request: Request) -> Optional[dict]:
             jwt_settings.SECRET_KEY,
             algorithms=[jwt_settings.ALGORITHM],
         )
-        return payload  # 유효하면 페이로드 반환
+        return payload
     except JWTError:
-        return None  # 토큰이 가짜거나 만료되어도 에러 대신 None 반환
+        return None

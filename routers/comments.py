@@ -15,7 +15,6 @@ def post_comments(
 ):
     return write_comments(post_id, comment_data, current_user)
 
-
 @router.get("/posts/{post_id}/comments", response_model=AllComments)
 def get_comments(
         post_id: str,

@@ -3,7 +3,6 @@ import os
 from datetime import datetime, timedelta, timezone
 from json import JSONDecodeError
 from typing import Optional
-
 import bcrypt
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
@@ -11,50 +10,30 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
 
-
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
 
 DATA_DIR = "data"
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
 POSTS_FILE = os.path.join(DATA_DIR, "posts.json")
 COMMENTS_FILE = os.path.join(DATA_DIR, "comments.json")
 
-
-
-
-
-
-
-
-
-
-
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
-
 app = FastAPI()
 security = HTTPBearer()
-
-
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
 
 class User(BaseModel):
     email: EmailStr
     password: str
     nickname: str
     profileImage: Optional[str] = None
-
-
-
-
 
 class UserUpdate(BaseModel):
     nickname: Optional[str] = None
@@ -65,27 +44,15 @@ class PostCreate(BaseModel):
     title: str
     content: str
 
-
-
-
-
 class PostUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
 
-
-
 class CommentCreate(BaseModel):
     content: str
 
-
-
-
-
 class CommentUpdate(BaseModel):
     content: Optional[str] = None
-
-
 
 def load_data(filename):
     try:
@@ -94,31 +61,19 @@ def load_data(filename):
     except (FileNotFoundError, JSONDecodeError):
         return []
 
-
 def save_data(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
-
-
-
-
 
 def hash_password(password):
     password_bytes = password.encode("utf-8")
     hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
     return hashed_bytes.decode("utf-8")
 
-
-
-
-
 def create_access_token(data):
     to_encode = {}
     for k in data:
         to_encode[k] = data[k]
-
-
-
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode["exp"] = expire
@@ -128,9 +83,6 @@ def create_access_token(data):
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
-
-
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
@@ -143,11 +95,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     except JWTError:
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
 
-
-
-
     users = load_data(USERS_FILE)
-
     target_user = None
     for u in users:
         if u.get("email") == email:
@@ -158,7 +106,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="존재하지 않는 회원입니다.")
 
     return target_user
-
 
 def sort_desc_by_int_key(items, key_name):
 
@@ -215,7 +162,6 @@ def signup(user: User):
         }
     }
 
-
 @app.post("/users/login", status_code=200)
 def login_user(user: UserLogin):
     users = load_data(USERS_FILE)
@@ -238,7 +184,6 @@ def login_user(user: UserLogin):
 
     raise HTTPException(status_code=401, detail="이메일 또는 비밀번호 불일치")
 
-
 @app.get("/users/me")
 def read_users_me(current_user: dict = Depends(get_current_user)):
     return {
@@ -247,7 +192,6 @@ def read_users_me(current_user: dict = Depends(get_current_user)):
         "nickname": current_user.get("nickname"),
         "profileImage": current_user.get("profileImage")
     }
-
 
 @app.patch("/users/me")
 def update_user_me(user_update: UserUpdate, current_user: dict = Depends(get_current_user)):
@@ -276,7 +220,6 @@ def update_user_me(user_update: UserUpdate, current_user: dict = Depends(get_cur
 
     return {"status": "success", "data": user_data}
 
-
 @app.delete("/users/me")
 def delete_user_me(current_user: dict = Depends(get_current_user)):
     users = load_data(USERS_FILE)
@@ -302,11 +245,6 @@ def delete_user_me(current_user: dict = Depends(get_current_user)):
 
     return {"status": "success", "message": "회원 탈퇴 완료"}
 
-
-
-
-
-
 @app.get("/users/{user_id}")
 def get_user_by_id(user_id: int):
     users = load_data(USERS_FILE)
@@ -327,9 +265,6 @@ def get_user_by_id(user_id: int):
 
     raise HTTPException(status_code=404, detail="유저 없음")
 
-
-
-
 @app.get("/users/me/posts")
 def get_my_posts(current_user: dict = Depends(get_current_user)):
     posts = load_data(POSTS_FILE)
@@ -343,8 +278,6 @@ def get_my_posts(current_user: dict = Depends(get_current_user)):
     return {"count": len(my_posts), "data": my_posts}
 
 # 여기까지 Users
-
-
 
 # Posts
 
@@ -375,7 +308,6 @@ def create_post(post: PostCreate, current_user: dict = Depends(get_current_user)
 
     return {"status": "success", "data": new_post}
 
-
 @app.get("/posts")
 def get_posts(page: int = 1, keyword: Optional[str] = None, sort: Optional[str] = None):
     posts = load_data(POSTS_FILE)
@@ -398,31 +330,19 @@ def get_posts(page: int = 1, keyword: Optional[str] = None, sort: Optional[str] 
     limit = 5
     start_index = (page - 1) * limit
     end_index = start_index + limit
-
-
-
-
     result_posts = []
     idx = start_index
     while idx < end_index and idx < len(filtered):
         result_posts.append(filtered[idx])
         idx += 1
 
-
-
     return {"total": len(filtered), "page": page, "data": result_posts}
-
 
 @app.get("/posts/{post_id}")
 def get_post_detail(post_id: int):
     posts = load_data(POSTS_FILE)
-
-
-
     target_post = None
     target_index = -1
-
-
 
     for i in range(len(posts)):
         if posts[i].get("id") == post_id:
@@ -430,35 +350,25 @@ def get_post_detail(post_id: int):
             target_index = i
             break
 
-
-
     if target_post is None:
         raise HTTPException(status_code=404, detail="게시글이 없습니다.")
-
 
     target_post["views"] = target_post.get("views", 0) + 1
     posts[target_index] = target_post
     save_data(POSTS_FILE, posts)
-
-
-
     return target_post
-
 
 @app.patch("/posts/{post_id}")
 def patch_post_detail(
     post_id: int,
     post_update: PostUpdate,
     current_user: dict = Depends(get_current_user)
-
 ):
-
 
     posts = load_data(POSTS_FILE)
 
     target_post = None
     target_index = -1
-
 
     for i in range(len(posts)):
         if posts[i].get("id") == post_id:
@@ -466,17 +376,11 @@ def patch_post_detail(
             target_index = i
             break
 
-
-
     if target_post is None:
         raise HTTPException(status_code=404, detail="게시글이 없습니다.")
 
-
-
     if target_post.get("writerId") != current_user.get("userId"):
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
-
-
 
     if post_update.title is not None:
         target_post["title"] = post_update.title
@@ -488,15 +392,9 @@ def patch_post_detail(
 
     return {"status": "success", "data": target_post}
 
-
-
-
-
-
 @app.delete("/posts/{post_id}")
 def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
     posts = load_data(POSTS_FILE)
-
 
     target_index = -1
     for i in range(len(posts)):
@@ -504,43 +402,29 @@ def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
             target_index = i
             break
 
-
-
     if target_index == -1:
         raise HTTPException(status_code=404, detail="게시글이 없습니다")
 
     if posts[target_index].get("writerId") != current_user.get("userId"):
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
 
-
-
     posts.pop(target_index)
     save_data(POSTS_FILE, posts)
-
     return {"status": "success", "message": "삭제 완료"}
 
 # 여기까지 Posts
-
-
 # Comments
 
 @app.get("/posts/{post_id}/comments")
 def get_comments(post_id: int):
     comments = load_data(COMMENTS_FILE)
 
-
     post_comments = []
     for c in comments:
         if c.get("postId") == post_id:
             post_comments.append(c)
 
-
-
     return {"count": len(post_comments), "data": post_comments}
-
-
-
-
 
 @app.post("/posts/{post_id}/comments")
 def create_comment(
@@ -550,18 +434,12 @@ def create_comment(
 ):
     comments = load_data(COMMENTS_FILE)
 
-
-
-
     if len(comments) == 0:
         new_id = 1
     else:
         new_id = comments[-1].get("id", 0) + 1
 
-
-
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
 
     new_comment = {
         "id": new_id,
@@ -572,14 +450,10 @@ def create_comment(
         "createdAt": now
     }
 
-
-
     comments.append(new_comment)
     save_data(COMMENTS_FILE, comments)
 
     return {"status": "success", "data": new_comment}
-
-
 
 @app.patch("/comments/{comment_id}")
 def update_comment(
@@ -589,13 +463,8 @@ def update_comment(
 ):
     comments = load_data(COMMENTS_FILE)
 
-
-
     target_comment = None
     target_index = -1
-
-
-
 
     for i in range(len(comments)):
         if comments[i].get("id") == comment_id:
@@ -606,40 +475,20 @@ def update_comment(
     if target_comment is None:
         raise HTTPException(status_code=404, detail="댓글이 없습니다.")
 
-
-
     if target_comment.get("writerId") != current_user.get("userId"):
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
-
-
-
 
     if comment_update.content is not None:
         target_comment["content"] = comment_update.content
 
-
-
-
-
     comments[target_index] = target_comment
     save_data(COMMENTS_FILE, comments)
 
-
     return {"status": "success", "data": target_comment}
-
-
-
-
-
-
-
 
 @app.delete("/comments/{comment_id}")
 def delete_comment(comment_id: int, current_user: dict = Depends(get_current_user)):
     comments = load_data(COMMENTS_FILE)
-
-
-
 
     target_index = -1
     for i in range(len(comments)):
@@ -647,30 +496,16 @@ def delete_comment(comment_id: int, current_user: dict = Depends(get_current_use
             target_index = i
             break
 
-
-
-
     if target_index == -1:
         raise HTTPException(status_code=404, detail="댓글이 없습니다.")
-
-
-
 
     if comments[target_index].get("writerId") != current_user.get("userId"):
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
 
-
     comments.pop(target_index)
     save_data(COMMENTS_FILE, comments)
 
-
-
-
     return {"status": "success", "message": "삭제 완료"}
-
-
-
-
 
 @app.get("/users/me/comments")
 def get_user_comments(current_user: dict = Depends(get_current_user)):
@@ -680,8 +515,6 @@ def get_user_comments(current_user: dict = Depends(get_current_user)):
     for c in comments:
         if c.get("writerId") == current_user.get("userId"):
             my_comments.append(c)
-
-
     return my_comments
 
 # 여기까지 Comments

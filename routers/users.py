@@ -1,47 +1,50 @@
-from fastapi import APIRouter, status, HTTPException
-from schemas.user import UserCreate, UserRegistrationResponse
-from utils.data import load_json, save_json, generate_id
-from utils.auth import hash_password
-from datetime import datetime
-
-
+from fastapi import APIRouter, HTTPException, status
+from schemas.user import UserCreate, UserRegistrationResponse, UserInfo
+from service.user import create_user, DuplicateResourceError, UserCreateFailedError
 
 router = APIRouter(
-    prefix="/users",
-    tags=["Users"]
+    prefix="/users", tags=["Users"]
 )
 
-@router.post(
-    "",
-    response_model=UserRegistrationResponse,
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("", response_model=UserRegistrationResponse, status_code=201)
 def register_user(user: UserCreate):
-    # 1. 기존 유저 데이터 로드
-    users = load_json("users.json")
+    try:
+        new_user = create_user(user)
 
-    # 2. 중복 이메일 검사 (비즈니스 로직)
-    if any(u["email"] == user.email for u in users):
+        return {
+            "status": "success",
+            "data": {
+                "id": new_user["id"],
+                "email": new_user["email"],
+                "nickname": new_user["nickname"],
+                "profile_image_url": new_user["profile_image_url"],
+                "created_at": new_user["created_at"],
+            }
+        }
+
+    except DuplicateResourceError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="이미 사용 중인 이메일입니다."
+            detail={
+                "status": "error",
+                "error": {
+                    "code": "DUPLICATE_RESOURCE",
+                    "message": "이미 사용 중인 이메일입니다.",
+                    "details": {
+                        "field": e.field
+                    }
+                }
+            }
         )
 
-    # 3. 새로운 유저 객체 생성
-    new_user = {
-        "id": generate_id("user", users),
-        "email": user.email,
-        "nickname": user.nickname,
-        "profile_image_url": user.profile_image_url,
-        "password": hash_password(user.password),
-        "created_at": datetime.now().isoformat()
-    }
-
-    # 4. 리스트에 추가 및 파일 저장
-    users.append(new_user)
-    save_json("users.json", users)
-
-    return {
-        "status": "success",
-        "data": new_user
-    }
+    except UserCreateFailedError:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "error",
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "회원가입 처리 중 오류가 발생했습니다."
+                }
+            }
+        )

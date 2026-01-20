@@ -2,6 +2,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 import re
+from schemas.common import Pagination, validate_password_logic
 
 
 # 회원가입 Post/users 부분
@@ -14,14 +15,11 @@ class CreateUser(BaseModel):
 
     @field_validator('password')
     @classmethod
-    def validate_password(cls, v: str) -> str:    # v는 입력값(비밀번호)
-        if not re.search(r'[A-Za-z]', v):
-            raise ValueError('비밀번호에 영문자가 포함되어야 합니다')
-        if not re.search(r'\d', v):
-            raise ValueError('비밀번호에 숫자가 포함되어야 합니다')
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>₩]', v):
-            raise ValueError('비밀번호에 특수문자가 포함되어야 합니다')
-        return v
+    def validate_new_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        # 공통 함수를 호출하여 검증 수행
+        return validate_password_logic(v)
 
 
 # 회원가입하고 나서
@@ -44,6 +42,13 @@ class UpdateUserRequest(BaseModel):
     nickname: str
     profile_image: str | None = None
     new_password: str | None = None
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        return validate_password_logic(v)
 
 
 # 수정된 프로필 응답
@@ -105,27 +110,21 @@ class OtherUserProfileResponse(BaseModel):
 
 
 # 내가쓴 게시글 목록
-class PostSummary(BaseModel):
+class UserPostSummary(BaseModel):
     post_id: str
     title: str
     created_at: datetime
 
 
-class Pagination(BaseModel):
-    page: int
-    limit: int
-    total: int
-
-
 class MyPostsResponse(BaseModel):
     status: str = "success"
-    data: list[PostSummary]
+    data: list[UserPostSummary]
     pagination: Pagination
 
 
 # 내가 작성한 댓글
 class PostInComment(BaseModel):
-    id: str
+    post_id: str
     title: str
 
 
@@ -145,7 +144,7 @@ class MyCommentsResponse(BaseModel):
 
 # 내가 좋아요한 게시글 목록
 class AuthorInfo(BaseModel):
-    author_id: str
+    author_email: str
     nickname: str
 
 

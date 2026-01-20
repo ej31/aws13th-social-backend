@@ -46,7 +46,6 @@ async def get_comments(post_id:int,
 
 @router.patch("/{comment_id}", response_model=CommonResponse[CommentResponse],status_code=status.HTTP_200_OK)
 async def update_comment(
-        post_id: int,  # prefix에서 주입됨
         comment_id: int,  # 경로 매개변수에서 주입됨
         req: CommentUpdateRequest,
         current_user: Annotated[dict, Depends(get_current_user)],
@@ -64,7 +63,6 @@ async def update_comment(
 
 @router.delete("/{comment_id}",status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(
-        post_id: int,
         comment_id: int,
         current_user: Annotated[dict, Depends(get_current_user)],
         comment_service: Annotated[CommentService, Depends(CommentService)]

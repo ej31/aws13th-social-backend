@@ -19,7 +19,7 @@ async def get_posts(post_service: Annotated[PostService,Depends(PostService)],
 
         extracted_user_id = current_user_info.get("id") if current_user_info else None
 
-        posts,total = await post_service.get_posts(page=page,limit=size,current_user_id=extracted_user_id)
+        posts,total = await post_service.get_post(page=page,limit=size,current_user_id=extracted_user_id)
         meta = PaginationMeta(
             page=page,
             limit=size,
@@ -42,7 +42,7 @@ async def get_posts_detail(post_service: Annotated[PostService,Depends(PostServi
     #현재 current_user가 비인증 사용자가 아니라면 dict에서 id를 꺼냄
     extracted_user_id = current_user_info.get("id") if current_user_info else None
 
-    posts_detail_data = await post_service.get_posts_detail(post_id=post_id,current_user_id=extracted_user_id)
+    posts_detail_data = await post_service.get_post_detail(post_id=post_id,current_user_id=extracted_user_id)
     return CommonResponse(
         status = "success",
         message = "게시물 상세 조회에 성공하였습니다.",
@@ -55,7 +55,7 @@ async def delete_posts(post_service:Annotated[PostService,Depends(PostService)],
                        post_id: int = Path(...,description="삭제할 게시글의 ID"),):
 
     author_id= current_user_id.get("id")
-    await post_service.delete_posts(post_id,author_id)
+    await post_service.delete_post(post_id,author_id)
     return None
 
 @router.put("/{post_id}",response_model= CommonResponse[PostsResponse],status_code=status.HTTP_200_OK)
@@ -65,7 +65,7 @@ async def update_posts(post_service: Annotated[PostService,Depends(PostService)]
                        post_id: int = Path(...,description="수정할 게시물의 ID"),
                        ):
     author_id= current_user_id.get("id")
-    update_data = await post_service.update_posts(post_id,update_request,author_id)
+    update_data = await post_service.update_post(post_id,update_request,author_id)
     return CommonResponse(
         status = "success",
         message = "성공적으로 게시물을 업데이트 하였습니다.",

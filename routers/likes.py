@@ -9,7 +9,7 @@ from common.dependencies import get_current_user
 router = APIRouter(prefix="/posts/{post_id}/likes", tags=["likes"])
 
 
-@router.get("/", response_model=CommonResponse[LikeStatusResponse])
+@router.get("/", response_model=CommonResponse[LikeStatusResponse],status_code=status.HTTP_200_OK)
 async def get_like_status(
         post_id: int,
         current_user: Annotated[dict, Depends(get_current_user)],
@@ -25,7 +25,7 @@ async def get_like_status(
     )
 
 
-@router.post("/", response_model=CommonResponse[LikeStatusResponse])
+@router.post("/", response_model=CommonResponse[LikeStatusResponse],status_code=status.HTTP_201_CREATED)
 async def toggle_like(
         post_id: int,
         current_user: Annotated[dict, Depends(get_current_user)],
@@ -40,7 +40,7 @@ async def toggle_like(
         data=result
     )
 
-@router.delete("/", response_model=CommonResponse[None])
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_like(
         post_id: int,
         current_user: Annotated[dict, Depends(get_current_user)],

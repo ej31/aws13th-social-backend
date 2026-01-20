@@ -43,7 +43,7 @@
         "title": "stringzz",
         "content": "string",
         "created_at": "2026-01-17T12:44:22.551908+00:00",
-        "views": 0,
+        "views": 2,
         "likes": 0,
         "comment_count": 0,
         "author_id": 7,
@@ -80,5 +80,15 @@
         "author_id": 7,
         "post_id": 8,
         "like_count": 1
+    },
+    {
+        "title": "stringzz",
+        "content": "stringzzzz",
+        "created_at": "2026-01-20T00:55:16.919561+00:00",
+        "views": 3,
+        "likes": 0,
+        "comment_count": 0,
+        "author_id": 7,
+        "post_id": 9
     }
 ]

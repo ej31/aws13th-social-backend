@@ -34,7 +34,7 @@ class CommentRepository:
         return None
 
     def save(self,comment_data:dict) -> dict:
-        """코멘트 id가 없을 시 새로 게시물 생성 만약 있을 시 수정된 데이터만 저장"""
+        """코멘트 id가 없을 시 새로 댓글 생성 만약 있을 시 수정된 데이터만 저장"""
         comments = self._load_all()
 
         if "comment_id" not in comment_data or comment_data["comment_id"] is None:

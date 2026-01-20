@@ -33,26 +33,31 @@ class PostRepository:
                 return p
         return None
 
+    def get_next_id(self):
+        """다음에 부여할 게시물의 ID를 반환"""
+        posts = self._load_all()
+        return max([p["post_id"] for p in posts],default=0)+1
+
     def save(self, post_data: dict) -> dict:
         posts = self._load_all()
-        #새 게시글인지 확인한다.
-        if "post_id" not in post_data or post_data["post_id"] is None:
-            # 현재 게시글의 id 중 최대값을 찾는다. (기본값이 없을 시 default=0으로 해둠)
-            max_id = max([p["post_id"] for p in posts],default=0)
-            #새 ID 부여 (최대값 + 1)
-            post_data["post_id"] = max_id + 1
-            #리스트에 새 데이터 추가
-            posts.append(post_data)
+        target_id = post_data.get("post_id")
+
+        if target_id is None:
+            raise ValueError(f"게시물의 ID : {target_id}가 존재하지 않습니다.")
+
+        index = None
+        for i,p in enumerate(posts):
+            if int(p["post_id"]) == target_id:
+                index = i
+                break
+
+        if index is not None:
+            #수정
+            posts[index] = post_data
         else:
-            #p에는 posts, post_data의 id와 비교해서 같은 값을 찾음
-            for i,p in enumerate(posts):
-                if int(p["post_id"]) == int(post_data["post_id"]):
-                    #찾게되면 현재 저장되어 있는 posts[i]번째를 현재 저장할려는 post_data로 변경함
-                    posts[i] = post_data
-                    break
-            else:
-                # 해당 post_id를 가진 게시글이 없으면 새로 추가
-                raise ValueError(f"수정하려는 게시글 {post_data['post_id']}가 존재하지 않습니다.",f"(요청 타입: {type(post_data['post_id'])})")
+            #생성
+            posts.append(post_data)
+
         self._save_all(posts)
         return post_data
 

@@ -10,9 +10,14 @@ class FileUtil:
 
     @staticmethod
     def _is_safe_path(base_dir:str,target_path: str) -> bool:
-            real_base = os.path.basename(base_dir)
-            real_target_path = os.path.basename(target_path)
-            return real_target_path.startswith(real_base)
+            real_base = os.path.realpath(base_dir)
+            real_target = os.path.realpath(target_path)
+
+            try:
+                return os.path.commonprefix([real_base,target_path]) == real_base
+            except ValueError:
+                return False
+
 
     @classmethod
     async def validate_and_save_image(cls,file:UploadFile,folder:str = settings.upload_dir) -> str:

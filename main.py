@@ -6,10 +6,11 @@ from pydantic import EmailStr
 from schemas import user, post, auth
 from schemas.post import PostUpdateResponse, PostLikeCreateResponse
 from schemas.common import PostSortType, Pagination, validate_password_logic
-from routers import users, posts
+from routers import users, posts, auth
 
 app = FastAPI()
 app.include_router(users.router)
+app.include_router(auth.router)
 @app.post('/')
 async def root():
     return {"message": "Cloud Community API Server is Running!"}
@@ -448,15 +449,3 @@ async def delete_comment(
 
 ######### auth ############
 # 회원 로그인
-@app.post("/auth/tokens", response_model=auth.LoginResponse, status_code=status.HTTP_201_CREATED)
-async def auth_token(
-        login_data: Annotated[auth.LoginRequest, Body()]
-):
-    _ = login_data
-    return {"status": "success",
-            "data": {
-                "token_type": "Bearer",
-                "access_token": "token_1234",
-                "expires_in": 3600
-            }
-            }

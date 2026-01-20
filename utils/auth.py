@@ -1,4 +1,29 @@
 import bcrypt
+import os
+from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+ALGORITHM = os.getenv('ALGORITHM')
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
+
+def create_access_token(data: dict):
+    """사용자 정보(Payload)를 담은 JWT 토큰 생성"""
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({'exp': expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_access_token(token: str):
+    """토큰을 해석하여 사용자 정보를 반환"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return payload
+    except JWTError:
+        return None
 
 def hash_password(password: str) -> str:
     """비밀번호를 안전하게 해싱합니다 (bcrypt 직접 사용)."""

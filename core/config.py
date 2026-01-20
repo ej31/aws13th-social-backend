@@ -16,11 +16,10 @@ class AllSettings(BaseSettings):
     MYSQL_USER: str = "root"
     MYSQL_PASSWORD: str
     MYSQL_DB: str
-    MYSQL_DB2: str
     MYSQL_CHARSET: str = "utf8mb4"
 
     model_config = SettingsConfigDict(
-        env_file=(ROOT_DIR / ".env", ROOT_DIR / ".env .DB")
+        env_file=(ROOT_DIR / ".env", ROOT_DIR / ".env_DB")
     )
 
 

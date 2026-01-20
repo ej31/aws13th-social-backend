@@ -12,11 +12,11 @@ router = APIRouter(tags=["users"])
 
 @router.post("/auth/signup",response_model=AuthResponse,status_code=status.HTTP_201_CREATED)
 async def signup(form_data: Annotated[UserSignUp, Depends(signup_form_reader)]):
-    user, token, expires = signup_user(form_data)
+    user_internal, token, expires = signup_user(form_data)
     return AuthResponse(
         access_token=token,
         expires_in=expires,
-        user=UserPublic(**user),
+        user=UserPublic(**user_internal.model_dump()),
         issued_at=datetime.now(timezone.utc),
     )
 

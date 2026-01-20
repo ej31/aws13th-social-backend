@@ -8,7 +8,7 @@ from core.db_connection import get_db_connection
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "users.json"
 
 def get_users_db():
-    conn = get_db_connection()
+    conn= get_db_connection()
     with conn:
         with DictCursor(conn) as cursor:
             cursor.execute("SELECT * FROM users")

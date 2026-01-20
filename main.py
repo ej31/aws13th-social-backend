@@ -82,7 +82,7 @@ def create_access_token(data):
     to_encode["exp"] = expire
 
     if not SECRET_KEY:
-        raise HTTPException(status_code=500, detail="SECRET_KEY 설정 X")
+        raise HTTPException(status_code=500, detail="SECRET_KEY가 존재하지 않습니다.")
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

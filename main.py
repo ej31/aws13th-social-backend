@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Header, Path, Depends, Query, status
+from fastapi import FastAPI, Header, Path, Depends, Query, status, Response
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, Annotated, Literal, List
 from datetime import datetime
@@ -382,4 +382,158 @@ async def get_my_post(
                 "created_post_at": "datetime"
             }
         ]
+    }
+
+
+# 댓글 목록 조회
+class CommentItem(BaseModel):
+    post_id: int
+    nickname: str
+    comment: str
+    like_count: int
+    created_at: datetime
+    updated_at: datetime
+
+class Pagination(BaseModel):
+    page: int
+    limit: int = Field(ge=1, le=100)
+    sort: Literal["created_at", "like_count"] = "created_at"
+
+class CommentListResponse(BaseModel):
+    status: str
+    data: List[CommentItem]
+    pagination: Pagination
+
+@app.get("/posts/{post_id}/comments")
+async def get_comments(
+        post_id: int,
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1, le=100),
+        sort: str = Query("created_at")
+):
+    return{
+        "status": "success",
+        "data": [
+            {
+                "post_id": 1234125,
+                "nickname": "닉네임",
+                "comment": "댓글 내용",
+                "like_count": "댓글 공감 수",
+                "created_at": "datetime"
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "limit": 20,
+            "sort": "created_at"
+        }
+    }
+
+
+# 댓글 작성
+class CommentCreateRequest(BaseModel):
+    comment: str = Field(min_length=1, max_length=1000, alias="content")
+    # TODO: authorization
+    nickname: str
+
+class CommentCreateData(BaseModel):
+    nickname: str
+    comment: str
+    comment_id: int
+    comment_created_at: datetime
+
+class CommentCreateResponse(BaseModel):
+    status: str
+    data: CommentCreateData
+
+@app.post("/posts/comments")
+async def create_comment(
+        request: CommentCreateRequest
+):
+    return{
+        "status": "success",
+        "data": {
+            "nickname": "닉네임",
+            "comment": "댓글 내용",
+            "comment_id": 1234125,
+            "comment_created_at": datetime.now()
+        }
+    }
+
+
+# 댓글 수정
+class CommentUpdateRequest(BaseModel):
+    comment: str = Field(min_length=1, max_length=1000, alias="content")
+
+class CommentUpdateData(BaseModel):
+    comment_id: int
+    nickname: str
+    comment: str
+    created_at: datetime
+    updated_at: datetime
+
+class CommentUpdateResponse(BaseModel):
+    status: str
+    data: CommentUpdateData
+
+@app.patch("/posts/{post_id}/comments/{comment_id}")
+async def update_comment(
+        request: CommentUpdateRequest
+):
+    return{
+        "status": "success",
+        "data": {
+            "comment_id": 1234125,
+            "nickname": "닉네임",
+            "comment": "댓글 수정 내용",
+            "created_at": "datetime",
+            "updated_at": datetime.now()
+        }
+    }
+
+
+# 댓글 삭제
+@app.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: int):
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# 내가 쓴 댓글 목록
+class MyCommentsItem(BaseModel):
+    comment_id: int
+    comment: str
+    like_count: int
+    created_at: datetime
+
+class Pagination(BaseModel):
+    page: int
+    limit: int
+    sort: Literal["created_at", "like_count"] = "created_at"
+
+class MyCommentsResponse(BaseModel):
+    status: str
+    data: List[MyCommentsItem]
+    pagination: Pagination
+
+@app.get("/users/{nickname}/comments", response_model=MyCommentsResponse)
+async def get_my_comments(
+        nickname: str,
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1, le=100)
+):
+    return{
+        "status": "success",
+        "data": [
+            {
+                "comment_id": 1234125,
+                "comment": "댓글 내용",
+                "like_count": 123,
+                "created_at": datetime.now()
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "limit": 20,
+            "sort": "created_at"
+        }
     }

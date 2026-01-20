@@ -31,7 +31,7 @@ async def add_like(
         current_user: Annotated[dict, Depends(get_current_user)],
         like_service: Annotated[LikeService, Depends(LikeService)]
 ):
-    """좋아요를 토글한다. (없으면 등록, 있으면 취소)"""
+    """좋아요를 등록한다."""
     result = await like_service.add_like(post_id, current_user["id"])
 
     return CommonResponse(

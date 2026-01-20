@@ -6,24 +6,27 @@ from service.user import create_user, DuplicateResourceError, UserCreateFailedEr
 router = APIRouter(
     prefix="/users", tags=["Users"]
 )
+
+
 @router.post("",
              response_model=UserRegistrationResponse,
-             status_code=201
+             status_code=status.HTTP_201_CREATED
              )
-#동일 ip 1분에 최대 5번 회원가입 시도 초과 시 429에러 발생
+# 동일 IP당 1분에 최대 5번 회원가입 시도 제한
 @limiter.limit("5/minute")
 def register_user(
         request: Request,
         user: UserCreate):
     try:
+        # 서비스 계층에서 유저 생성 로직 수행
         new_user = create_user(user)
+
         return {
             "status": "success",
             "data": {
                 "id": new_user["id"],
                 "email": new_user["email"],
                 "nickname": new_user["nickname"],
-                "password": new_user | {"password": None},
                 "profile_image_url": new_user["profile_image_url"],
                 "created_at": new_user["created_at"],
             }
@@ -48,7 +51,7 @@ def register_user(
         )
     except UserCreateFailedError:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "status": "error",
                 "error": {

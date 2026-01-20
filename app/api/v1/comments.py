@@ -63,7 +63,7 @@ def get_comments(
         ))
     
     safe_total = total if total > 0 else 1
-    total_pages = ceil(safe_total / limit) if total > 0 else 0
+    total_pages = ceil(safe_total / limit)
     
     return APIResponse(
         status="success",

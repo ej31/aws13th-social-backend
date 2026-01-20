@@ -7,7 +7,7 @@ class LikeStatusResponse(BaseModel):
     is_liked: bool = Field(...,description="현재 사용자의 좋아요 여부")
     like_count: int = Field(...,description="해당 게시물의 좋아요 개수",ge=0)
 
-class LikeInternal(BaseModel):
+class LikeCreateInternal(BaseModel):
     like_id: int
     post_id: int
     user_id: int

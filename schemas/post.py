@@ -34,7 +34,7 @@ class PostsResponse(PostsBase):
     updated_at: datetime | None = None
 
 #JSON 내부에 저장할 때 사용하는 모델
-class PostsInternal(PostsBase):
+class PostsCreateInternal(PostsBase):
     post_id: int
     author_id: int # 내부에서는 해시되지 않은 원본 ID를 저장한다.
     views: int = 0

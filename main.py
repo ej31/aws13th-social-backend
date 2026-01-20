@@ -34,10 +34,18 @@ class User(BaseModel):
     nickname: str
     profileImage: str | None = None
 
+
+
 class UserUpdate(BaseModel):
     nickname: str | None = None
     profileImage: str | None = None
     password: str | None = None
+
+
+
+
+
+
 
 
 class PostCreate(BaseModel):
@@ -45,16 +53,44 @@ class PostCreate(BaseModel):
     content: str
 
 
+
+
+
 class PostUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
 
 
+
+
+
+
 class CommentCreate(BaseModel):
     content: str
 
+
+
+
+
+
+
+
+
+
 class CommentUpdate(BaseModel):
     content: str | None = None
+
+
+
+
+
+
+
+
+
+
+
+
 
 def load_data(filename):
     try:
@@ -63,14 +99,29 @@ def load_data(filename):
     except (FileNotFoundError, JSONDecodeError):
         return []
 
+
+
+
+
+
+
+
+
+
+
 def save_data(filename, data):
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
+
+
+
+
 
 def hash_password(password: str):
     password_bytes = password.encode('utf-8')
     hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
     return hashed_bytes.decode('utf-8')
+
 
 
 
@@ -81,6 +132,15 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+
+
+
+
+
+
+
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -112,17 +172,28 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 def signup(user: User):
     users = load_data(USERS_FILE)
 
+
+
+
+
     for u in users:
         if u['email'] == user.email:
             raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
+
+
 
     if not users:
         new_id = 1
     else:
         new_id = users[-1]['userId'] + 1
 
+
+
     hashed_pw = hash_password(user.password)
     now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+
 
     new_user_data = {
         "userId": new_id,
@@ -132,6 +203,7 @@ def signup(user: User):
         "profileImage": user.profileImage,
         "createdAt": now
     }
+
 
     users.append(new_user_data)
     save_data(USERS_FILE, users)
@@ -151,11 +223,20 @@ def signup(user: User):
 def login_user(user: UserLogin):
     users = load_data(USERS_FILE)
 
+
+
+
+
+
+
+
+
     target_user = None
     for u in users:
         if u['email'] == user.email:
             target_user = u
             break
+
 
     if target_user:
         is_pw_correct = bcrypt.checkpw(
@@ -165,6 +246,8 @@ def login_user(user: UserLogin):
         if is_pw_correct:
             jwt_token = create_access_token(data={"sub": target_user['email']})
             return {"access_token": jwt_token, "token_type": "bearer"}
+
+
 
     raise HTTPException(status_code=401, detail="이메일 또는 비밀번호 불일치")
 
@@ -179,6 +262,21 @@ def read_users_me(current_user: dict = Depends(get_current_user)):
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @app.patch("/users/me")
 def update_user_me(user_update: UserUpdate, current_user: dict = Depends(get_current_user)):
     users = load_data(USERS_FILE)
@@ -189,8 +287,11 @@ def update_user_me(user_update: UserUpdate, current_user: dict = Depends(get_cur
             target_index = i
             break
 
+
     if target_index == -1:
         raise HTTPException(status_code=404, detail="유저 정보를 찾을 수 없습니다.")
+
+
 
     user_data = users[target_index]
 
@@ -207,6 +308,18 @@ def update_user_me(user_update: UserUpdate, current_user: dict = Depends(get_cur
     return {"status": "success", "data": user_data}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 @app.delete("/users/me")
 def delete_user_me(current_user: dict = Depends(get_current_user)):
     users = load_data(USERS_FILE)
@@ -218,6 +331,16 @@ def delete_user_me(current_user: dict = Depends(get_current_user)):
 
     save_data(USERS_FILE, new_users)
     return {"status": "success", "message": "회원 탈퇴 완료"}
+
+
+
+
+
+
+
+
+
+
 
 
 @app.get("/users/{user_id}")
@@ -236,6 +359,16 @@ def get_user_by_id(user_id: int):
     raise HTTPException(status_code=404, detail="유저 없음")
 
 
+
+
+
+
+
+
+
+
+
+
 @app.get("/users/me/posts")
 def get_my_posts(current_user: dict = Depends(get_current_user)):
     posts = load_data(POSTS_FILE)
@@ -247,6 +380,20 @@ def get_my_posts(current_user: dict = Depends(get_current_user)):
 
 
 # 여기까지 Users
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -280,6 +427,21 @@ def create_post(post: PostCreate, current_user: dict = Depends(get_current_user)
     return {"status": "success", "data": new_post}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @app.get("/posts")
 def get_posts(page: int = 1, keyword: str | None = None, sort: str | None = None):
     posts = load_data(POSTS_FILE)
@@ -299,6 +461,19 @@ def get_posts(page: int = 1, keyword: str | None = None, sort: str | None = None
     result_posts = posts[start_index:end_index]
 
     return {"total": len(posts), "page": page, "data": result_posts}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @app.get("/posts/{post_id}")
@@ -322,6 +497,18 @@ def get_post_detail(post_id: int):
     save_data(POSTS_FILE, posts)
 
     return target_post
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @app.patch("/posts/{post_id}")
@@ -358,6 +545,15 @@ def patch_post_detail(
     return {"status": "success", "data": target_post}
 
 
+
+
+
+
+
+
+
+
+
 @app.delete("/posts/{post_id}")
 def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
     posts = load_data(POSTS_FILE)
@@ -383,6 +579,18 @@ def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 # Comments
 @app.get("/posts/{post_id}/comments")
 def get_comments(post_id: int):
@@ -391,6 +599,16 @@ def get_comments(post_id: int):
     post_comments = [c for c in comments if c['postId'] == post_id]
 
     return {"count": len(post_comments), "data": post_comments}
+
+
+
+
+
+
+
+
+
+
 
 
 @app.post("/posts/{post_id}/comments")
@@ -423,16 +641,40 @@ def create_comment(
     return {"status": "success", "data": new_comment}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 @app.patch("/comments/{comment_id}")
 def update_comment(
         comment_id: int,
         comment_update: CommentUpdate,
         current_user: dict = Depends(get_current_user)
 ):
+
     comments = load_data(COMMENTS_FILE)
+
+
+
+
+
+
 
     target_comment = None
     target_index = -1
+
+
+
+
 
     for i, c in enumerate(comments):
         if c['id'] == comment_id:
@@ -440,24 +682,55 @@ def update_comment(
             target_index = i
             break
 
+
+
+
+
+
+
     if target_comment is None:
         raise HTTPException(status_code=404, detail="댓글이 없습니다.")
+
+
+
 
     if target_comment['writerId'] != current_user['userId']:
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
 
+
+
     if comment_update.content is not None:
         target_comment['content'] = comment_update.content
+
+
 
     comments[target_index] = target_comment
     save_data(COMMENTS_FILE, comments)
 
+
+
+
     return {"status": "success", "data": target_comment}
+
+
+
+
+
+
 
 
 @app.delete("/comments/{comment_id}")
 def delete_comment(comment_id: int, current_user: dict = Depends(get_current_user)):
+
+
     comments = load_data(COMMENTS_FILE)
+
+
+
+
+
+
+
 
     target_comment = None
     for c in comments:
@@ -465,11 +738,22 @@ def delete_comment(comment_id: int, current_user: dict = Depends(get_current_use
             target_comment = c
             break
 
+
+
+
     if target_comment is None:
+
         raise HTTPException(status_code=404, detail="댓글이 없습니다.")
 
+
     if target_comment['writerId'] != current_user['userId']:
+
+
+
         raise HTTPException(status_code=403, detail="권한이 없습니다.")
+
+
+
 
     comments.remove(target_comment)
     save_data(COMMENTS_FILE, comments)
@@ -478,12 +762,26 @@ def delete_comment(comment_id: int, current_user: dict = Depends(get_current_use
 
 
 
+
+
+
 @app.get("/users/me/comments")
+
 def get_user_comments(current_user: dict = Depends(get_current_user)):
+
+
+
     comments = load_data(COMMENTS_FILE)
 
+
     my_comm = []
+
+
     for i in comments:
         if i['writerId'] == current_user['userId']:
             my_comm.append(i)
-    return
+
+    return my_comm
+
+
+# 여기까지 Comments

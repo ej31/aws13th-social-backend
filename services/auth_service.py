@@ -78,6 +78,9 @@ def login_user(data: UserLogin):
             # safe_user = {k: v for k, v in user_record.items() if k != "password"}
             safe_user = UserPublic(**user_record)
             return safe_user, token, expires
+    except Exception :
+        con.rollback()
+        raise
     finally:
         if con:
             con.close()

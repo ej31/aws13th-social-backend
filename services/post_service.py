@@ -24,7 +24,7 @@ def write_posts(data: Post, current_user: dict):
             post_created_at = datetime.now(timezone.utc)
 
             insert_sql = "INSERT INTO posts (user_id, post_id,title, content, media, created_at) VALUES (%s, %s, %s, %s, %s, %s)"
-            param =(user_id, post_id, data.title, data.content, post_created_at)
+            param =(user_id, post_id, data.title, data.content, data.media, post_created_at)
             cursor.execute(insert_sql, param)
 
             post_response= PostPublic(

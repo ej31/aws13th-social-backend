@@ -23,7 +23,8 @@ def get_user_by_id(user_id):
             cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
             return cursor.fetchone()
    finally:
-    conn.close()
+       if conn:
+            conn.close()
 
 
 # def get_users():

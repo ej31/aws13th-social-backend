@@ -2,7 +2,6 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, HttpUrl
 from datetime import datetime
 
-
 class UserInternal(BaseModel):
     user_id: str
     email: EmailStr

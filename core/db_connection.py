@@ -1,9 +1,17 @@
 import pymysql
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 from pymysql.cursors import DictCursor
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
+env_db_path = BASE_DIR / ".env .DB"
+
+# verbose=True를 넣으면 로드 과정을 상세히 출력해줍니다.
+if load_dotenv(dotenv_path=env_db_path, verbose=True):
+    print(f"✅ .env_DB 로드 성공! (경로: {env_db_path})")
+else:
+    print(f"❌ .env_DB 로드 실패! (파일이 해당 경로에 있는지 확인하세요: {env_db_path})")
 
 def get_db_connection():
     return pymysql.connect(
@@ -13,28 +21,6 @@ def get_db_connection():
     password=os.getenv("MYSQL_PASSWORD"),
     db=os.getenv("MYSQL_DB"),
     charset=os.getenv("MYSQL_CHARSET"),
+
     cursorclass=DictCursor
     )
-
-# conn = get_db_connection()
-#
-# with conn:
-#     with conn.cursor() as cursor:
-#         cursor.execute("SELECT * FROM users")
-#         rows=cursor.fetchall()
-#         for row in rows:
-#             print(row)
-
-#
-# cursor = conn.cursor()
-# # 3. SQL 실행
-# cursor.execute("SELECT * FROM users")
-#
-# # 4. 결과 가져오기
-# rows = cursor.fetchall()
-# for row in rows:
-#     print(row)
-#
-# # 5. 종료 (커서 → 연결 순서)
-# cursor.close()
-# conn.close()

@@ -204,8 +204,8 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij+all,pycharm+all
-.env
+core/.env
 .venv
 DB/users.json
 DB/posts.json
-.env_DB
+core/.env .DB

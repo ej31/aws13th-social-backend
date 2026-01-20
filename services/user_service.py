@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 from repositories.user_repo import get_users, save_users,find_user_by_id
 
-
 def get_my_profile(current_user: dict) -> dict:
     return current_user
 

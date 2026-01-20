@@ -1,28 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.users import UserCreate, UserResponse, UserUpdate, UserDelete, UserPublicResponse
-from utils.data import load_json, add_item, find_by_field, find_by_id, update_item, delete_item, delete_items_by_field
+from database import get_db
+from repositories import UserRepository, RefreshTokenRepository
 from utils.auth import hash_password, verify_password, get_current_user
+from models.user import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+
 @router.post("", status_code=201)
-async def create_user(request: UserCreate):
+async def create_user(request: UserCreate, db: AsyncSession = Depends(get_db)):
     """회원가입"""
-    users = await load_json("users.json")
+    user_repo = UserRepository(db)
 
     # 이메일 중복 체크
-    if find_by_field(users, "email", request.email):
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "status": "error",
-                "code": "DUPLICATE_RESOURCE",
-                "message": "이미 사용 중인 정보(이메일/닉네임)입니다."
-            }
-        )
-
-    # 닉네임 중복 체크
-    if find_by_field(users, "nickname", request.nickname):
+    if await user_repo.email_exists(request.email):
         raise HTTPException(
             status_code=409,
             detail={
@@ -36,30 +29,33 @@ async def create_user(request: UserCreate):
     hashed_password = hash_password(request.password)
 
     # 사용자 저장
-    new_user = await add_item("users.json", {
-        "email": request.email,
-        "password": hashed_password,
-        "nickname": request.nickname,
-        "profileImage": request.profileImage
-    }, id_field="userId")
+    new_user = await user_repo.create(
+        email=request.email,
+        password=hashed_password,
+        nickname=request.nickname,
+        profile_image=request.profileImage
+    )
 
     return {
         "status": "success",
         "message": "회원가입이 완료되었습니다.",
         "data": {
-            "userId": new_user["userId"],
-            "email": new_user["email"],
-            "nickname": new_user["nickname"],
-            "createdAt": new_user["createdAt"]
+            "userId": new_user.userId,
+            "email": new_user.email,
+            "nickname": new_user.nickname,
+            "createdAt": new_user.createdAt
         }
     }
 
 
 @router.get("/me")
-async def get_my_profile(current_user: dict = Depends(get_current_user)):
+async def get_my_profile(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """내 프로필 조회"""
-    users = await load_json("users.json")
-    user = find_by_id(users, current_user["userId"], id_field="userId")
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(current_user["userId"])
 
     if not user:
         raise HTTPException(
@@ -74,22 +70,26 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
     return {
         "status": "success",
         "data": {
-            "userId": user["userId"],
-            "email": user["email"],
-            "nickname": user["nickname"],
-            "profileImage": user.get("profileImage"),
-            "createdAt": user["createdAt"]
+            "userId": user.userId,
+            "email": user.email,
+            "nickname": user.nickname,
+            "profileImage": user.profileImage,
+            "createdAt": user.createdAt
         }
     }
 
 
 @router.patch("/me")
-async def update_user(user: UserUpdate, current_user: dict = Depends(get_current_user)):
+async def update_user(
+    user_update: UserUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """프로필 수정"""
-    users = await load_json("users.json")
-    current_user_data = find_by_id(users, current_user["userId"], id_field="userId")
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(current_user["userId"])
 
-    if not current_user_data:
+    if not user:
         raise HTTPException(
             status_code=404,
             detail={
@@ -99,56 +99,50 @@ async def update_user(user: UserUpdate, current_user: dict = Depends(get_current
             }
         )
 
-    # 닉네임 변경 시 중복 체크
-    if user.nickname and user.nickname != current_user_data["nickname"]:
-        if find_by_field(users, "nickname", user.nickname):
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "status": "error",
-                    "code": "DUPLICATE_RESOURCE",
-                    "message": "이미 사용 중인 닉네임입니다."
-                }
-            )
-
     # 비밀번호 변경 시 currentPassword 확인
     update_data = {}
-    if user.password:
-        if not user.currentPassword:
+    if user_update.password:
+        if not user_update.currentPassword:
             raise HTTPException(status_code=400, detail="현재 비밀번호를 입력해주세요.")
 
-        if not verify_password(user.currentPassword, current_user_data["password"]):
+        if not verify_password(user_update.currentPassword, user.password):
             raise HTTPException(status_code=403, detail="현재 비밀번호가 일치하지 않습니다.")
 
-        update_data["password"] = hash_password(user.password)
+        update_data["password"] = hash_password(user_update.password)
 
-    if user.nickname:
-        update_data["nickname"] = user.nickname
-    if "profileImage" in user.model_fields_set:
-        update_data["profileImage"] = user.profileImage
+    if user_update.nickname:
+        update_data["nickname"] = user_update.nickname
+    if "profileImage" in user_update.model_fields_set:
+        update_data["profileImage"] = user_update.profileImage
 
     # 업데이트
-    updated_user = await update_item("users.json", current_user["userId"], update_data, id_field="userId")
+    updated_user = await user_repo.update(current_user["userId"], **update_data)
 
     return {
         "status": "success",
         "message": "프로필 정보가 성공적으로 수정되었습니다.",
         "data": {
-            "userId": updated_user["userId"],
-            "nickname": updated_user["nickname"],
-            "profileImage": updated_user.get("profileImage"),
-            "updatedAt": updated_user.get("updatedAt")
+            "userId": updated_user.userId,
+            "nickname": updated_user.nickname,
+            "profileImage": updated_user.profileImage,
+            "updatedAt": updated_user.updatedAt
         }
     }
 
 
 @router.delete("/me")
-async def delete_user(user: UserDelete, current_user: dict = Depends(get_current_user)):
+async def delete_user(
+    user_delete: UserDelete,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """회원탈퇴"""
-    users = await load_json("users.json")
-    current_user_data = find_by_id(users, current_user["userId"], id_field="userId")
+    user_repo = UserRepository(db)
+    token_repo = RefreshTokenRepository(db)
 
-    if not current_user_data:
+    user = await user_repo.get_by_id(current_user["userId"])
+
+    if not user:
         raise HTTPException(
             status_code=404,
             detail={
@@ -159,7 +153,7 @@ async def delete_user(user: UserDelete, current_user: dict = Depends(get_current
         )
 
     # 비밀번호 확인
-    if not verify_password(user.password, current_user_data["password"]):
+    if not verify_password(user_delete.password, user.password):
         raise HTTPException(
             status_code=403,
             detail={
@@ -169,23 +163,22 @@ async def delete_user(user: UserDelete, current_user: dict = Depends(get_current
             }
         )
 
-    # 사용자 삭제
-    await delete_item("users.json", current_user["userId"], id_field="userId")
-
     # 해당 사용자의 모든 refreshToken 삭제
-    await delete_items_by_field("refresh_tokens.json", "userId", current_user["userId"])
+    await token_repo.delete_by_user_id(current_user["userId"])
+
+    # 사용자 삭제 (CASCADE로 인해 관련 데이터도 자동 삭제)
+    await user_repo.delete(current_user["userId"])
 
     return {
         "status": "success",
         "message": "회원 탈퇴가 성공적으로 처리되었습니다."
     }
 
-
 @router.get("/{userId}")
-async def get_user(userId: int):
+async def get_user(userId: int, db: AsyncSession = Depends(get_db)):
     """특정 회원 조회"""
-    users = await load_json("users.json")
-    user = find_by_id(users, userId, id_field="userId")
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(userId)
 
     if not user:
         raise HTTPException(
@@ -200,9 +193,9 @@ async def get_user(userId: int):
     return {
         "status": "success",
         "data": {
-            "userId": user["userId"],
-            "nickname": user["nickname"],
-            "profileImage": user.get("profileImage"),
-            "createdAt": user["createdAt"]
+            "userId": user.userId,
+            "nickname": user.nickname,
+            "profileImage": user.profileImage,
+            "createdAt": user.createdAt
         }
     }

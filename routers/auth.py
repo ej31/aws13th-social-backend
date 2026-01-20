@@ -1,20 +1,24 @@
-from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response, Request, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 import os
 from schemas.users import UserLogin, LoginResponse
-from utils.data import load_json, find_by_field, add_item, find_by_id, delete_item
-from utils.auth import verify_password, create_access_token, create_refresh_token, verify_token, hash_refresh_token
+from database import get_db
+from repositories import UserRepository, RefreshTokenRepository
+from utils.auth import verify_password, create_access_token, create_refresh_token, hash_refresh_token
 from datetime import datetime, timezone
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
 @router.post("/tokens")
-async def login(user: UserLogin, response: Response):
+async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
     """로그인"""
-    users = await load_json("users.json")
+    user_repo = UserRepository(db)
+    token_repo = RefreshTokenRepository(db)
 
     # 이메일로 사용자 찾기
-    db_user = find_by_field(users, "email", user.email)
+    db_user = await user_repo.get_by_email(user.email)
     if not db_user:
         raise HTTPException(
             status_code=401,
@@ -26,7 +30,7 @@ async def login(user: UserLogin, response: Response):
         )
 
     # 비밀번호 검증
-    if not verify_password(user.password, db_user["password"]):
+    if not verify_password(user.password, db_user.password):
         raise HTTPException(
             status_code=401,
             detail={
@@ -38,19 +42,18 @@ async def login(user: UserLogin, response: Response):
 
     # AccessToken 생성
     access_token = create_access_token(
-        data={"userId": db_user["userId"], "email": db_user["email"]}
+        data={"userId": db_user.userId, "email": db_user.email}
     )
 
     # RefreshToken 생성 및 저장
-    refresh_token_data = create_refresh_token(db_user["userId"])
+    refresh_token_data = create_refresh_token(db_user.userId)
 
     # 평문 토큰은 쿠키로 전송, 해시만 DB에 저장
-    token_to_save = {
-        "tokenHash": refresh_token_data["tokenHash"],
-        "userId": refresh_token_data["userId"],
-        "expiresAt": refresh_token_data["expiresAt"]
-    }
-    await add_item("refresh_tokens.json", token_to_save, id_field="tokenId")
+    await token_repo.create(
+        token_hash=refresh_token_data["tokenHash"],
+        user_id=refresh_token_data["userId"],
+        expires_at=refresh_token_data["expiresAt"]
+    )
 
     # RefreshToken을 HttpOnly 쿠키로 설정
     response.set_cookie(
@@ -67,17 +70,25 @@ async def login(user: UserLogin, response: Response):
         "status": "success",
         "message": "로그인에 성공하였습니다.",
         "data": {
-            "userId": db_user["userId"],
-            "nickname": db_user["nickname"],
+            "userId": db_user.userId,
+            "nickname": db_user.nickname,
             "accessToken": access_token,
             "tokenType": "Bearer",
             "expiresIn": 60 * 60
         }
     }
 
+
 @router.post("/tokens/refresh")
-async def refresh_access_token(request: Request, response: Response):
+async def refresh_access_token(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
     """RefreshToken으로 새로운 AccessToken 발급"""
+    user_repo = UserRepository(db)
+    token_repo = RefreshTokenRepository(db)
+
     # 쿠키에서 refreshToken 읽기
     refresh_token = request.cookies.get("refreshToken")
     if not refresh_token:
@@ -89,12 +100,10 @@ async def refresh_access_token(request: Request, response: Response):
                 "message": "리프레시 토큰이 없습니다."
             }
         )
-    refresh_tokens = await load_json("refresh_tokens.json")
-    users = await load_json("users.json")
 
     # RefreshToken 찾기
     refresh_token_hash = hash_refresh_token(refresh_token)
-    token_data = find_by_field(refresh_tokens, "tokenHash", refresh_token_hash)
+    token_data = await token_repo.get_by_hash(refresh_token_hash)
     if not token_data:
         raise HTTPException(
             status_code=401,
@@ -105,8 +114,13 @@ async def refresh_access_token(request: Request, response: Response):
             }
         )
 
-    # 만료 확인
-    if datetime.fromisoformat(token_data["expiresAt"]) < datetime.now(timezone.utc):
+    # 만료 확인 (timezone-aware datetime으로 변환)
+    now = datetime.now(timezone.utc)
+    expires_at = token_data.expiresAt
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if expires_at < now:
         raise HTTPException(
             status_code=401,
             detail={
@@ -117,7 +131,7 @@ async def refresh_access_token(request: Request, response: Response):
         )
 
     # 사용자 정보 조회
-    user = find_by_id(users, token_data["userId"], id_field="userId")
+    user = await user_repo.get_by_id(token_data.userId)
     if not user:
         raise HTTPException(
             status_code=404,
@@ -130,16 +144,15 @@ async def refresh_access_token(request: Request, response: Response):
 
     # RefreshToken Rotation
     # 1. 기존 RefreshToken 삭제(일회성)
-    await delete_item("refresh_tokens.json", token_data["tokenId"], id_field="tokenId")
+    await token_repo.delete(token_data.tokenId)
 
     # 2. 새로운 RefreshToken 생성 및 저장
-    new_refresh_token_data = create_refresh_token(user["userId"])
-    token_to_save = {
-        "tokenHash": new_refresh_token_data["tokenHash"],
-        "userId": new_refresh_token_data["userId"],
-        "expiresAt": new_refresh_token_data["expiresAt"]
-    }
-    await add_item("refresh_tokens.json", token_to_save, id_field="tokenId")
+    new_refresh_token_data = create_refresh_token(user.userId)
+    await token_repo.create(
+        token_hash=new_refresh_token_data["tokenHash"],
+        user_id=new_refresh_token_data["userId"],
+        expires_at=new_refresh_token_data["expiresAt"]
+    )
 
     # 3. 새 RefreshToken을 HttpOnly 쿠키로 설정
     response.set_cookie(
@@ -154,7 +167,7 @@ async def refresh_access_token(request: Request, response: Response):
 
     # 4. 새로운 AccessToken 발급
     new_access_token = create_access_token(
-        data={"userId": user["userId"], "email": user["email"]}
+        data={"userId": user.userId, "email": user.email}
     )
     return {
         "status": "success",
@@ -164,4 +177,3 @@ async def refresh_access_token(request: Request, response: Response):
             "expiresIn": 60 * 60
         }
     }
-

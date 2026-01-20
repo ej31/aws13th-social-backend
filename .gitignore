@@ -208,4 +208,4 @@ core/.env
 .venv
 DB/users.json
 DB/posts.json
-core/.env .DB
+core/.env_DB

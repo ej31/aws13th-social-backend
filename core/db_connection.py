@@ -5,7 +5,7 @@ from pathlib import Path
 from pymysql.cursors import DictCursor
 
 BASE_DIR = Path(__file__).resolve().parent
-env_db_path = BASE_DIR / ".env .DB"
+env_db_path = BASE_DIR / ".env_DB"
 
 # verbose=True를 넣으면 로드 과정을 상세히 출력해줍니다.
 if load_dotenv(dotenv_path=env_db_path, verbose=True):

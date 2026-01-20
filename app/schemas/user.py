@@ -62,7 +62,7 @@ class UserUpdateRequest(BaseModel):
         password: 변경할 비밀번호 (선택)
     """
     nickname: str | None = Field(default=None, min_length=2, max_length=20, description="닉네임")
-    profile_image: str | None = Field(default=None, description="프로필 이미지 URL")
+    profile_image: str | None = None
     password: str | None = Field(default=None, min_length=8, description="비밀번호")
 
     @field_validator('nickname')

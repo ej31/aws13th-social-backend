@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Annotated, List
+
 from pydantic import BaseModel, Field
+
 
 class Comment(BaseModel):
     content: Annotated[str, Field(min_length=1,max_length=100)]

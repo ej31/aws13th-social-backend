@@ -1,10 +1,11 @@
-from datetime import datetime,timezone
+from datetime import datetime, timezone
+from typing import Optional
+
 import uuid
+from fastapi import HTTPException
+
 from models.comment import Comment, CommentResponse
 from repositories.comments_repo import get_comments, save_comments
-from fastapi import HTTPException
-from typing import Annotated, List, Optional
-
 from repositories.posts_repo import get_post
 
 

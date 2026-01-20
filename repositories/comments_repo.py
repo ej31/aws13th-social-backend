@@ -1,7 +1,29 @@
-import json, os
+import json
+import os
 from pathlib import Path
 
+from core.db_connection import get_db_connection
+
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "comments.json"
+
+
+def get_all_comments_db():
+    con= get_db_connection()
+    with con:
+        with con.cursor() as cursor:
+            cursor.execute("SELECT * FROM comments")
+            return cursor.fetchall()
+
+def get_comment_by_id(comment_id):
+    conn = get_db_connection()
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM comments WHERE comment_id = %s", (comment_id,))
+            return cursor.fetchone()
+
+
+
+
 
 def get_comments()->list[dict]:
     if not os.path.exists(DB_FILE):

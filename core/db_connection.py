@@ -1,7 +1,8 @@
-import pymysql
 import os
-from dotenv import load_dotenv
 from pathlib import Path
+
+import pymysql
+from dotenv import load_dotenv
 from pymysql.cursors import DictCursor
 
 BASE_DIR = Path(__file__).resolve().parent

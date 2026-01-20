@@ -1,6 +1,24 @@
-import json, os
+import json
+import os
 from pathlib import Path
+
+from core.db_connection import get_db_connection
+
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "posts.json"
+
+def get_all_posts():
+    con = get_db_connection()
+    with con.cursor() as cursor:
+        cursor.execute("SELECT * FROM posts")
+        return cursor.fetchall()
+
+def get_post_by_id(post_id):
+    conn = get_db_connection()
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM posts WHERE post_id = %s", (post_id,))
+            return cursor.fetchone()
+
 
 def get_post():
     if not os.path.exists(DB_FILE):

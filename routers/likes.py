@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends
 from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from fastapi import HTTPException
+
+from dependencies.auth import get_current_user
 from models.like import LikeResponse, LikeCreate
+from repositories.comments_repo import get_comments
 from repositories.posts_repo import get_post
 from services.likes_service import toggle_like_service, get_likes_service, get_my_likes
-from dependencies.auth import get_current_user
-from repositories.comments_repo import get_comments
-from fastapi import HTTPException
 
 router = APIRouter(tags=["likes"])
 

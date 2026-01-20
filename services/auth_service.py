@@ -1,11 +1,13 @@
+from datetime import datetime, timezone
+
 import uuid
-from datetime import datetime,timezone
-from core.db_connection import get_db_connection
-from models.user import UserInternal
-from services.jwt_service import create_access_token
-from models.auth import UserSignUp, UserLogin
 from fastapi import HTTPException
 from passlib.context import CryptContext
+
+from core.db_connection import get_db_connection
+from models.auth import UserSignUp, UserLogin
+from models.user import UserInternal, UserPublic
+from services.jwt_service import create_access_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -72,7 +74,11 @@ def login_user(data: UserLogin):
             if not verify_password(data.password, user_record["password"]):
                 raise HTTPException(401, "이메일 또는 비밀번호가 올바르지 않습니다.")
             token, expires = create_access_token(user_record["user_id"])
-            safe_user = {k: v for k, v in user_record.items() if k != "password"}
+
+            # safe_user = {k: v for k, v in user_record.items() if k != "password"}
+            safe_user = UserPublic(**user_record)
             return safe_user, token, expires
     finally:
-        con.close()
+        if con:
+            con.close()
+

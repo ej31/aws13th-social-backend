@@ -1,12 +1,15 @@
+from typing import Optional
+
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from starlette.requests import Request
-from typing import Optional
+
 from core.config import jwt_settings
-from repositories.user_repo import get_users, get_all_users_db
+from repositories.user_repo import get_user_by_id
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -18,10 +21,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError as err:
         raise HTTPException(status_code=401, detail="토큰 오류") from err
     user_id = payload.get("sub")
-    users = get_all_users_db()
-    list_users = list(users)
-    user = next((u for u in list_users if u["user_id"] == user_id), None)
-
+    user = get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=401, detail="유저 없음")
 

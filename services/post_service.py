@@ -1,31 +1,67 @@
+from datetime import datetime, timezone
+from typing import Optional
+
 import uuid
-from typing import Annotated, List, Optional
-from models.post import Post, PostInternal, PostQuery
 from fastapi import HTTPException
+
+from core.db_connection import get_db_connection
+from models.post import Post, PostQuery, PostPublic
 from repositories.posts_repo import get_post, save_post
-from datetime import datetime,timezone
+
 
 def write_posts(data: Post, current_user: dict):
-    posts = get_post()
+    con = None
+    try:
+        con = get_db_connection()
+        with con.cursor() as cursor:
+            check_sql = "SELECT * FROM posts WHERE title = %s"
+            cursor.execute(check_sql, (data.title,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400,detail="이미 존대하는 게시물 타이틀")
 
-    if any(u["title"] == data.title for u in posts):
-        raise HTTPException(400, "이미 존재하는 게시물 타이틀")
+            user_id = current_user["user_id"]
+            post_id = str(uuid.uuid4())
+            post_created_at = datetime.now(timezone.utc)
 
-    post_created_at = datetime.now(timezone.utc)
+            insert_sql = "INSERT INTO posts (user_id, post_id,title, content,created_at) VALUES (%s, %s, %s, %s, %s)"
+            param =(user_id, post_id, data.title, data.content, post_created_at)
+            cursor.execute(insert_sql, param)
 
-    my_post = PostInternal(
-        user_id=current_user["user_id"],
-        post_id=str(uuid.uuid4()),
-        view_count=0,
-        title=data.title,
-        content=data.content,
-        media=data.media,
-        created_at=post_created_at
-    ).model_dump(mode="json")
+            post_response= PostPublic(
+                title=data.title,
+                content=data.content,
+                media=data.media,
+            )
+        con.commit()
+        return post_response
 
-    posts.append(my_post)
-    save_post(posts)
-    return my_post
+
+    except Exception as e:
+        con.rollback()
+        raise e
+    finally: con.close()
+
+#
+# def write_posts(data: Post, current_user: dict):
+#     posts = get_all_posts()
+#     if any(u["title"] == data.title for u in posts):
+#         raise HTTPException(400, "이미 존재하는 게시물 타이틀")
+#
+#     post_created_at = datetime.now(timezone.utc)
+#
+#     my_post = PostInternal(
+#         user_id=current_user["user_id"],
+#         post_id=str(uuid.uuid4()),
+#         view_count=0,
+#         title=data.title,
+#         content=data.content,
+#         media=data.media,
+#         created_at=post_created_at
+#     ).model_dump(mode="json")
+#
+#     posts.append(my_post)
+#     save_post(posts)
+#     return my_post
 
 def get_user_post(post_id: str) -> dict:
     posts = get_post()

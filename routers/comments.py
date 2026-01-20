@@ -1,5 +1,7 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends
+
 from dependencies.auth import get_current_user, get_optional_user
 from models.comment import Comment, CommentResponse, AllComments
 from services.comments_service import write_comments, get_usr_comments, update_user_comments, delete_user_comments, \

@@ -1,8 +1,11 @@
+from datetime import datetime, timezone
+from typing import Optional, List
+
 import uuid
-from datetime import datetime,timezone
+
 from models.like import LikeCreate, LikeResponse
 from repositories.likes_repo import get_likes, save_likes
-from typing import Optional, Annotated, Any, Generator,List
+
 
 def toggle_like_service(user_id: str, like_in: LikeCreate):
     likes = get_likes()

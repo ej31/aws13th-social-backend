@@ -26,13 +26,13 @@ async def get_like_status(
 
 
 @router.post("/", response_model=CommonResponse[LikeStatusResponse],status_code=status.HTTP_201_CREATED)
-async def toggle_like(
+async def add_like(
         post_id: int,
         current_user: Annotated[dict, Depends(get_current_user)],
         like_service: Annotated[LikeService, Depends(LikeService)]
 ):
     """좋아요를 토글한다. (없으면 등록, 있으면 취소)"""
-    result = await like_service.toggle_like(post_id, current_user["id"])
+    result = await like_service.add_like(post_id, current_user["id"])
 
     return CommonResponse(
         status="success",
@@ -48,7 +48,7 @@ async def remove_like(
 ):
     """명시적으로 좋아요를 취소한다."""
     # 이미 좋아요가 있는 경우에만 삭제가 일어나도록 한다..
-    await like_service.toggle_like(post_id, current_user["id"])
+    await like_service.remove_like(post_id, current_user["id"])
 
     return CommonResponse(
         status="success",

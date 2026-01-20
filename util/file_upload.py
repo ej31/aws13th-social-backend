@@ -8,6 +8,11 @@ class FileUtil:
     ALLOWED_EXTENSIONS = ["image/png","image/jpeg","image/jpg"]
     MAX_FILE_SIZE = 5* 1024*1024 #5mb
 
+    @staticmethod
+    def _is_safe_path(base_dir:str,target_path: str) -> bool:
+            real_base = os.path.basename(base_dir)
+            real_target_path = os.path.basename(target_path)
+            return real_target_path.startswith(real_base)
     @classmethod
     async def validate_and_save_image(cls,file:UploadFile,folder:str = settings.upload_dir) -> str:
         if file.content_type not in cls.ALLOWED_EXTENSIONS:
@@ -39,6 +44,12 @@ class FileUtil:
     @staticmethod
     def delete_file(file_path: str) -> None:
         actual_path = file_path.lstrip("/")
+        if not FileUtil._is_safe_path(settings.upload_dir,actual_path):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="잘못된 경로에 대한 접근입니다."
+            )
+
         if os.path.exists(actual_path):
             os.remove(actual_path)
 

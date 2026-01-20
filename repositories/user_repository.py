@@ -49,7 +49,7 @@ class UserRepository:
                 users[i] = user_data
                 break
         else:
-            raise ValueError(f"ID가 {user_data['id']}인 유저를 찾을 수 없어 수정할 수 없습니다.")
+            users.append(user_data)
 
         self._save_all(users)
 

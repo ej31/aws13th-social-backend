@@ -34,13 +34,13 @@ class CommentService:
         }
 
     @staticmethod
-    def _comment_verify_author(comment: dict, current_user_id: str) -> None:
+    def _comment_verify_author(comment: dict, current_user_id: int) -> None:
         """현재 사용자와 댓글 글쓴이가 맞는지 확인"""
         if comment["author_id"] != current_user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="해당 게시글에 대한 수정/삭제 권한이 없습니다.")
 
-    async def create_comment(self,post_id: int, req: CommentCreateRequest,author_id: str):
+    async def create_comment(self,post_id: int, req: CommentCreateRequest,author_id: int):
         post = self.post_repo.find_by_id(post_id)
         if not post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -70,7 +70,7 @@ class CommentService:
 
         return paged_comments_data,len(all_comments)
 
-    async def update_comment(self,comment_id:int,req: CommentUpdateRequest,author_id: str):
+    async def update_comment(self,comment_id:int,req: CommentUpdateRequest,author_id: int):
         comment = self.comment_repo.find_by_id(comment_id)
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -87,7 +87,7 @@ class CommentService:
         updated_comment = self.comment_repo.save(comment)
         return self._assemble_comment_response(updated_comment)
 
-    async def delete_comment(self,comment_id:int, author_id: str) -> bool:
+    async def delete_comment(self,comment_id:int, author_id: int) -> bool:
         comment = self.comment_repo.find_by_id(comment_id)
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

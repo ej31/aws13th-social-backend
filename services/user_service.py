@@ -10,11 +10,7 @@ from common.config import settings
 from common.security import hash_password, encode_id, verify_password
 from common.jwt import create_access_token
 from repositories.user_repository import UserRepository
-from schemas.user import SignupRequest, UserLoginRequest, UserUpdateRequest
-
-
-if not os.path.exists(settings.upload_dir):
-    os.makedirs(settings.upload_dir)
+from schemas.user import SignupRequest, UserLoginRequest, UserUpdateRequest, UserInternal
 
 class UserService:
     # service에서 jwt 의존성을 주입 받지 않는 이유는 이미 router에서 jwt로 인증을 받았기 때문이다.
@@ -37,15 +33,16 @@ class UserService:
 
         user_id = self.user_repo.get_next_id()
 
-        new_user = {
-            "id": user_id,
-            "email": signup_data.email,
-            "nickname": signup_data.nickname,
-            "password": hash_password(signup_data.password),
-            "profile_image": image_url,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        saved_user = self.user_repo.save(new_user)
+        new_user = UserInternal(
+            email = signup_data.email,
+            nickname = signup_data.nickname,
+            password = hash_password(signup_data.password),
+            id= user_id,
+            profile_image = image_url,
+            created_at = datetime.now(timezone.utc).isoformat()
+        )
+
+        saved_user = self.user_repo.save(new_user.model_dump())
 
         response_data = saved_user.copy()
         response_data["id"] = encode_id(saved_user["id"])

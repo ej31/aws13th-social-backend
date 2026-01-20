@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Annotated
 from .common import validate_password_logic
 
 

@@ -88,7 +88,10 @@ async def get_user_posts(
 async def get_user_comments(
         authorization: Annotated[str, Header(description="Bearer access token")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
-        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
+        sort: PostSortType | None = Query(default=PostSortType.LATEST,
+                                          description="정렬 기준 (latest: 최신순, views: 조회수순, likes: 좋아요순)"
+                                          )
 ):
     return {
         "status": "success",

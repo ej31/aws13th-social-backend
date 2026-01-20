@@ -13,7 +13,7 @@ from pydantic import BaseModel, EmailStr
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY가 없습니다!!!!!!!!!")
+    raise RuntimeError("Required environment variable SECRET_KEY is not set")
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -57,12 +57,14 @@ class CommentCreate(BaseModel):
 class CommentUpdate(BaseModel):
     content: Optional[str] = None
 
-def load_data(filename):
+def load_data(filename, default=None):
+    if default is None:
+        default = []
     try:
         with open(filename, "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, JSONDecodeError):
-        return []
+        return default
 
 def save_data(filename, data):
     with open(filename, "w", encoding="utf-8") as f:
@@ -74,9 +76,7 @@ def hash_password(password):
     return hashed_bytes.decode("utf-8")
 
 def create_access_token(data):
-    to_encode = {}
-    for k in data:
-        to_encode[k] = data[k]
+    to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode["exp"] = expire
@@ -109,22 +109,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="존재하지 않는 회원입니다.")
 
     return target_user
-
-def sort_desc_by_int_key(items, key_name):
-
-    n = len(items)
-    i = 0
-    while i < n:
-        j = i + 1
-        while j < n:
-            left = items[i].get(key_name, 0)
-            right = items[j].get(key_name, 0)
-            if right > left:
-                temp = items[i]
-                items[i] = items[j]
-                items[j] = temp
-            j += 1
-        i += 1
 
 # Users
 @app.post("/users/signup", status_code=201)
@@ -225,26 +209,24 @@ def update_user_me(user_update: UserUpdate, current_user: dict = Depends(get_cur
 
 @app.delete("/users/me")
 def delete_user_me(current_user: dict = Depends(get_current_user)):
+    user_id = current_user.get("userId")
+    email = current_user.get("email")
+
     users = load_data(USERS_FILE)
+    new_users = [u for u in users if u.get("email") != email]
 
-    new_users = []
-
-    deleted = False
-
-    for u in users:
-        if u.get("email") == current_user.get("email"):
-            deleted = True
-        else:
-
-
-            new_users.append(u)
-
-    if not deleted:
-
-
-        return {"msg": "삭제에 실패하였습니다."}
+    if len(users) == len(new_users):
+        return {"msg": "탈퇴에 실패하였습니다."}
 
     save_data(USERS_FILE, new_users)
+
+    posts = load_data(POSTS_FILE)
+    new_posts = [p for p in posts if p.get("writerId") != user_id]
+    save_data(POSTS_FILE, new_posts)
+
+    comments = load_data(COMMENTS_FILE)
+    new_comments = [c for c in comments if c.get("writerId") != user_id]
+    save_data(COMMENTS_FILE, new_comments)
 
     return {"status": "success", "message": "회원 탈퇴 완료"}
 
@@ -257,7 +239,7 @@ def get_my_posts(current_user: dict = Depends(get_current_user)):
         if p.get("writerId") == current_user.get("userId"):
             my_posts.append(p)
 
-    sort_desc_by_int_key(my_posts, "id")
+    my_posts.sort(key=lambda x: x.get("id", 0), reverse=True)
     return {"count": len(my_posts), "data": my_posts}
 
 @app.get("/users/{user_id}")
@@ -317,31 +299,27 @@ def create_post(post: PostCreate, current_user: dict = Depends(get_current_user)
 def get_posts(page: int = 1, keyword: Optional[str] = None, sort: Optional[str] = None):
     posts = load_data(POSTS_FILE)
 
-    filtered = []
+    sort_index = []
     if keyword is None:
-        filtered = posts
+        sort_index = posts
     else:
         for p in posts:
             title = p.get("title", "")
             content = p.get("content", "")
             if (keyword in title) or (keyword in content):
-                filtered.append(p)
+                sort_index.append(p)
 
     if sort == "views":
-        sort_desc_by_int_key(filtered, "views")
+        sort_index.sort(key=lambda x: x.get("views", 0), reverse=True)
     else:
-        sort_desc_by_int_key(filtered, "id")
+        sort_index.sort(key=lambda x: x.get("id", 0), reverse=True)
 
     limit = 5
-    start_index = (page - 1) * limit
+    current_page = max(1, page)
+    start_index = (current_page - 1) * limit
     end_index = start_index + limit
-    result_posts = []
-    idx = start_index
-    while idx < end_index and idx < len(filtered):
-        result_posts.append(filtered[idx])
-        idx += 1
-
-    return {"total": len(filtered), "page": page, "data": result_posts}
+    result_posts = sort_index[start_index:end_index]
+    return {"total": len(sort_index), "page": current_page, "data": result_posts}
 
 @app.get("/posts/{post_id}")
 def get_post_detail(post_id: int):
@@ -431,26 +409,25 @@ def get_comments(post_id: int):
 
     return {"count": len(post_comments), "data": post_comments}
 
+
+def post_exists(post_id):
+    posts = load_data(POSTS_FILE)
+
+    if len(posts) == 0:
+        raise HTTPException(status_code=404, detail="게시글이 없습니다.")
+
+    for p in posts:
+        if p.get("id") == post_id:
+            return
+
+    raise HTTPException(status_code=404, detail="게시글이 없습니다.")
+
 @app.post("/posts/{post_id}/comments")
 def create_comment(
     post_id: int,
     comment: CommentCreate,
     current_user: dict = Depends(get_current_user)
 ):
-
-
-
-    def post_exists(post_id):
-        posts = load_data(POSTS_FILE)
-
-        if len(posts) == 0:
-            raise HTTPException(status_code=404, detail="게시글이 없습니다.")
-
-        for p in posts:
-            if p.get("id") == post_id:
-                return
-
-        raise HTTPException(status_code=404, detail="게시글이 없습니다.")
 
     post_exists(post_id)
 
@@ -476,6 +453,8 @@ def create_comment(
     save_data(COMMENTS_FILE, comments)
 
     return {"status": "success", "data": new_comment}
+
+
 
 @app.patch("/comments/{comment_id}")
 def update_comment(

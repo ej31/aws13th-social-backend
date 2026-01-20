@@ -31,7 +31,7 @@ class LikeRepository:
         """전체 좋아요 목록 조회"""
         return self._load_data()
 
-    def find_by_post_and_user(self, post_id: int, user_id: str) -> Optional[dict]:
+    def find_by_post_and_user(self, post_id: int, user_id: int) -> Optional[dict]:
         """특정 유저가 특정 게시글에 남긴 좋아요 확인 """
         likes = self._load_data()
         for like in likes:

@@ -63,7 +63,8 @@ class UserService:
 
         access_token = create_access_token(subject=user["email"])
         refresh_token = create_refresh_token(subject=user["email"])
-
+        user["refresh_token"] = refresh_token
+        self.user_repo.save(user)
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -120,7 +121,7 @@ class UserService:
             new_image_path = await FileUtil.validate_and_save_image(profile_image)
             user["profile_image"] = new_image_path
 
-        self.user_repo.save(user)
+        self.user_repo.update(user)
         return user
 
     async def find_user_by_id(self,id:int):

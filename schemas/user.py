@@ -54,7 +54,7 @@ class UserCreateInternal(UserBase):
     password: str  # 해싱된 비밀번호 저장
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Optional[str] = None
-    refresh_token: str
+    refresh_token: Optional[str] = None
 
 class UserResponse(UserBase):
     created_at: datetime

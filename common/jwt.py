@@ -8,8 +8,8 @@ from datetime import datetime, timezone, timedelta
 #access Token 생성
 def create_access_token(subject:str) -> str:
     minutes = int(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
-    to_encode = {"exp": expire,
+    expire_minutes = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    to_encode = {"exp": expire_minutes,
                  "sub":str(subject)}
 
     encoded_jwt = jwt.encode(
@@ -20,10 +20,10 @@ def create_access_token(subject:str) -> str:
     return encoded_jwt
 
 def create_refresh_token(subject: str) -> str:
-    days = int(settings.REFRESH_TOKEN_EXPIRE_MINUTES)
-    expire = datetime.now(timezone.utc) + timedelta(minutes=days)
+    days = int(settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire_minutes = datetime.now(timezone.utc) + timedelta(minutes=days)
 
-    to_encode = {"exp":expire,"sub":str(subject),"type":"refresh"}
+    to_encode = {"exp":expire_minutes,"sub":str(subject),"type":"refresh"}
 
     encoded_jwt = jwt.encode(
         to_encode,
@@ -40,6 +40,9 @@ def decode_access_token(token: str) -> str | None:
 
         if not email:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="사용자 정보가 없습니다.")
+
+        if payload.get("type") == "refresh":
+            return None
 
         return email
 

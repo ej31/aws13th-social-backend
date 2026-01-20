@@ -4,8 +4,10 @@ from datetime import datetime, timedelta, timezone
 from json import JSONDecodeError
 from typing import Optional
 import bcrypt
-from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from dotenv import load_dotenv
+from fastapi import FastAPI
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
@@ -432,6 +434,9 @@ def create_comment(
     comment: CommentCreate,
     current_user: dict = Depends(get_current_user)
 ):
+
+
+
     def post_exists(post_id):
         posts = load_data(POSTS_FILE)
 
@@ -439,12 +444,14 @@ def create_comment(
             raise HTTPException(status_code=404, detail="게시글이 없습니다.")
 
         for p in posts:
-            if p.get("postId") == post_id:
+            if p.get("id") == post_id:
                 return
 
         raise HTTPException(status_code=404, detail="게시글이 없습니다.")
 
-        comments = load_data(COMMENTS_FILE)
+    post_exists(post_id)
+
+    comments = load_data(COMMENTS_FILE)
 
     if len(comments) == 0:
         new_id = 1

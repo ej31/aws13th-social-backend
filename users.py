@@ -436,6 +436,11 @@ def delete_post(post_id: int, current_user: dict = Depends(get_current_user)):
 
 # 여기까지 게시글 삭제
 
+# 내가 쓴 게시글 목록
+
+
+
+# 여기까지 내가 쓴 게시글 목록
 
 
 # 댓글 목록 조회
@@ -513,6 +518,7 @@ def create_comment(comment: commentCreate, current_user: dict = Depends(get_curr
 
 
 
+
 # 댓글 수정
 @app.patch("/comments/{commentId}")
 def patch_comment():
@@ -521,7 +527,7 @@ def patch_comment():
     current_user: dict = Depends(get_current_user)
 
     try:
-        with open('data/posts.json', 'r', encoding='utf-8') as f:
+        with open('data/comments.json', 'r', encoding='utf-8') as f:
         comments = json.load(f)
     except:
         raise HTTPException(status_code=500, detail="데이터를 읽을 수 없습니다.")

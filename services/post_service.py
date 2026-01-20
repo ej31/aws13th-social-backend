@@ -7,7 +7,7 @@ from common.security import encode_id
 from repositories.post_repository import PostRepository
 from repositories.user_repository import UserRepository
 from repositories.like_repository import LikeRepository
-from schemas.post import PostsCreateRequest, PostsUpdateRequest, PostsInternal
+from schemas.post import PostsCreateRequest, PostsUpdateRequest, PostsCreateInternal
 
 
 class PostService:
@@ -53,7 +53,7 @@ class PostService:
         return post_data
 
     async def create_post(self, req: PostsCreateRequest, author_id: int) -> dict:
-        post_data = PostsInternal(
+        post_data = PostsCreateInternal(
             post_id = self.post_repo.get_next_id(),
             author_id = author_id,
             **req.model_dump()

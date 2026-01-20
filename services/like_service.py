@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException
 
 from repositories.like_repository import LikeRepository
 from repositories.post_repository import PostRepository
-from schemas.like import LikeInternal
+from schemas.like import LikeCreateInternal
 
 
 class LikeService:
@@ -24,7 +24,7 @@ class LikeService:
         if not existing_like:
             #LikeInternal 모델을 통한 안전한 데이터 생성
             next_id = self.like_repo.get_next_id()
-            new_like = LikeInternal(like_id=next_id,post_id=post_id, user_id=user_id)
+            new_like = LikeCreateInternal(like_id=next_id,post_id=post_id, user_id=user_id)
             self.like_repo.save(new_like.model_dump())
 
             #Post 테이블의 좋아요 수 업데이트 (정합성 유지)

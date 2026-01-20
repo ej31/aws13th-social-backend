@@ -13,6 +13,7 @@ class FileUtil:
             real_base = os.path.basename(base_dir)
             real_target_path = os.path.basename(target_path)
             return real_target_path.startswith(real_base)
+
     @classmethod
     async def validate_and_save_image(cls,file:UploadFile,folder:str = settings.upload_dir) -> str:
         if file.content_type not in cls.ALLOWED_EXTENSIONS:

@@ -50,8 +50,8 @@
     {
         "id": 7,
         "email": "admin@example.com",
-        "nickname": "updateadmintestzz",
-        "password": "$pbkdf2-sha256$29000$GANAiFFqLSWk1PrfG.M8pw$aAH6KUAfNzBeKJm4./LrQbifR075ZnMfrHblneYLze8",
+        "nickname": "justtestadmin",
+        "password": "$pbkdf2-sha256$29000$5ty7995bKwXgHAPAmNN6rw$mDSRjtqpeYm8GOJSFoTIjp1qt0KQppMt4FPpLeY4dNY",
         "profile_image": "/static/profiles/0f11ce76-11e3-40f9-ae54-9bf5527e2d3d_admin.png",
         "created_at": "2026-01-15T14:38:59.127878"
     }

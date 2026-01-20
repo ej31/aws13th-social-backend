@@ -1,48 +1,32 @@
-import datetime
+from pydantic import BaseModel, EmailStr, HttpUrl
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime
 
-
-# 회원가입 기능
+# 회원가입
 class UserCreate(BaseModel):
-    name: str = Field(..., min_length=2, max_length=50, description="사용자 이름")
-    age: int = Field(..., ge=0, le=100, description="나이 (0~100)")
     email: EmailStr
-    nickname: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.now)
+    password: str
+    nickname: str
+    profile_image: Optional[HttpUrl] = None
 
-# 로그인 기능
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
 class UserUpdate(BaseModel):
-    pass
+    nickname: Optional[str] = None
+    profile_image: Optional[HttpUrl] = None
+    password: Optional[str] = None
 
+# 회원 탈퇴
+class UserDelete(BaseModel):
+    password: str
+
+# 사용자 응답
 class UserResponse(BaseModel):
-    pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    email: EmailStr
+    id: int  # 또는 str (DB 타입에 따라)
+    nickname: str
+    profile_image: Optional[HttpUrl] = None
+    created_at: datetime

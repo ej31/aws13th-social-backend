@@ -67,7 +67,8 @@ def get_posts(
         ))
     
     # 페이지네이션 정보
-    total_pages = ceil(total / limit) if total > 0 else 0
+    safe_total = total if total > 0 else 1
+    total_pages = ceil(safe_total / limit)
     
     return APIResponse(
         status="success",

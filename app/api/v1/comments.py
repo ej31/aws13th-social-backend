@@ -62,7 +62,8 @@ def get_comments(
             updated_at=comment["updated_at"]
         ))
     
-    total_pages = ceil(total / limit) if total > 0 else 0
+    safe_total = total if total > 0 else 1
+    total_pages = ceil(safe_total / limit) if total > 0 else 0
     
     return APIResponse(
         status="success",

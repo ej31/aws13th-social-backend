@@ -151,36 +151,6 @@ def delete_my_account(
     # 204 No Content는 응답 본문이 없음
     return None
 
-
-@router.get("/{user_id}", response_model=APIResponse[UserPublicResponse])
-def get_user_profile(
-    user_id: int,
-    user_repo: UserRepo
-):
-    """
-    특정 회원 조회
-    """
-    user = user_repo.find_by_user_id(user_id)
-    
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다"
-        )
-    
-    # 공개 정보만 반환
-    user_response = UserPublicResponse(
-        user_id=user["user_id"],
-        nickname=user["nickname"],
-        profile_image=user["profile_image"],
-        created_at=user["created_at"]
-    )
-    
-    return APIResponse(
-        status="success",
-        data=user_response
-    )
-    
 @router.get("/me/posts", response_model=APIResponse[dict])
 def get_my_posts(
     current_user: CurrentUser,
@@ -229,8 +199,8 @@ def get_my_posts(
             created_at=post["created_at"],
             updated_at=post["updated_at"]
         ))
-    
-    total_pages = ceil(total / limit) if total > 0 else 0
+    safe_total = total if total > 0 else 1
+    total_pages = ceil(safe_total / limit)
     
     return APIResponse(
         status="success",
@@ -279,7 +249,8 @@ def get_my_comments(
             updated_at=comment["updated_at"]
         ))
     
-    total_pages = ceil(total / limit) if total > 0 else 0
+    safe_total = total if total > 0 else 1
+    total_pages = ceil(safe_total / limit)
     
     return APIResponse(
         status="success",
@@ -335,7 +306,8 @@ def get_my_likes(
                 updated_at=post["updated_at"]
             ))
     
-    total_pages = ceil(total / limit) if total > 0 else 0
+    safe_total = total if total > 0 else 1
+    total_pages = ceil(safe_total / limit)
     
     return APIResponse(
         status="success",
@@ -349,3 +321,33 @@ def get_my_likes(
             )
         }
     )
+
+@router.get("/{user_id}", response_model=APIResponse[UserPublicResponse])
+def get_user_profile(
+    user_id: int,
+    user_repo: UserRepo
+):
+    """
+    특정 회원 조회
+    """
+    user = user_repo.find_by_user_id(user_id)
+    
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="사용자를 찾을 수 없습니다"
+        )
+    
+    # 공개 정보만 반환
+    user_response = UserPublicResponse(
+        user_id=user["user_id"],
+        nickname=user["nickname"],
+        profile_image=user["profile_image"],
+        created_at=user["created_at"]
+    )
+    
+    return APIResponse(
+        status="success",
+        data=user_response
+    )
+    

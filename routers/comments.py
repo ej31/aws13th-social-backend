@@ -1,10 +1,7 @@
 # app/routers/comments.py
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
 
-from schemas.comment import CommentCreate, CommentOut
-from utils.data import read_json, write_json, next_id
-from utils.auth import get_current_user
+from fastapi import APIRouter
+
 
 router = APIRouter(prefix="/posts", tags=["comments"])
 

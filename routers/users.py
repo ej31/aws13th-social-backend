@@ -1,12 +1,11 @@
-from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 
 from schemas.comment import CommentOut
 from schemas.post import PostOut
 from schemas.user import UserOut, NickNameUpdateIn
-from utils.auth import hash_password, get_current_user, oauth2_scheme
-from utils.data import read_json, next_id, write_json
+from utils.auth import get_current_user
+from utils.data import read_json, write_json
 
 router = APIRouter(
     prefix="/users",

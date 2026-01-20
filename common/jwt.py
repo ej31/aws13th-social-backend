@@ -8,8 +8,8 @@ from datetime import datetime, timezone, timedelta
 #access Token 생성
 def create_access_token(subject:str) -> str:
     minutes = int(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    expire_minutes = datetime.now(timezone.utc) + timedelta(minutes=minutes)
-    to_encode = {"exp": expire_minutes,
+    expire_at  = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    to_encode = {"exp": expire_at ,
                  "sub":str(subject),
                  "type":"access"}
 
@@ -22,9 +22,9 @@ def create_access_token(subject:str) -> str:
 
 def create_refresh_token(subject: str) -> str:
     days = int(settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    expire_minutes = datetime.now(timezone.utc) + timedelta(days=days)
+    expire_at  = datetime.now(timezone.utc) + timedelta(days=days)
 
-    to_encode = {"exp":expire_minutes,"sub":str(subject),"type":"refresh"}
+    to_encode = {"exp":expire_at ,"sub":str(subject),"type":"refresh"}
 
     encoded_jwt = jwt.encode(
         to_encode,
@@ -42,7 +42,7 @@ def decode_access_token(token: str) -> str | None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="사용자 정보가 없습니다.")
 
         if payload.get("type") == "refresh":
-            return None
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="사용자 정보가 없습니다.")
 
         return email
 
@@ -63,16 +63,17 @@ def decode_refresh_token(token: str) -> str:
             algorithms=[settings.ALGORITHM]
         )
 
-        # 2. 토큰 타입 검증 (중요: Access Token을 여기에 넣는 것을 방지)
         if payload.get("type") != "refresh":
-            return None
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자 정보가 없습니다.")
 
-        # 3. 주체(Subject) 정보 추출
         subject = payload.get("sub")
         if subject is None:
             return None
 
         return subject
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="토큰이 만료되었습니다.")
+    except JWTClaimsError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="토큰의 클레임 정보가 유효하지 않습니다.")
     except JWTError:
-        # 잘못된 토큰 형식 등 기타 에러 처리
-        return None
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다.")

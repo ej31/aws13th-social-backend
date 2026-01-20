@@ -68,6 +68,7 @@ class UserService:
         return {
             "access_token": access_token,
             "token_type": "bearer",
+            "refresh_token": refresh_token,
         }
 
     async def delete_user(self, email: str):

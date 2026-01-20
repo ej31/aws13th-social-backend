@@ -52,7 +52,7 @@ class FileUtil:
     @staticmethod
     def delete_file(file_path: str) -> None:
         actual_path = file_path.lstrip("/")
-        if not FileUtil._is_safe_path(actual_path, settings.UPLOAD_DIR):
+        if not FileUtil._is_safe_path(settings.upload_dir, actual_path):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="잘못된 경로에 대한 접근입니다."

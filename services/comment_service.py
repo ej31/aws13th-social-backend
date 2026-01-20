@@ -33,6 +33,13 @@ class CommentService:
             "author": author_info
         }
 
+    @staticmethod
+    def _verify_author(comment: dict, current_user_id: str) -> None:
+        """현재 사용자와 댓글 글쓴이가 맞는지 확인"""
+        if comment["author_id"] != current_user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="해당 게시글에 대한 수정/삭제 권한이 없습니다.")
+
     async def create_comment(self,post_id: int, req: CommentCreateRequest,author_id: str):
         post = self.post_repo.find_by_id(post_id)
         if not post:
@@ -69,9 +76,7 @@ class CommentService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="댓글이 존재하지 않습니다.")
 
-        if comment["author_id"] != author_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="댓글을 수정할 권한이 없습니다.")
+        self._verify_author(comment, author_id)
 
         update_data= req.model_dump(exclude_none=True)
 
@@ -87,10 +92,7 @@ class CommentService:
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="댓글이 존재하지 않습니다.")
-
-        if comment["author_id"] != author_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="댓글 작성자가 아닙니다.")
+        self._verify_author(comment, author_id)
 
         is_deleted = self.comment_repo.delete(comment_id)
 

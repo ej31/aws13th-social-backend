@@ -1,46 +1,38 @@
 """
-FastAPI Community - 메인
+FastAPI 애플리케이션 진입점
 """
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from app.schemas import *
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.api.v1 import api_router
 
 settings = get_settings()
 
-# FastAPI 인스턴스 초기화 
+# FastAPI 앱 생성
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="클라우드 커뮤니티 REST API",
     version=settings.VERSION,
-    docs_url="/docs",
+    debug=settings.DEBUG
 )
 
-# 전역 예외 핸들러 - 사용자가 데이터를 잘못 보냈을 때
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    errors = exc.errors()
-    error_messages = []
-    for error in errors:
-        field = " -> ".join(str(loc) for loc in error["loc"])
-        message = error["msg"]
-        error_messages.append(f"{field}: {message}")
-    
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={
-            "status": "error",
-            "message": "Validation error",
-            "detail": "; ".join(error_messages)
-        }
-    )
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# API 라우터 등록
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
-async def root():
+def root():
     return {
-        "message": "Welcome to FastAPI Community API",
+        "message": "FastAPI Community API",
         "version": settings.VERSION,
-        "docs": "/docs"
+        "status": "running"
     }

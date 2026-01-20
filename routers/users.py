@@ -91,6 +91,12 @@ async def get_auth_tokens(user: UserLoginRequest, response: Response, cur: DbCur
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(data=token_data)
 
+    # Refresh token을 DB에 저장
+    await cur.execute(
+        "UPDATE users SET refresh_token = %s WHERE id = %s",
+        (refresh_token, db_user["id"])
+    )
+
     # Refresh token을 HttpOnly 쿠키로 설정
     response.set_cookie(
         key=REFRESH_TOKEN_COOKIE_KEY,
@@ -108,9 +114,10 @@ async def get_auth_tokens(user: UserLoginRequest, response: Response, cur: DbCur
 @router.post("/auth/tokens/refresh", response_model=TokenRefreshResponse)
 async def refresh_access_token(
         cur: DbCursor,
+        response: Response,
         refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
 ) -> TokenRefreshResponse:
-    """Access Token 갱신 (쿠키에서 refresh_token 읽음)"""
+    """Access Token 갱신 (쿠키에서 refresh_token 읽음) + Refresh Token Rotation"""
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -125,24 +132,64 @@ async def refresh_access_token(
             detail="invalid token",
         )
 
+    # DB에서 저장된 refresh token 조회
     await cur.execute(
-        "SELECT 1 FROM users WHERE id = %s",
+        "SELECT refresh_token FROM users WHERE id = %s",
         (user_id,)
     )
-    if not await cur.fetchone():
+    db_user = await cur.fetchone()
+
+    if not db_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid token",
         )
 
-    # 새 access token 발급
-    access_token = create_access_token(data={"sub": user_id})
-    return TokenRefreshResponse(access_token=access_token)
+    # 저장된 토큰과 비교
+    if db_user["refresh_token"] != refresh_token:
+        # 탈취 의심 → 토큰 무효화
+        await cur.execute(
+            "UPDATE users SET refresh_token = NULL WHERE id = %s",
+            (user_id,)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="token reuse detected",
+        )
+
+    # 새 토큰 발급
+    token_data = {"sub": user_id}
+    new_access_token = create_access_token(data=token_data)
+    new_refresh_token = create_refresh_token(data=token_data)
+
+    # 새 refresh token을 DB에 저장
+    await cur.execute(
+        "UPDATE users SET refresh_token = %s WHERE id = %s",
+        (new_refresh_token, user_id)
+    )
+
+    # 새 refresh token을 쿠키에 설정
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=new_refresh_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        path="/",
+    )
+
+    return TokenRefreshResponse(access_token=new_access_token)
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response) -> None:
-    """로그아웃 (refresh_token 쿠키 삭제)"""
+async def logout(user_id: CurrentUserId, response: Response, cur: DbCursor) -> None:
+    """로그아웃 (refresh_token 쿠키 삭제 + DB 토큰 무효화)"""
+    # DB에서 refresh token 삭제
+    await cur.execute(
+        "UPDATE users SET refresh_token = NULL WHERE id = %s",
+        (user_id,)
+    )
     response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY, path="/")
 
 

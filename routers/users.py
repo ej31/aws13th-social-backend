@@ -1,9 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
-from schemas.user import UserCreate, UserRegistrationResponse, UserInfo
+from fastapi import APIRouter, HTTPException, status, Request
+from core.limiter import limiter
+from schemas.user import UserCreate, UserRegistrationResponse
 from service.user import create_user, DuplicateResourceError, UserCreateFailedError
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from main import limiter
 
 router = APIRouter(
     prefix="/users", tags=["Users"]
@@ -14,7 +12,9 @@ router = APIRouter(
              )
 #동일 ip 1분에 최대 5번 회원가입 시도 초과 시 429에러 발생
 @limiter.limit("5/minute")
-def register_user(user: UserCreate):
+def register_user(
+        request: Request,
+        user: UserCreate):
     try:
         new_user = create_user(user)
         return {

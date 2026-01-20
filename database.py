@@ -15,9 +15,16 @@ def find_user_by_email(email: str) -> dict | None:
             return user
     return None
 
-#----- user_id 부여 (추후 DB 확장성 고려, 함수 형태로 구현) --------------
+#----- user_id 부여 (추후 DB 확장성 고려, 함수 형태로 임시 구현) --------------
 user_counter = 0
 def generate_user_id():
     global user_counter
     user_counter += 1
     return f"user_{user_counter}"
+
+#----- post_id 부여 (추후 DB 확장성 고려, 함수 형태로 임시 구현) ------------
+post_counter = 0
+def generate_post_id():
+    global post_counter
+    post_counter += 1
+    return f"user_{post_counter}"

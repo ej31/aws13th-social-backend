@@ -31,9 +31,8 @@ async def post_users(
     # 닉네임 중복 확인
     if any(user["nickname"] == nickname for user in demo_db):
         raise HTTPException(status_code=409, detail="해당 닉네임은 이미 등록되어 있습니다.")
-    # 프로필 이미지 등록 시작
+    # 프로필 이미지 검증
     profile_image_url = None
-    # 프로필 이미지 확장자 확인
     if profile_image:
         profile_image_url = await validate_and_process_image(profile_image)
     # user_id 부여
@@ -77,12 +76,13 @@ async def post_auth_token(
     attempts = login_attempts.get(email_address)
     if attempts is not None:
         elapsed_time = datetime.now(timezone.utc) - attempts["last_attempt"]
+        print(f"경과시간 : {elapsed_time}")
         if elapsed_time > login_block_ttl:
             del login_attempts[email_address]
             attempts = None
     # 로그인 횟수 5회 초과 여부 확인
     if attempts and attempts["login_count"] >= max_attempts:
-        raise HTTPException(status_code=429, detail="로그인 시도 횟수 초과했습니다. 1분 후 다시 시도하세요.")
+        raise HTTPException(status_code=429, detail="로그인 시도 횟수(5회) 초과했습니다. 1분 후 다시 시도하세요.")
     # 비밀번호 해시값 비교 검증, 틀렸을 때
     if not verify_password(password, user["hashed_password"]):
         # 처음 로그인 시도했을 경우
@@ -184,7 +184,6 @@ async def patch_users_my_page(
             "users_modified_time": user["users_modified_time"]
         }
     }
-
 
 # 5. 내 프로필 삭제 메서드 구현
 @router.delete("/users/my-page")

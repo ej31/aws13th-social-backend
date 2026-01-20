@@ -16,7 +16,7 @@ async def signup(form_data: Annotated[UserSignUp, Depends(signup_form_reader)]):
     return AuthResponse(
         access_token=token,
         expires_in=expires,
-        user=UserPublic(**user_internal.model_dump()),
+        user=UserPublic(**user_internal.model_dump(include={"email", "nickname", "profile_image_url"})),
         issued_at=datetime.now(timezone.utc),
     )
 

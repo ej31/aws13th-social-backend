@@ -1,14 +1,13 @@
-from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import HTTPException, status
 from fastapi.params import Depends
 
-from common.security import decode_id, encode_id
+from common.security import encode_id
 from repositories.post_repository import PostRepository
 from repositories.user_repository import UserRepository
 from repositories.like_repository import LikeRepository
-from schemas.post import PostsCreateRequest, PostsUpdateRequest
+from schemas.post import PostsCreateRequest, PostsUpdateRequest, PostsInternal
 
 
 class PostService:
@@ -21,18 +20,17 @@ class PostService:
         self.like_repo = like_repo
 
     @staticmethod
-    def _verify_author(post: dict, current_user_id: str) -> None:
+    def _verify_author(post: dict, current_user_id: int) -> None:
         """현재 사용자와 글쓴이가 맞는지 확인"""
-        if str(post["author_id"]) != str(current_user_id):
+        if post["author_id"] != current_user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="해당 게시글에 대한 수정/삭제 권한이 없습니다.")
+                                detail="해당 댓글에 대한 수정/삭제 권한이 없습니다.")
 
-    def _assemble_post_response(self, post_data: dict, current_user_id: str | None = None) -> dict | None:
+    def _assemble_post_response(self, post_data: dict, current_user_id: int | None = None) -> dict | None:
         """게시글 데이터에 author 및 실시간 좋아요 정보를 합쳐 응답 규격을 맞춤"""
         if not post_data:
             return None
 
-        # 1. 작성자 정보 결합
         author_id = post_data.get("author_id")
         author_info = self.user_repo.find_by_id(author_id)
 
@@ -44,7 +42,7 @@ class PostService:
         else:
             post_data["author"] = {"id": "unknown", "nickname": "탈퇴한 사용자"}
 
-        # 2. 실시간 좋아요 여부 확인 (핵심 수정 부분)
+        # 실시간 좋아요 여부 확인
         is_liked = False
         if current_user_id:
             # LikeRepository를 통해 현재 유저가 이 게시글에 좋아요를 눌렀는지 확인
@@ -54,15 +52,13 @@ class PostService:
         post_data["is_liked"] = is_liked
         return post_data
 
-    async def create_post(self, req: PostsCreateRequest, author_id: str) -> dict:
-        post_data = req.model_dump()
-
-        post_data["created_at"] = datetime.now(timezone.utc).isoformat()
-        post_data["views"] = 0
-        post_data["likes"] = 0
-        post_data["comment_count"] = 0
-        post_data["author_id"] = author_id
-        saved_post = self.post_repo.save(post_data)
+    async def create_post(self, req: PostsCreateRequest, author_id: int) -> dict:
+        post_data = PostsInternal(
+            post_id = self.post_repo.get_next_id(),
+            author_id = author_id,
+            **req.model_dump()
+        )
+        saved_post = self.post_repo.save(post_data.model_dump())
 
         # 생성 직후에는 본인이 좋아요를 누른 상태가 아니므로 author_id를 넘기지 않거나 로직에 따라 처리
         return self._assemble_post_response(saved_post, author_id)
@@ -89,11 +85,12 @@ class PostService:
         # 상세 조회 시에도 현재 유저 ID를 넘겨야 is_liked가 계산됨
         return self._assemble_post_response(posts_data, current_user_id)
 
-    async def update_posts(self, post_id: int, req: PostsUpdateRequest, author_id: str):
+    async def update_posts(self, post_id: int, req: PostsUpdateRequest, author_id: int):
         post = self.post_repo.find_by_id(post_id)
         if not post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="게시글이 존재하지 않습니다.")
+
         self._verify_author(post, author_id)
 
         update_data = req.model_dump(exclude_unset=True)
@@ -103,7 +100,7 @@ class PostService:
         updated_post = self.post_repo.save(post)
         return self._assemble_post_response(updated_post, author_id)
 
-    async def delete_posts(self, post_id: int, author_id: str) -> bool:
+    async def delete_posts(self, post_id: int, author_id: int) -> bool:
         post = self.post_repo.find_by_id(post_id)
         if not post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

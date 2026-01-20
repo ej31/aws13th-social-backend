@@ -44,15 +44,25 @@ class UserRepository:
         #새로운 유저를 추가하거나 기존 유저 정보를 업데이트 한다.
         users = self._load_all()
 
+        if (u["id"] == user_data["id"] for u in users):
+            raise ValueError(f"{user_data["id"]}는 이미 존재하는 유저입니다.")
+        users.append(user_data)
+        self._save_all(users)
+        return user_data
+
+    def update(self,user_data: dict) -> dict:
+        users = self._load_all()
+        index = None
         for i, user in enumerate(users):
             if user["id"] == user_data["id"]:
-                users[i] = user_data
+                index = i
                 break
-        else:
-            users.append(user_data)
 
+        if index is None:
+            raise ValueError(f"{user_data["id"]}에 존재하는 회원을 찾을 수 없습니다.")
+
+        users[index] = user_data
         self._save_all(users)
-
         #저장한 데이터 반환
         return user_data
 

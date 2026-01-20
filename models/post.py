@@ -1,9 +1,7 @@
 from datetime import datetime
 from typing import Optional, Annotated
-
 from fastapi.params import Form
 from pydantic import BaseModel, HttpUrl, Field
-
 
 class Post(BaseModel):
     title: str

@@ -1,8 +1,6 @@
 from typing import Optional, Annotated
-
 from fastapi import Form
 from pydantic import BaseModel, EmailStr, Field, HttpUrl, model_validator
-
 
 class UserSignUp(BaseModel):
     email: EmailStr

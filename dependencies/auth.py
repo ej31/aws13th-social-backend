@@ -1,15 +1,12 @@
 from typing import Optional
-
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from starlette.requests import Request
-
 from core.config import jwt_settings
 from repositories.user_repo import get_user_by_id
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -27,14 +24,15 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
     return user
 
-
 def get_optional_user(request: Request) -> Optional[dict]:
     auth_header = request.headers.get("Authorization")
 
     if not auth_header or not auth_header.startswith("Bearer "):
         return None
 
-    token = auth_header.split(" ")[1]
+    token = auth_header[len("Bearer "):].strip()
+    if not token:
+        return None
     try:
         payload = jwt.decode(
             token,

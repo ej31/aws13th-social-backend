@@ -12,7 +12,8 @@ def get_all_users_db():
             cursor.execute("SELECT * FROM users")
             return cursor.fetchall()
     finally:
-        conn.close()
+        if conn :
+            conn.close()
 
 def get_user_by_id(user_id):
    conn  = None

@@ -2,7 +2,6 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-
 class LikeTargetType(str, Enum):
     PostLike = "PostLike"
     CommentLike = "CommentLike"

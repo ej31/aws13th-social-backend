@@ -19,8 +19,9 @@ def update_my_profile(current_user: dict, patch_data: dict) -> dict:
     if not patch_data:
         raise HTTPException(status_code=400, detail="수정할 데이터가 없습니다.")
 
+    password = patch_data.get("password")
     if "password" in patch_data:
-        patch_data["password"] = get_password_hash(patch_data["password"])
+        patch_data["password"] = get_password_hash(password)
 
     con = None
     try:

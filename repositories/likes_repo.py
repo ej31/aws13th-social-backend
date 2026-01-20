@@ -5,19 +5,19 @@ from pathlib import Path
 from core.db_connection import get_db_connection
 
 
-def get_all_comments_db():
-    con= get_db_connection()
-    with con:
-        with con.cursor() as cursor:
-            cursor.execute("SELECT * FROM likes")
-            return cursor.fetchall()
-
-def get_like_by_id(like_id):
-    conn = get_db_connection()
-    with conn:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM likes WHERE like_id = %s", (like_id,))
-            return cursor.fetchone()
+# def get_all_likes_db():
+#     con= get_db_connection()
+#     with con:
+#         with con.cursor() as cursor:
+#             cursor.execute("SELECT * FROM likes")
+#             return cursor.fetchall()
+#
+# def get_like_by_id(like_id):
+#     conn = get_db_connection()
+#     with conn:
+#         with conn.cursor() as cursor:
+#             cursor.execute("SELECT * FROM likes WHERE like_id = %s", (like_id,))
+#             return cursor.fetchone()
 
 
 

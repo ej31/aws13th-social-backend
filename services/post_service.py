@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from core.db_connection import get_db_connection
 from models.post import Post, PostQuery, PostPublic
-from repositories.posts_repo import get_post, save_post
+from repositories.posts_repo import get_post, save_post, get_post_by_id
 
 
 def write_posts(data: Post, current_user: dict):
@@ -17,13 +17,13 @@ def write_posts(data: Post, current_user: dict):
             check_sql = "SELECT * FROM posts WHERE title = %s"
             cursor.execute(check_sql, (data.title,))
             if cursor.fetchone():
-                raise HTTPException(status_code=400,detail="이미 존대하는 게시물 타이틀")
+                raise HTTPException(status_code=400,detail="이미 존재하는 게시물 타이틀")
 
             user_id = current_user["user_id"]
             post_id = str(uuid.uuid4())
             post_created_at = datetime.now(timezone.utc)
 
-            insert_sql = "INSERT INTO posts (user_id, post_id,title, content,created_at) VALUES (%s, %s, %s, %s, %s)"
+            insert_sql = "INSERT INTO posts (user_id, post_id,title, content, media, created_at) VALUES (%s, %s, %s, %s, %s, %s)"
             param =(user_id, post_id, data.title, data.content, post_created_at)
             cursor.execute(insert_sql, param)
 
@@ -34,46 +34,26 @@ def write_posts(data: Post, current_user: dict):
             )
         con.commit()
         return post_response
-
-
     except Exception as e:
         con.rollback()
         raise e
-    finally: con.close()
-
-#
-# def write_posts(data: Post, current_user: dict):
-#     posts = get_all_posts()
-#     if any(u["title"] == data.title for u in posts):
-#         raise HTTPException(400, "이미 존재하는 게시물 타이틀")
-#
-#     post_created_at = datetime.now(timezone.utc)
-#
-#     my_post = PostInternal(
-#         user_id=current_user["user_id"],
-#         post_id=str(uuid.uuid4()),
-#         view_count=0,
-#         title=data.title,
-#         content=data.content,
-#         media=data.media,
-#         created_at=post_created_at
-#     ).model_dump(mode="json")
-#
-#     posts.append(my_post)
-#     save_post(posts)
-#     return my_post
+    finally:
+        if con :
+            con.close()
 
 def get_user_post(post_id: str) -> dict:
-    posts = get_post()
-    user_post = next((u for u in posts if u["post_id"] == post_id), None)
-    if user_post is None:
-        raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다")
+    user_post = get_post_by_id(post_id)
+    if not user_post:
+        raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다.")
 
     if "view_count" not in user_post:
         user_post["view_count"] = 0
-    user_post["view_count"] += 1
-    save_post(posts)
+
+    sql = "update posts set view_count = view_count + 1 where post_id = %s"
+
+
     return user_post
+
 
 def update_my_post(post_id:str, post_dict: dict, current_user: dict) -> dict:
     posts = get_post()

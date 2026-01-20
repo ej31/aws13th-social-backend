@@ -7,18 +7,26 @@ from core.db_connection import get_db_connection
 DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "posts.json"
 
 def get_all_posts():
-    con = get_db_connection()
-    with con.cursor() as cursor:
-        cursor.execute("SELECT * FROM posts")
-        return cursor.fetchall()
+    con =None
+    try:
+        con = get_db_connection()
+        with con.cursor() as cursor:
+            cursor.execute("SELECT * FROM posts")
+            return cursor.fetchall()
+    finally:
+        if con :
+            con.close()
 
 def get_post_by_id(post_id):
-    conn = get_db_connection()
-    with conn:
-        with conn.cursor() as cursor:
+    con = None
+    try:
+        con = get_db_connection()
+        with con.cursor() as cursor:
             cursor.execute("SELECT * FROM posts WHERE post_id = %s", (post_id,))
             return cursor.fetchone()
-
+    finally:
+        if con :
+            con.close()
 
 def get_post():
     if not os.path.exists(DB_FILE):

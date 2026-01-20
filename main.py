@@ -6,9 +6,13 @@ from pydantic import EmailStr
 from schemas import user, post, auth
 from schemas.post import PostUpdateResponse, PostLikeCreateResponse
 from schemas.common import PostSortType, Pagination, validate_password_logic
+from routers import users, posts
 
 app = FastAPI()
-
+app.include_router(users.router)
+@app.post('/')
+async def root():
+    return {"message": "Cloud Community API Server is Running!"}
 
 ############### 먼저 Users 엔드포인트 작성 ############
 # 내 프로필 조회
@@ -134,21 +138,6 @@ async def get_user_likes(
         }
     }
 
-
-# 회원 가입
-@app.post("/users", response_model=user.ResponseUser, status_code=201)
-async def post_users(
-        user_data: Annotated[user.CreateUser, Body()]
-):
-    current_time = datetime.now(timezone.utc).isoformat()
-    return {"status": "success",
-            "data": {
-                "email": user_data.email,
-                "nickname": user_data.nickname,
-                "profile_image": user_data.profile_image,
-                "created_at": current_time
-            }
-            }
 
 
 # 프로필 수정

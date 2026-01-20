@@ -6,5 +6,13 @@
     "profile_image_url": "https://cdn.example.com/profile/1.png",
     "password": "$2b$12$.ugp29DnhHwKVcYRRQVA4uKxIqBhXf135vftp8V7m2FVF90VmYZbC",
     "created_at": "2026-01-20T03:31:23.027330"
+  },
+  {
+    "id": "user_2",
+    "email": "user@example2.com",
+    "nickname": "cloud_jay1",
+    "profile_image_url": "https://cdn.example.com/profile/1.png",
+    "password": "$2b$12$8Nws4r2FE52r7W7T/RmhauK/4NezsDMokB4ywJfk.VS/hnGBYkKD.",
+    "created_at": "2026-01-20T06:23:16.372875"
   }
 ]

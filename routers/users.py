@@ -23,18 +23,24 @@ def register_user(user: UserCreate):
         }
 
     except DuplicateResourceError as e:
+        message_map = {
+            "email": "이미 사용 중인 이메일 입니다.",
+            "nickname": "이미 사용 중인 닉네임 입니다"
+        }
+
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "status": "error",
                 "error": {
                     "code": "DUPLICATE_RESOURCE",
-                    "message": "이미 사용 중인 이메일입니다.",
+                    "message": message_map.get(e.field, "중복된 리소스 입니다."),
                     "details": {
                         "field": e.field
                     }
                 }
             }
+
         )
 
     except UserCreateFailedError:

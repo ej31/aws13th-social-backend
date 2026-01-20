@@ -26,6 +26,10 @@ def create_user(user: UserCreate) -> Dict[str, Any]:
         if any(u["email"] == user.email for u in users):
             raise DuplicateResourceError(field="email")
 
+        #닉네임 중복 검사
+        if any(u["nickname"] == user.nickname for u in users):
+            raise DuplicateResourceError(field="nickname")
+
         new_user = {
             "id": generate_id("user", users),
             "email": user.email,

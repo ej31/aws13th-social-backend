@@ -5,6 +5,7 @@ from enum import Enum
 from pydantic import EmailStr
 from schemas import user, post, auth
 from schemas.post import PostUpdateResponse, PostLikeCreateResponse
+from schemas.common import PostSortType, Pagination, validate_password_logic
 
 
 class PostSortType(str, Enum):
@@ -87,10 +88,7 @@ async def get_user_posts(
 async def get_user_comments(
         authorization: Annotated[str, Header(description="Bearer access token")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
-        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
-        sort: PostSortType | None = Query(default=PostSortType.LATEST,
-                                          description="정렬 기준 (latest: 최신순, views: 조회수순, likes: 좋아요순)"
-                                          )
+        limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
     return {
         "status": "success",
@@ -458,12 +456,10 @@ async def delete_like(
 
 ############Comments##################
 # 댓글 삭제
-@app.delete(
-    "/comments/{comment_id}",status_code=status.HTTP_204_NO_CONTENT,summary="댓글 삭제",description="본인이 작성한 댓글을 삭제합니다."
-)
+@app.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(
         comment_id: Annotated[str, Path(description="삭제할 댓글 ID")],
-        authorization: Annotated[str, Header(description="로그인 토큰")]
+        authorization: Annotated[str, Header(description="로그인 토큰", alias="Authorization")]
 ):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

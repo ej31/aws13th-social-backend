@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "title": "string",
+        "content": "string",
+        "writerId": 5,
+        "writerNickname": "string",
+        "views": 1,
+        "likes": 0,
+        "createdAt": "2026-01-19T16:31:44Z"
+    },
+    {
+        "id": 2,
+        "title": "11111111111111111111111111111111111111111111",
+        "content": "41341343432424234234",
+        "writerId": 5,
+        "writerNickname": "string",
+        "views": 0,
+        "likes": 0,
+        "createdAt": "2026-01-19T16:32:19Z"
+    }
+]

@@ -1,0 +1,26 @@
+[
+    {
+        "userId": 2,
+        "email": "user@example.com",
+        "nickname": "string",
+        "password": "$2b$12$UN8V43kk8mDWA6rZE1Sv3ul53ZsA1Jewomz9lkQgB.xLugpJNXyO2",
+        "profileImage": "string",
+        "createdAt": "2026-01-16T09:34:18Z"
+    },
+    {
+        "userId": 3,
+        "email": "dk@example.com",
+        "nickname": "dk",
+        "password": "$2b$12$RwWYCFapri4nr0WvvBSqPeQm1WgGvovpNEU.I7Prj0XmGJz8LViU.",
+        "profileImage": "string",
+        "createdAt": "2026-01-16T09:42:47Z"
+    },
+    {
+        "userId": 4,
+        "email": "123@example.com",
+        "nickname": "string",
+        "password": "$2b$12$MHidepI9Px.lHp7TR7cz9uuh.csX490iLwvBFqd2zO2KJI0jJPdj.",
+        "profileImage": "string",
+        "createdAt": "2026-01-16T19:56:51Z"
+    }
+]

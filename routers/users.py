@@ -181,24 +181,38 @@ async def get_my_profile(user_id: CurrentUserId) -> UserMyProfile:
 
 
 @router.patch("/users/me", response_model=UserMyProfile)
-def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest) -> UserMyProfile:
+async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest) -> UserMyProfile:
     """내 프로필 수정"""
-    users = read_json(settings.users_file)
+    # 전달된 필드만 추출
+    update_fields = update_data.model_dump(exclude_unset=True)
+    print(update_fields)
 
-    user_index = next((i for i, user in enumerate(users) if user["id"] == user_id), None)
-    if user_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+    # 동적 SET 절 생성: "nickname = %(nickname)s, profile_img = %(profile_img)s"
+    set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)
+    update_fields["user_id"] = user_id
 
-    # 변경할 필드만 업데이트
-    update_field = update_data.model_dump(exclude_unset=True)
-    users[user_index].update(update_field)
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                f"UPDATE users SET {set_clause} WHERE id = %(user_id)s",
+                update_fields
+            )
 
-    write_json(settings.users_file, users)
+            if cur.rowcount == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
 
-    return users[user_index]
+            # 수정된 데이터 조회
+            await cur.execute(
+                "SELECT id, email, nickname, profile_img, created_at FROM users WHERE id = %s",
+                (user_id,)
+            )
+            user = await cur.fetchone()
+
+    return UserMyProfile(**user)
 
 
 @router.get("/users/{user_id}", response_model=UserProfile)

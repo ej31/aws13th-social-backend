@@ -26,9 +26,11 @@ def safe_path(filename: str) -> Path:
 def load_json(filename: str) -> List[Dict[str, Any]]:
     """
     JSON 파일을 읽어 리스트 형태로 반환.
-    파일이 없거나 손상된 경우 빈 리스트 반환.
+
+    - 파일이 존재하지 않으면 빈 리스트 반환 (정상 초기 상태)
+    - JSON 파싱 에러 발생 시 RuntimeError 발생 (데이터 손상)
     """
-    file_path = safe_path(filename)
+    file_path = DATA_DIR / filename
 
     if not file_path.exists():
         return []
@@ -38,12 +40,12 @@ def load_json(filename: str) -> List[Dict[str, Any]]:
             return json.load(f)
 
     except json.JSONDecodeError as e:
-        logger.critical(f"JSON 파일 손상: {filename}")
-        raise RuntimeError("데이터 파일 손상")
+        logger.critical(f"JSON 파일 손상 감지 ({filename}): {e}")
+        raise RuntimeError("데이터 파일이 손상되었습니다")
 
-    except Exception:
-        logger.exception("파일 로드 실패")
-        raise
+    except Exception as e:
+        logger.exception("파일 로드 중 알 수 없는 오류")
+        raise RuntimeError("데이터 파일을 읽는 중 오류 발생")
 
 
 def save_json(filename: str, data: list[dict[str, Any]]) -> bool:

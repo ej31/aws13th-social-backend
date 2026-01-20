@@ -313,3 +313,6 @@ data/*.json
 
 # 샘플파일은 추가
 !data/*.json.example
+
+#테스트 코드 제외
+test.py

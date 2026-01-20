@@ -23,6 +23,7 @@ def register_user(
                 "id": new_user["id"],
                 "email": new_user["email"],
                 "nickname": new_user["nickname"],
+                "password": new_user | {"password": None},
                 "profile_image_url": new_user["profile_image_url"],
                 "created_at": new_user["created_at"],
             }

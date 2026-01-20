@@ -214,7 +214,7 @@ def delete_user_me(current_user: dict = Depends(get_current_user)):
     new_users = [u for u in users if u['email'] != current_user['email']]
 
     if len(users) == len(new_users):
-        return {"msg": "삭제 실패"}
+        return {"msg": "삭제에 실패하였습니다."}
 
     save_data(USERS_FILE, new_users)
     return {"status": "success", "message": "회원 탈퇴 완료"}
@@ -475,3 +475,15 @@ def delete_comment(comment_id: int, current_user: dict = Depends(get_current_use
     save_data(COMMENTS_FILE, comments)
 
     return {"status": "success", "message": "삭제 완료"}
+
+
+
+@app.get("/users/me/comments")
+def get_user_comments(current_user: dict = Depends(get_current_user)):
+    comments = load_data(COMMENTS_FILE)
+
+    my_comm = []
+    for i in comments:
+        if i['writerId'] == current_user['userId']:
+            my_comm.append(i)
+    return

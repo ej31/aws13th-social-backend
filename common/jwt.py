@@ -10,7 +10,8 @@ def create_access_token(subject:str) -> str:
     minutes = int(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     expire_minutes = datetime.now(timezone.utc) + timedelta(minutes=minutes)
     to_encode = {"exp": expire_minutes,
-                 "sub":str(subject)}
+                 "sub":str(subject),
+                 "type":"access"}
 
     encoded_jwt = jwt.encode(
         to_encode,
@@ -21,7 +22,7 @@ def create_access_token(subject:str) -> str:
 
 def create_refresh_token(subject: str) -> str:
     days = int(settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    expire_minutes = datetime.now(timezone.utc) + timedelta(minutes=days)
+    expire_minutes = datetime.now(timezone.utc) + timedelta(days=days)
 
     to_encode = {"exp":expire_minutes,"sub":str(subject),"type":"refresh"}
 
@@ -30,7 +31,6 @@ def create_refresh_token(subject: str) -> str:
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM
     )
-
     return encoded_jwt
 
 def decode_access_token(token: str) -> str | None:
@@ -53,3 +53,26 @@ def decode_access_token(token: str) -> str | None:
     except JWTError:
         #서명 오류, 형식 오류 등 모든 나머지를 여기서 처리한다.
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="유효하지 않은 토큰입니다.")
+
+def decode_refresh_token(token: str) -> str:
+    try:
+        # 1. 토큰 디코딩
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+
+        # 2. 토큰 타입 검증 (중요: Access Token을 여기에 넣는 것을 방지)
+        if payload.get("type") != "refresh":
+            return None
+
+        # 3. 주체(Subject) 정보 추출
+        subject = payload.get("sub")
+        if subject is None:
+            return None
+
+        return subject
+    except JWTError:
+        # 잘못된 토큰 형식 등 기타 에러 처리
+        return None

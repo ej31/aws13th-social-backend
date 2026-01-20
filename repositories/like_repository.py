@@ -65,4 +65,4 @@ class LikeRepository:
     def get_next_id(self):
         """다음에 부여할 게시물의 ID를 반환"""
         likes = self._load_data()
-        return max([p["like_id"] for p in likes],default=0)+1
+        return max([like["like_id"] for like in likes],default=0)+1

@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, status, UploadFile
-from fastapi import Response
 from fastapi.params import Form, File, Depends
 from pydantic import EmailStr
 from fastapi import HTTPException
@@ -45,19 +44,9 @@ async def signup(
 
 @router.post("/auth/tokens", response_model=CommonResponse[TokenData], status_code=status.HTTP_200_OK)
 async def login(login_data: UserLoginRequest,
-                response:Response,
                 user_service: Annotated[UserService, Depends(get_auth_service)]):
 
     result = await user_service.login_user(login_data)
-
-    response.set_cookie(
-        key="refresh_token",
-        value=result["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=60 * 60 * 24 * 14
-    )
     return CommonResponse(
         status="success",
         message="로그인에 성공하였습니다.",

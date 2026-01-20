@@ -64,10 +64,9 @@ class UserService:
         access_token = create_access_token(subject=user["email"])
         refresh_token = create_refresh_token(subject=user["email"])
         user["refresh_token"] = refresh_token
-        self.user_repo.save(user)
+        self.user_repo.update(user)
         return {
             "access_token": access_token,
-            "refresh_token": refresh_token,
             "token_type": "bearer",
         }
 

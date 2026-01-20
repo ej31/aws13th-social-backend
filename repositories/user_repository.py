@@ -44,8 +44,10 @@ class UserRepository:
         #새로운 유저를 추가하거나 기존 유저 정보를 업데이트 한다.
         users = self._load_all()
 
-        if (u["id"] == user_data["id"] for u in users):
+        #중복이 있는지 확인
+        if any(u["id"] == user_data["id"] for u in users):
             raise ValueError(f"{user_data["id"]}는 이미 존재하는 유저입니다.")
+
         users.append(user_data)
         self._save_all(users)
         return user_data

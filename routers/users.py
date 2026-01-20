@@ -8,7 +8,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("", status_code=201)
 async def create_user(request: UserCreate):
     """회원가입"""
-    users = load_json("users.json")
+    users = await load_json("users.json")
 
     # 이메일 중복 체크
     if find_by_field(users, "email", request.email):
@@ -36,7 +36,7 @@ async def create_user(request: UserCreate):
     hashed_password = hash_password(request.password)
 
     # 사용자 저장
-    new_user = add_item("users.json", {
+    new_user = await add_item("users.json", {
         "email": request.email,
         "password": hashed_password,
         "nickname": request.nickname,
@@ -58,7 +58,7 @@ async def create_user(request: UserCreate):
 @router.get("/me")
 async def get_my_profile(current_user: dict = Depends(get_current_user)):
     """내 프로필 조회"""
-    users = load_json("users.json")
+    users = await load_json("users.json")
     user = find_by_id(users, current_user["userId"], id_field="userId")
 
     if not user:
@@ -79,7 +79,7 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
 @router.patch("/me")
 async def update_user(user: UserUpdate, current_user: dict = Depends(get_current_user)):
     """프로필 수정"""
-    users = load_json("users.json")
+    users = await load_json("users.json")
     current_user_data = find_by_id(users, current_user["userId"], id_field="userId")
 
     if not current_user_data:
@@ -114,7 +114,7 @@ async def update_user(user: UserUpdate, current_user: dict = Depends(get_current
         update_data["profileImage"] = user.profileImage
 
     # 업데이트
-    updated_user = update_item("users.json", current_user["userId"], update_data, id_field="userId")
+    updated_user = await update_item("users.json", current_user["userId"], update_data, id_field="userId")
 
     return {
         "status": "success",
@@ -131,7 +131,7 @@ async def update_user(user: UserUpdate, current_user: dict = Depends(get_current
 @router.delete("/me")
 async def delete_user(user: UserDelete, current_user: dict = Depends(get_current_user)):
     """회원탈퇴"""
-    users = load_json("users.json")
+    users = await load_json("users.json")
     current_user_data = find_by_id(users, current_user["userId"], id_field="userId")
 
     if not current_user_data:
@@ -149,7 +149,7 @@ async def delete_user(user: UserDelete, current_user: dict = Depends(get_current
         )
 
     # 사용자 삭제
-    delete_item("users.json", current_user["userId"], id_field="userId")
+    await delete_item("users.json", current_user["userId"], id_field="userId")
 
     return {
         "status": "success",
@@ -160,7 +160,7 @@ async def delete_user(user: UserDelete, current_user: dict = Depends(get_current
 @router.get("/{userId}")
 async def get_user(userId: int):
     """특정 회원 조회"""
-    users = load_json("users.json")
+    users = await load_json("users.json")
     user = find_by_id(users, userId, id_field="userId")
 
     if not user:

@@ -1,14 +1,48 @@
-# utils/data.py
-""" JSON 파일을 임시 DB처럼 다루기 위한 최소 유틸 """
+# utils/database.py
+
+import aiomysql
 
 import json
+
 import logging
 from pathlib import Path
 from typing import Any
-
 from fastapi import HTTPException, status
+from config import settings
+
+pool: aiomysql.Pool | None = None
 
 logger = logging.getLogger(__name__)
+
+
+async def init_pool() -> None:
+    global pool
+    pool = await aiomysql.create_pool(
+        host=settings.db_host,
+        port=settings.db_port,
+        user=settings.db_user,
+        password=settings.db_password,
+        db=settings.db_name,
+        charset='utf8mb4',
+        autocommit=True,
+        cursorclass=aiomysql.DictCursor,
+        minsize=5,
+        maxsize=20,
+    )
+
+
+async def close_pool() -> None:
+    global pool
+    if pool:
+        pool.close()
+        await pool.wait_closed()
+        pool = None
+
+
+def get_pool() -> aiomysql.Pool:
+    if pool is None:
+        raise RuntimeError("Database pool is not initialized")
+    return pool
 
 
 def read_json(path: Path) -> Any:

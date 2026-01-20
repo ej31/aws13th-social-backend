@@ -49,11 +49,12 @@ class UserUpdateRequest(BaseModel):
             raise ValueError("비밀번호를 변경하려면 현재 비밀번호 입력이 필수입니다.")
         return self
 
-class UserInternal(UserBase):
+class UserCreateInternal(UserBase):
     id: int  # DB 내 PK (int)
     password: str  # 해싱된 비밀번호 저장
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: Optional[str] = None
+    refresh_token: str
 
 class UserResponse(UserBase):
     created_at: datetime

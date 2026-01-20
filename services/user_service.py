@@ -8,9 +8,10 @@ from fastapi import UploadFile
 
 from common.config import settings
 from common.security import hash_password, encode_id, verify_password
-from common.jwt import create_access_token
+from common.jwt import create_access_token, create_refresh_token
 from repositories.user_repository import UserRepository
-from schemas.user import SignupRequest, UserLoginRequest, UserUpdateRequest, UserInternal
+from schemas.user import SignupRequest, UserLoginRequest, UserUpdateRequest, UserCreateInternal
+
 
 class UserService:
     # service에서 jwt 의존성을 주입 받지 않는 이유는 이미 router에서 jwt로 인증을 받았기 때문이다.
@@ -33,14 +34,15 @@ class UserService:
 
         user_id = self.user_repo.get_next_id()
 
-        new_user = UserInternal(
+        new_user = UserCreateInternal(
             email = signup_data.email,
             nickname = signup_data.nickname,
             password = hash_password(signup_data.password),
             id= user_id,
             profile_image = image_url,
-            created_at = datetime.now(timezone.utc).isoformat()
+            created_at = datetime.now(timezone.utc).isoformat(),
         )
+
 
         saved_user = self.user_repo.save(new_user.model_dump())
 
@@ -60,10 +62,12 @@ class UserService:
             )
 
         access_token = create_access_token(subject=user["email"])
+        refresh_token = create_refresh_token(subject=user["email"])
 
         return {
             "access_token": access_token,
-            "token_type": "bearer"
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
         }
 
     async def delete_user(self, email: str):

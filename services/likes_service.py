@@ -57,7 +57,8 @@ def get_likes_service(user_id: str, like_in: LikeCreate ) -> Optional[LikeRespon
     existing = next((like for like in likes if like["user_id"] == user_id
                      and like["target_type"] == like_in.target_type
                      and like["target_id"] == like_in.target_id), None)
-    current_total = len([like for like in likes if like["target_id"] == like_in.target_id])
+    current_total = len([like for like in likes if
+                         like["target_id"] == like_in.target_id and like["target_type"] == like_in.target_type])
     if not existing:
         # 좋아요 정보가 없더라도 기본값을 채워서 반환해야 에러가 안 납니다.
         return LikeResponse(
@@ -76,8 +77,8 @@ def get_likes_service(user_id: str, like_in: LikeCreate ) -> Optional[LikeRespon
         total_likes=current_total
     )
 
-def get_my_likes(user_id: str) -> List[LikeResponse]:
+def get_my_likes(user_id: str) -> List[dict]:
     likes = get_likes()
-    existing = (like for like in likes if like["user_id"] == user_id)
-    return existing
+    my_likes  = [like for like in likes if like["user_id"] == user_id]
+    return my_likes
 

@@ -42,6 +42,9 @@ class PostRepository:
         posts = self._load_all()
         target_id = post_data.get("post_id")
 
+        if target_id is None:
+            raise ValueError(f"게시물의 ID : {target_id}가 존재하지 않습니다.")
+
         index = None
         for i,p in enumerate(posts):
             if int(p["post_id"]) == target_id:

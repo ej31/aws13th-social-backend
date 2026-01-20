@@ -44,6 +44,7 @@ class UserUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def check_password_update_requirements(self) -> 'UserUpdateRequest':
+        #변경할 비밀번호는 입력했는데 현재 비밀번호를 입력하지 않았을 경우
         if self.password and not self.current_password:
             raise ValueError("비밀번호를 변경하려면 현재 비밀번호 입력이 필수입니다.")
         return self

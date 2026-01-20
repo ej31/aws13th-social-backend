@@ -88,7 +88,9 @@ async def get_user_comments(
         authorization: Annotated[str, Header(description="Bearer access token")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
         limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수"),
-        sort: str | None = Query(default=None, description="정렬 기준 (created_at, updated_at)")
+        sort: PostSortType | None = Query(default=PostSortType.LATEST,
+                                          description="정렬 기준 (latest: 최신순, views: 조회수순, likes: 좋아요순)"
+                                          )
 ):
     return {
         "status": "success",
@@ -248,7 +250,6 @@ async def get_posts_sorted(
         page: int = Query(default=1, ge=1, description="페이지 번호"),
         limit: int = Query(default=20, ge=1, le=100, description="페이지당 항목 수")
 ):
-    print(f"선택된 정렬 기준: {sort.value}")
 
     return {
         "status": "success",
@@ -288,7 +289,7 @@ async def get_post(
 
 
 # 댓글 목록 조회
-@app.get("/posts/{post_id}/comments", response_model=post.CommentListResponse,status_code=status.HTTP_200_OK)
+@app.get("/posts/{post_id}/comments", response_model=post.CommentListResponse, status_code=status.HTTP_200_OK)
 async def get_post_comments(
         post_id: Annotated[str, Path(description="특정 게시글을 나타내는 유일한 식별자")],
         page: int = Query(default=1, ge=1, description="페이지 번호"),
@@ -386,7 +387,7 @@ async def delete_post(
 
 
 # 댓글 작성 (특정 게시글에 댓글을 작성합니다.)
-@app.post("/posts/{post_id}/comments")
+@app.post("/posts/{post_id}/comments", response_model=post.CommentCreateResponse, status_code=status.HTTP_201_CREATED)
 async def post_comment(
         post_id: Annotated[str, Path(description="게시글 ID")],
         authorization: Annotated[str, Header(description="로그인 토큰")],
@@ -396,7 +397,7 @@ async def post_comment(
         "status": "success",
         "data": {
             "post_id": post_id,
-            "id": "comment_1",
+            "comment_id": "comment_1",
             "author": {
                 "author_email": "example@naver.com",
                 "nickname": "abc"

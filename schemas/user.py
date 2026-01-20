@@ -2,6 +2,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 import re
+from schemas.common import Pagination, validate_password_logic
 
 
 # 회원가입 Post/users 부분
@@ -14,14 +15,11 @@ class CreateUser(BaseModel):
 
     @field_validator('password')
     @classmethod
-    def validate_password(cls, v: str) -> str:    # v는 입력값(비밀번호)
-        if not re.search(r'[A-Za-z]', v):
-            raise ValueError('비밀번호에 영문자가 포함되어야 합니다')
-        if not re.search(r'\d', v):
-            raise ValueError('비밀번호에 숫자가 포함되어야 합니다')
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>₩]', v):
-            raise ValueError('비밀번호에 특수문자가 포함되어야 합니다')
-        return v
+    def validate_new_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        # 공통 함수를 호출하여 검증 수행
+        return validate_password_logic(v)
 
 
 # 회원가입하고 나서
@@ -47,10 +45,11 @@ class UpdateUserRequest(BaseModel):
 
     @field_validator('new_password')
     @classmethod
-    def validate_password(cls, v: str | None) -> str | None:
+    def validate_new_password(cls, v: str | None) -> str | None:
         if v is None:
             return v
-        return CreateUser.validate_password(v)
+        return validate_password_logic(v)
+
 
 # 수정된 프로필 응답
 class UpdateUserResponse(BaseModel):
@@ -115,12 +114,6 @@ class UserPostSummary(BaseModel):
     post_id: str
     title: str
     created_at: datetime
-
-
-class Pagination(BaseModel):
-    page: int
-    limit: int
-    total: int
 
 
 class MyPostsResponse(BaseModel):

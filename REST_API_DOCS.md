@@ -845,7 +845,7 @@ Cmd + T (Ctrl + T) 누르면 탭 추가가 가능합니다. 참고하세요!
   "status": "success",
   "data": {
     "post_id": "1",
-    "id": "comment_1",
+    "comment_id": "comment_1",
     "author": {
       "author_email": "example@naver.com",
       "nickname": "abc"

@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from schemas.common import Pagination
+from pydantic import BaseModel,Field
 from datetime import datetime
 
 
@@ -15,10 +16,7 @@ class PostPostSummary(BaseModel):
     author: AuthorInfo
     created_at: datetime
 # 3. 페이지네이션 정보
-class Pagination(BaseModel):
-    page: int
-    limit: int
-    total: int
+
 # 4. 출력 정보
 class PostListResponse(BaseModel):
     status: str = 'success'
@@ -46,12 +44,9 @@ class PostDetailResponse(BaseModel):
     status: str = 'success'
     data: PostDetail
 # 댓글 목록 조회
-class CommentAuthor(BaseModel):
-    author_email: str
-    nickname: str
 class CommentItem(BaseModel):
     comment_id: str
-    content: str
+    comment_content: str
     author: AuthorInfo
     created_at: datetime
     title: str
@@ -75,8 +70,8 @@ class PostCreateRequest(BaseModel):
 # 응답 데이터
 class CreationPost(BaseModel):
     post_id: str
-    title: str
-    content: str
+    title: str = Field(...,min_length=1,description="게시글 제목")
+    content: str = Field(...,min_length=1,description="게시글 내용")
     created_at: datetime
     author: AuthorInfo
 class CreationPostResponse(BaseModel):
@@ -116,7 +111,7 @@ class CommentUpdateRequest(BaseModel):
     content: str
 class CommentUpdateData(BaseModel):
     post_id: str
-    id: str
+    comment_id: str
     author: AuthorInfo
     content: str
     created_at: datetime

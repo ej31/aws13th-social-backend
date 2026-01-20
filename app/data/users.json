@@ -1,26 +1,19 @@
 [
   {
-    "id": 1,
-    "email": "sss",
-    "nickname": "string",
-    "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$Y.9Cu8XXVMK.zUmkH.4aDu$.jsahHzk9apsAOvDiRMqfrABpWbKec2",
-    "profile_image": "string",
-    "created_at": "2026-01-15T01:44:29.786225Z"
+    "id": "cd012e94-3e81-4f75-9dc5-94a9d67643de",
+    "email": "jjj",
+    "nickname": "jjjjj",
+    "hash_password": "$bcrypt-sha256$v=2,t=2b,r=12$mPU1PMLlE2M.YR/AjYmomu$bz1rXCo65QEjVNrO3u/.rzIt.BWfiUm",
+    "profile_image": "qweqweqwe",
+    "created_at": "2026-01-19T10:47:06.214078Z",
+    "is_deleted": true
   },
   {
-    "id": 2,
-    "email": "ss",
-    "nickname": "string",
-    "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$EVulugecVRD8O7JPZiiebu$8MoSh3wvLHpZAITphF5wbA5oeExISLS",
-    "profile_image": "string",
-    "created_at": "2026-01-15T05:33:34.136082Z"
-  },
-  {
-    "id": "b314e54a-9862-4ddd-8031-8b2b9c20ee14",
-    "email": "ss",
-    "nickname": "string",
-    "password_hash": "$bcrypt-sha256$v=2,t=2b,r=12$nnpNRBzY836xK4yYlW9Dy.$8NJU4BOy2XGwd2WuzRisDeNID6BXaXS",
-    "profile_image": "string",
-    "created_at": "2026-01-16T00:26:39.513280Z"
+    "id": "5689fc28-8125-451d-8622-f47762a1d51b",
+    "email": "test",
+    "nickname": "jeonguk",
+    "hash_password": "$bcrypt-sha256$v=2,t=2b,r=12$KfvDTlMPR/PW.8Y9UWaYMO$0Nrg/X/WuBOusY218nEPFU6bV9m5YUK",
+    "profile_image": "qqq",
+    "created_at": "2026-01-20T00:41:52.996849Z"
   }
 ]

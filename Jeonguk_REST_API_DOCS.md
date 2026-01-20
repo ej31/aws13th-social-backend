@@ -76,7 +76,7 @@ Response(401 Unauthorized) - 유효하지 않은 토큰이거나 형식이 잘�
 
 ```json
 {
-  "liked": true
+  "liked": true,
   "like_count": 22
 }
 ```
@@ -147,19 +147,19 @@ Response(401 Unauthorized) - 유효하지 않은 토큰이거나 형식이 잘�
 {
   "status": "success",
   "data": {
-	  "list": [
-    {
-      "nickname": "욱정선",
-      "comment": "너무 공감되네요",
-      "created_at": "2026-01-04T12:00:00Z"
-    },
-    {
-	    "nickname": "제프",
-	    "comment": "열심히 합시다",
-	    "created_at": "2026-01-05T12:00:00Z"
-	  }
-  ]
- }
+    "list": [
+      {
+        "nickname": "욱정선",
+        "comment": "너무 공감되네요",
+        "created_at": "2026-01-04T12:00:00Z"
+      },
+      {
+        "nickname": "제프",
+        "comment": "열심히 합시다",
+        "created_at": "2026-01-05T12:00:00Z"
+      }
+    ]
+  }
 }
 ```
 
@@ -176,12 +176,6 @@ Response(401 Unauthorized) - 유효하지 않은 토큰이거나 형식이 잘�
 | 헤더 | 타입 | 필수 | 설명 |
 | --- | --- | --- | --- |
 | **Authorization** | string | O | 로그인 한 사용자가 쓴 게시글을 조회하는 리소스이므로 Bearer 토큰 인증이 필요합니다. |
-
-**Path Parameters**
-
-| 파라미터 | 타입 | 필수 | 설명 |
-| --- | --- | --- | --- |
-| user_id | integer | O | 로그인 한 사용자의 Id값을 통해 자신이 쓴 게시글을 조회한다. |
 
 **Query Parameters**
 
@@ -271,7 +265,7 @@ Response (404 Not Found)
 
 ### { 게시물 정렬 }
 
-**GET** `/posts` 
+**GET** `/posts/sort` 
 
 게시물을 최신순, 조회수순, 좋아요순 등으로 정렬합니다. page와 limit 파라미터를 활용하여 원하는 범위의 데이터만 정렬 가능합니다.
 
@@ -289,22 +283,23 @@ Response (404 Not Found)
 {
   "status": "success",
   "data": {
-		"list" : [
-    {
-      "id": 3,
-      "title": "JEFF의 파이썬 강의",
-      "created_at": "2026-01-06T15:00:00Z"
-    },
-    {
-	    "id": 10,
-	    "title": "코딩은 왜이렇게 어려운가",
-	    "created_at": "2026-01-05T12:00:00Z"
-	  }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100
+    "list": [
+      {
+        "id": 3,
+        "title": "JEFF의 파이썬 강의",
+        "created_at": "2026-01-06T15:00:00Z"
+      },
+      {
+        "id": 10,
+        "title": "코딩은 왜이렇게 어려운가",
+        "created_at": "2026-01-05T12:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 100
+    }
   }
 }
 ```
@@ -313,7 +308,7 @@ Response (404 Not Found)
 
 ### { 게시글 검색 }
 
-**GET** `/posts` 
+**GET** `/posts/search` 
 
 keyword를 통해 전체 게시판에서 keyword를 포함한 제목과 내용을 검색합니다. 
 
@@ -593,7 +588,7 @@ Response(401 Unauthorized) - 유효하지 않은 토큰이거나 형식이 잘�
   "status": "success",
   "data": {
     "id": 1,
-    "comment": "다시 생각해보니 내 말이 틀렸던 것 같다."
+    "comment": "다시 생각해보니 내 말이 틀렸던 것 같다.",
     "updated_at": "2026-01-04T12:00:00Z"
   }
 }
@@ -1021,7 +1016,7 @@ Response (401 Unauthorized)
     "id": 1,
     "email": "seonjeongug2@gmail.com",
     "nickname": "정정욱",
-    "profile_image": "https://example.com/images/profile.png"
+    "profile_image": "https://example.com/images/profile.png",
     "created_at": "2026-01-04T12:00:00Z"
   }
 }

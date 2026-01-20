@@ -31,9 +31,9 @@ class UserLoginRequest(BaseModel):
 
 
 class UserProfileUpdateRequest(BaseModel):
-    new_nickname: str | None = None
-    new_profile_image: str | None = None
-    new_password: str | None = None
+    nickname: str | None = None
+    profile_image: str | None = None
+    password: str | None = None
     current_password: str | None = None  # 문서상 X지만 예시/설명에 존재 :contentReference[oaicite:3]{index=3}
 
 

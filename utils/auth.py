@@ -1,23 +1,22 @@
-"""
-  인증 관련 유틸리티
-  - 비밀번호 해싱/검증
-  - JWT 토큰 생성/검증
-  """
 from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import JWTError, jwt
+from fastapi import HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
+import secrets
+import hashlib
 
 # 비밀번호 해싱 설정
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT 설정
-+SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY 환경변수가 설정되지 않았습니다. 프로덕션 배포 전 반드시 설정하세요.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 def hash_password(password: str) -> str:
     """비밀번호를 해싱합니다."""
@@ -76,3 +75,55 @@ def get_current_user_id(token: str) -> int | None:
     if payload:
         return payload.get("userId")
     return None
+
+def create_refresh_token(user_id: int) -> dict:
+    """
+    리프레시 토큰을 생성합니다.
+    유효기간: 7일
+    토큰은 평문으로 반환되고, 해시는 DB에 저장됩니다.
+    """
+    token = secrets.token_urlsafe(32)
+    token_hash = hash_refresh_token(token)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    return {
+        "token": token,
+        "tokenHash": token_hash,
+        "userId": user_id,
+        "expiresAt": expire.isoformat()
+    }
+
+security = HTTPBearer(auto_error=False)
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    JWT 토큰을 검증하고 현재 사용자 정보를 반환합니다.
+    """
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "status": "error",
+                "code": "UNAUTHORIZED",
+                "message": "유효하지 않은 토큰입니다."
+            }
+        )
+
+    token = credentials.credentials
+    payload = verify_token(token)
+
+    if not payload:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "status": "error",
+                "code": "UNAUTHORIZED",
+                "message": "유효하지 않은 토큰입니다."
+            }
+        )
+
+    return payload
+
+def hash_refresh_token(token: str) -> str:
+    """RefreshToken을 SHA256으로 해시합니다."""
+    return hashlib.sha256(token.encode()).hexdigest()

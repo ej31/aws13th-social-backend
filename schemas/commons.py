@@ -49,7 +49,7 @@ Title = Annotated[
 
 Count = Annotated[int, Field(ge=0)]
 
-DbCursor = Annotated[Cursor, Depends(get_cursor)]
+CurrentCursor = Annotated[Cursor, Depends(get_cursor)]
 
 
 class Pagination(BaseModel):

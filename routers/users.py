@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie
 from aiomysql import IntegrityError
 
 from config import settings
-from schemas.commons import UserId, DbCursor
+from schemas.commons import UserId, CurrentCursor
 from schemas.user import (
     UserMyProfile,
     UserUpdateRequest, UserProfile,
@@ -27,7 +27,7 @@ CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 
 @router.post("/users", response_model=UserCreateResponse,
              status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreateRequest, cur: DbCursor) -> UserCreateResponse:
+async def create_user(user: UserCreateRequest, cur: CurrentCursor) -> UserCreateResponse:
     """회원가입"""
     new_id = f"user_{uuid.uuid4().hex}"
     now = datetime.now(UTC)
@@ -65,7 +65,7 @@ REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
 
 
 @router.post("/auth/tokens", response_model=UserLoginResponse)
-async def get_auth_tokens(user: UserLoginRequest, response: Response, cur: DbCursor) -> UserLoginResponse:
+async def get_auth_tokens(user: UserLoginRequest, response: Response, cur: CurrentCursor) -> UserLoginResponse:
     """로그인"""
     await cur.execute(
         "SELECT id, password FROM users WHERE email = %s",
@@ -110,7 +110,7 @@ async def get_auth_tokens(user: UserLoginRequest, response: Response, cur: DbCur
 
 @router.post("/auth/tokens/refresh", response_model=TokenRefreshResponse)
 async def refresh_access_token(
-        cur: DbCursor,
+        cur: CurrentCursor,
         response: Response,
         refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
 ) -> TokenRefreshResponse:
@@ -180,7 +180,7 @@ async def refresh_access_token(
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(user_id: CurrentUserId, response: Response, cur: DbCursor) -> None:
+async def logout(user_id: CurrentUserId, response: Response, cur: CurrentCursor) -> None:
     """로그아웃 (refresh_token 쿠키 삭제 + DB 토큰 무효화)"""
     # DB에서 refresh token 삭제
     await cur.execute(
@@ -191,7 +191,7 @@ async def logout(user_id: CurrentUserId, response: Response, cur: DbCursor) -> N
 
 
 @router.get("/users/me", response_model=UserMyProfile)
-async def get_my_profile(user_id: CurrentUserId, cur: DbCursor) -> UserMyProfile:
+async def get_my_profile(user_id: CurrentUserId, cur: CurrentCursor) -> UserMyProfile:
     """내 프로필 조회"""
     await cur.execute(
         """
@@ -216,7 +216,7 @@ ALLOWED_UPDATE_COLUMNS = frozenset({"nickname", "profile_img"})
 
 
 @router.patch("/users/me", response_model=UserMyProfile)
-async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest, cur: DbCursor) -> UserMyProfile:
+async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest, cur: CurrentCursor) -> UserMyProfile:
     """내 프로필 수정"""
     # 전달된 필드만 추출
     update_fields = update_data.model_dump(exclude_unset=True)
@@ -254,7 +254,7 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
 
 
 @router.get("/users/{user_id}", response_model=UserProfile)
-async def get_specific_user(user_id: UserId, cur: DbCursor) -> UserProfile:
+async def get_specific_user(user_id: UserId, cur: CurrentCursor) -> UserProfile:
     """특정 유저 프로필 조회"""
     await cur.execute(
         "SELECT id, nickname, profile_img FROM users WHERE id = %s",
@@ -272,7 +272,7 @@ async def get_specific_user(user_id: UserId, cur: DbCursor) -> UserProfile:
 
 
 @router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_my_account(user_id: CurrentUserId, cur: DbCursor) -> None:
+async def delete_my_account(user_id: CurrentUserId, cur: CurrentCursor) -> None:
     """회원 탈퇴"""
     await cur.execute(
         "DELETE FROM users WHERE id = %s",

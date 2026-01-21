@@ -43,8 +43,8 @@ async def init_pool() -> None:
         charset='utf8mb4',
         autocommit=False,
         cursorclass=aiomysql.DictCursor,
-        minsize=5,
-        maxsize=20,
+        minsize=2,
+        maxsize=10,
     )
 
 

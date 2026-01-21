@@ -215,11 +215,21 @@ async def get_my_profile(user_id: CurrentUserId, cur: DbCursor) -> UserMyProfile
     return UserMyProfile(**user)
 
 
+ALLOWED_UPDATE_COLUMNS = frozenset({"nickname", "profile_img"})
+
+
 @router.patch("/users/me", response_model=UserMyProfile)
 async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest, cur: DbCursor) -> UserMyProfile:
     """내 프로필 수정"""
     # 전달된 필드만 추출
     update_fields = update_data.model_dump(exclude_unset=True)
+    update_fields = {k: v for k, v in update_fields.items() if k in ALLOWED_UPDATE_COLUMNS}
+
+    if not update_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid fields to update"
+        )
 
     # 동적 SET 절 생성: "nickname = %(nickname)s, profile_img = %(profile_img)s"
     set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)

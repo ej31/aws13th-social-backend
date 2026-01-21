@@ -84,13 +84,15 @@ def create_refresh_token(user_id: int) -> dict:
     """
     token = secrets.token_urlsafe(32)
     token_hash = hash_refresh_token(token)
+    # timezone-aware datetime 생성 후 timezone 정보 제거 (MariaDB datetime 호환)
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire_naive = expire.replace(tzinfo=None)
 
     return {
         "token": token,
         "tokenHash": token_hash,
         "userId": user_id,
-        "expiresAt": expire.isoformat()
+        "expiresAt": expire_naive
     }
 
 security = HTTPBearer(auto_error=False)

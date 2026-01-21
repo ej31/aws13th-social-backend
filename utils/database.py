@@ -4,7 +4,6 @@ import aiomysql
 
 import json
 
-import logging
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
@@ -13,8 +12,6 @@ from fastapi import HTTPException, status
 from config import settings
 
 pool: aiomysql.Pool | None = None
-
-logger = logging.getLogger(__name__)
 
 
 def get_pool() -> aiomysql.Pool:
@@ -30,9 +27,8 @@ async def get_cursor() -> AsyncGenerator[Cursor, None]:
             try:
                 yield cur
                 await conn.commit()
-            except Exception as e:
+            except Exception:
                 await conn.rollback()
-                logger.error("Failed to rollback transaction: %s", e)
                 raise
 
 

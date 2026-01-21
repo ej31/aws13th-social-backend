@@ -36,6 +36,8 @@ async def create_user(request: UserCreate, db: AsyncSession = Depends(get_db)):
         profile_image=request.profileImage
     )
 
+    await db.commit()
+
     return {
         "status": "success",
         "message": "회원가입이 완료되었습니다.",
@@ -118,6 +120,8 @@ async def update_user(
     # 업데이트
     updated_user = await user_repo.update(current_user["userId"], **update_data)
 
+    await db.commit()
+
     return {
         "status": "success",
         "message": "프로필 정보가 성공적으로 수정되었습니다.",
@@ -168,6 +172,8 @@ async def delete_user(
 
     # 사용자 삭제 (CASCADE로 인해 관련 데이터도 자동 삭제)
     await user_repo.delete(current_user["userId"])
+
+    await db.commit()
 
     return {
         "status": "success",

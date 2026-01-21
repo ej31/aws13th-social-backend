@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, and_
+from sqlalchemy import select, desc, and_, func
 from sqlalchemy.exc import IntegrityError
 from models.like import Like
 from typing import List
@@ -21,8 +21,6 @@ class LikeRepository:
             await self.db.refresh(like)
             return like
         except IntegrityError:
-            # 중복 좋아요 시 (UNIQUE 제약조건 위반)
-            await self.db.rollback()
             return None
 
     async def get_by_id(self, like_id: int) -> Like | None:
@@ -91,7 +89,6 @@ class LikeRepository:
     async def count_by_post_id(self, post_id: int) -> int:
         """게시글의 좋아요 개수 조회"""
         result = await self.db.execute(
-            select(Like).where(Like.postId == post_id)
+            select(func.count(Like.likeId)).where(Like.postId == post_id)
         )
-        likes = result.scalars().all()
-        return len(likes)
+        return result.scalar()

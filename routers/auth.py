@@ -55,6 +55,8 @@ async def login(user: UserLogin, response: Response, db: AsyncSession = Depends(
         expires_at=refresh_token_data["expiresAt"]
     )
 
+    await db.commit()
+
     # RefreshToken을 HttpOnly 쿠키로 설정
     response.set_cookie(
         key="refreshToken",
@@ -153,6 +155,8 @@ async def refresh_access_token(
         user_id=new_refresh_token_data["userId"],
         expires_at=new_refresh_token_data["expiresAt"]
     )
+
+    await db.commit()
 
     # 3. 새 RefreshToken을 HttpOnly 쿠키로 설정
     response.set_cookie(

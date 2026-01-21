@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from models.refresh_token import RefreshToken
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class RefreshTokenRepository:
@@ -71,8 +71,10 @@ class RefreshTokenRepository:
 
     async def delete_expired(self) -> int:
         """만료된 토큰 모두 삭제"""
+        # timezone-aware datetime으로 비교
+        now = datetime.now(timezone.utc).replace(tzinfo=None)  # DB는 naive이므로 naive로 변환
         result = await self.db.execute(
-            delete(RefreshToken).where(RefreshToken.expiresAt < datetime.now())
+            delete(RefreshToken).where(RefreshToken.expiresAt < now)
         )
         await self.db.flush()
         return result.rowcount
@@ -82,4 +84,11 @@ class RefreshTokenRepository:
         token = await self.get_by_hash(token_hash)
         if not token:
             return False
-        return token.expiresAt > datetime.now()
+
+        # timezone-aware datetime으로 비교
+        now = datetime.now(timezone.utc)
+        expires_at = token.expiresAt
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        return expires_at > now

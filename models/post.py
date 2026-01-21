@@ -12,7 +12,6 @@ class Post(Base):
     content = Column(Text, nullable=False)
     userId = Column(Integer, ForeignKey("users.userId", ondelete="CASCADE"), nullable=False, index=True)
     viewCount = Column(Integer, nullable=False, default=0)
-    likeCount = Column(Integer, nullable=False, default=0)
     createdAt = Column(DateTime, nullable=False, server_default=func.now())
     updatedAt = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 

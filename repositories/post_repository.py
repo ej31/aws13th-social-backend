@@ -16,8 +16,8 @@ class PostRepository:
             content=content,
             userId=user_id,
             viewCount=0,
-            likeCount=0
         )
+
         self.db.add(post)
         await self.db.flush()
         await self.db.refresh(post)
@@ -61,8 +61,6 @@ class PostRepository:
             if hasattr(post, key) and value is not None:
                 setattr(post, key, value)
 
-        post.updatedAt = datetime.now()
-
         await self.db.flush()
         await self.db.refresh(post)
         return post
@@ -87,12 +85,3 @@ class PostRepository:
         await self.db.flush()
         return True
 
-    async def update_like_count(self, post_id: int, increment: int) -> bool:
-        """좋아요 수 업데이트 (increment: +1 또는 -1)"""
-        await self.db.execute(
-            update(Post)
-            .where(Post.postId == post_id)
-            .values(likeCount=Post.likeCount + increment)
-        )
-        await self.db.flush()
-        return True

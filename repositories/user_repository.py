@@ -47,9 +47,6 @@ class UserRepository:
             if hasattr(user, key) and value is not None:
                 setattr(user, key, value)
 
-        # updatedAt 자동 설정
-        user.updatedAt = datetime.now()
-
         await self.db.flush()
         await self.db.refresh(user)
         return user

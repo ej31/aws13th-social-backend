@@ -1,8 +1,6 @@
 from fastapi import APIRouter, status, HTTPException, Depends, Response
 from schemas.user import UserCreate, UserUpdate
 from datetime import datetime, timezone
-
-from utils import data
 from utils.auth import get_password_hash, get_current_user
 from utils.data import load_data, save_data, find_user_by_id, soft_delete_user
 import uuid

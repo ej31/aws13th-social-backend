@@ -254,11 +254,11 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
 
     # 동적 SET 절 생성: "nickname = %(nickname)s, profile_img = %(profile_img)s"
     set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)
-    update_fields["user_id"] = user_id
+    update_data = {**update_fields, "user_id": user_id}
 
     await cur.execute(
         f"UPDATE users SET {set_clause} WHERE id = %(user_id)s",
-        update_fields
+        update_data
     )
 
     if cur.rowcount == 0:

@@ -1,14 +1,16 @@
 from fastapi import APIRouter, status, Query, Depends, HTTPException
 from schemas.post import PostCreate, PostUpdate
 from utils.auth import get_current_user
-from utils.data import load_data, save_data
+from utils.data import load_data, save_data, get_user_nickname_map
 from datetime import datetime, timezone
-router = APIRouter(prefix="/posts",tags=["Posts"])
+
+router = APIRouter(prefix="/posts", tags=["Posts"])
+
 
 @router.get("")
 def get_posts(
-        page: int = Query(1, ge=1),      # 기본값 1페이지, 1보다 커야됌
-        limit: int = Query(20, ge=1, le=100), # 한 페이지당 20개, 최대 100개
+        page: int = Query(1, ge=1),  # 기본값 1페이지, 1보다 커야됌
+        limit: int = Query(20, ge=1, le=100),  # 한 페이지당 20개, 최대 100개
         sort: str = Query("latest", pattern="^(latest|views|likes)$"),
 ):
     """
@@ -17,11 +19,11 @@ def get_posts(
         - 페이지네이션 적용
         - 목록에서는 제목 + 작성자 닉네임만 반환
     """
-    #데이터 로드
-    posts = load_data("posts")    # 데이터베이스 대신 json 로드
+    # 데이터 로드
+    posts = load_data("posts")  # 데이터베이스 대신 json 로드
     users = load_data("users")
 
-    #삭제되지 않은 게시글만 필터링
+    # 삭제되지 않은 게시글만 필터링
     active_posts = [
         p for p in posts if not p.get("is_deleted", False)
     ]
@@ -42,24 +44,21 @@ def get_posts(
             key=lambda p: p.get("likeCount", 0),
             reverse=True
         )
-    #페이지네이션 계산
-    total = len(active_posts) # 전체 게시글 수
+    # 페이지네이션 계산
+    total = len(active_posts)  # 전체 게시글 수
     start = (page - 1) * limit  # 현재 페이지의 시작 인덱스 계산
     end = start + limit  # 현재 페이지의 끝 인덱스 계산
     paged_posts = active_posts[start:end]  # 전체 중 해당 페이지 구간만
 
-    #게시글이 누가 쓴 게시글인지 닉네임으로 알 수 있도록 userId - nickname 매칭
-    user_map = {
-        u["userId"]: u.get("nickname")
-        for u in users
-        if u.get("is_deleted") is not True
-    }
+    # 게시글이 누가 쓴 게시글인지 닉네임으로 알 수 있도록 userId - nickname 매칭
+    user_map = get_user_nickname_map(users)
+
     data = []
     for post in paged_posts:
         data.append({
             "postId": post["postId"],
             "title": post["title"],
-            "nickname": user_map.get(post["userId"], "알 수 없음"), # 여기서 userId는 게시글 작성자
+            "nickname": user_map.get(post["userId"], "알 수 없음"),  # 여기서 userId는 게시글 작성자
         })
     return {
         "status": "success",
@@ -70,11 +69,13 @@ def get_posts(
             "total": total,
         }
     }
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_post(
-    # 새 게시글 작성 (로그인 필수)
-    data: PostCreate,
-    current_user: dict = Depends(get_current_user)
+        # 새 게시글 작성 (로그인 필수)
+        data: PostCreate,
+        current_user: dict = Depends(get_current_user)
 ):
     # 제목 / 본문 검증
     if not data.title.strip() or not data.content.strip():  # strip()으로 양끝 공백 제거
@@ -89,17 +90,17 @@ def create_post(
         )
     # 게시글 데이터 로드
     posts = load_data("posts")
-    #postId 생성
-    new_post_Id = (    # 마지막 게시글 ID에 1 추가해 고우 ID 생성
-        max([p["postId"] for p in posts], default=0) + 1
+    # postId 생성
+    new_post_Id = (  # 마지막 게시글 ID에 1 추가해 고우 ID 생성
+            max([p["postId"] for p in posts], default=0) + 1
     )
-    #현재 시간
+    # 현재 시간
     created_at = datetime.now(timezone.utc).isoformat()
 
-    #게시글 작성
+    # 게시글 작성
     new_post = {
         "postId": new_post_Id,
-        "userId": current_user["userId"], #작성자 userId
+        "userId": current_user["userId"],  # 작성자 userId
         "title": data.title.strip(),
         "content": data.content.strip(),
         "viewCount": 0,
@@ -111,7 +112,7 @@ def create_post(
     posts.append(new_post)  # 게시글 목록에 추가
     save_data("posts", posts)  # 파일에 저장
 
-    #작성자 닉네임(current_user에 이미 있음)
+    # 작성자 닉네임(current_user에 이미 있음)
     nickname = current_user.get("nickname", "알 수 없음")
     return {
         "status": "success",
@@ -139,11 +140,8 @@ def search_posts(
     posts = load_data("posts")
     users = load_data("users")
 
-    user_map = {
-        u["userId"]: u.get("nickname")
-        for u in users
-        if u.get("is_deleted") is not True
-    }
+    user_map = get_user_nickname_map(users)
+
     keyword_lower = keyword.lower()
     result = []
 
@@ -157,9 +155,9 @@ def search_posts(
 
         # 제목 / 내용 / 닉네임 중 하나라도 키워드 포함되면 확인
         if (
-            keyword_lower in title.lower()
-            or keyword_lower in content.lower()
-            or keyword_lower in nickname.lower()
+                keyword_lower in title.lower()
+                or keyword_lower in content.lower()
+                or keyword_lower in nickname.lower()
         ):
             result.append({
                 "postId": post["postId"],
@@ -170,6 +168,7 @@ def search_posts(
         "status": "success",
         "data": result,
     }
+
 
 @router.get("/me")
 def get_my_posts(
@@ -184,7 +183,7 @@ def get_my_posts(
     my_posts = [
         p for p in posts
         if p["userId"] == current_user["userId"]
-        and not p.get("is_deleted", False)
+           and not p.get("is_deleted", False)
     ]
 
     # 정렬
@@ -221,10 +220,11 @@ def get_my_posts(
         }
     }
 
+
 @router.get("/{postId}")
 def get_post(
         postId: int,
-        current_user: dict = Depends(get_current_user)
+        _current_user: dict = Depends(get_current_user),
 ):
     """
     게시글 상세 조회
@@ -258,11 +258,7 @@ def get_post(
     save_data("posts", posts)
 
     # 작성자 닉네임 찾기
-    user_map = {
-        u["userId"]: u.get("nickname")
-        for u in users
-        if not u.get("is_deleted")
-    }
+    user_map = get_user_nickname_map(users)
     nickname = user_map.get(post["userId"], "알 수 없음")
 
     # 응답
@@ -280,11 +276,12 @@ def get_post(
         }
     }
 
+
 @router.patch("/{postId}")
 def update_post(
-    postId: int,
-    data: PostUpdate,
-    current_user: dict = Depends(get_current_user),
+        postId: int,
+        data: PostUpdate,
+        current_user: dict = Depends(get_current_user),
 ):
     """
     게시글 수정
@@ -297,7 +294,6 @@ def update_post(
         (p for p in posts if p["postId"] == postId),
         None
     )
-
 
     # 게시글이 없거나 삭제된 경우
     if post is None or post.get("is_deleted") is True:
@@ -352,12 +348,6 @@ def update_post(
     save_data("posts", posts)
 
     # 작성자 닉네임 찾기
-    users = load_data("users")
-    user_map = {
-        u["userId"]: u.get("nickname")
-        for u in users
-        if u.get("is_deleted") is not True
-    }
     nickname = current_user.get("nickname", "알 수 없음")
 
     return {
@@ -374,10 +364,11 @@ def update_post(
         }
     }
 
+
 @router.delete("/{postId}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(
-    postId: int,
-    current_user: dict = Depends(get_current_user),
+        postId: int,
+        current_user: dict = Depends(get_current_user),
 ):
     posts = load_data("posts")
     post = next(

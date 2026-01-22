@@ -61,10 +61,10 @@ def signup_user(data: UserSignUp):
             con.close()
 
 def login_user(data: UserLogin):
-    con = None
+    conn = None
     try:
-        con = get_db_connection()
-        with con.cursor() as cursor:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
             check_sql = "SELECT user_id,email, password, nickname, profile_image_url FROM users where email = %s"
             cursor.execute(check_sql, (data.username,))
             user_record = cursor.fetchone()
@@ -79,9 +79,9 @@ def login_user(data: UserLogin):
             safe_user = UserPublic(**user_record)
             return safe_user, token, expires
     except Exception :
-        con.rollback()
+        conn.rollback()
         raise
     finally:
-        if con:
-            con.close()
+        if conn:
+            conn.close()
 

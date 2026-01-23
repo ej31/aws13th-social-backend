@@ -20,7 +20,7 @@ class SortOrder(str, Enum):
 
 class PostListItem(BaseModel):
     id: PostId
-    author: UserId
+    author_id: UserId
     title: Title
     view_count: Count = 0
     like_count: Count = 0

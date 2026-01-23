@@ -53,15 +53,15 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
     if query.q:
         search_pattern = f"%{query.q}%"
         where_clause = "WHERE title LIKE %s OR content LIKE %s"
-        params = (search_pattern, search_pattern)
+        search_params = (search_pattern, search_pattern)
     else:
         where_clause = ""
-        params = ()
+        search_params = ()
 
     # 총 개수 조회
     await cur.execute(
         f"SELECT COUNT(*) as total FROM posts {where_clause}",
-        params
+        search_params
     )
     total_count = (await cur.fetchone())["total"]
     total_pages = (total_count + PAGE_SIZE - 1) // PAGE_SIZE or 1
@@ -69,13 +69,13 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
     # 게시글 목록 조회
     await cur.execute(
         f"""
-        SELECT id, author, title, view_count, like_count, created_at
+        SELECT id, author_id, title, view_count, like_count, created_at
         FROM posts
         {where_clause}
         ORDER BY {query.sort.value} {query.order.value.upper()}
         LIMIT %s OFFSET %s
         """,
-        (*params, PAGE_SIZE, offset)
+        (*search_params, PAGE_SIZE, offset)
     )
     posts = await cur.fetchall()
 
@@ -113,7 +113,7 @@ async def create_post(author_id: CurrentUserId, post: PostCreateRequest, cur: Cu
 
     new_post_model = PostDetail(
         id=post_id,
-        author=author_id,
+        author_id=author_id,
         title=post.title,
         content=post.content,
         view_count=0,

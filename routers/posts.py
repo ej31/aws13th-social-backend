@@ -111,13 +111,15 @@ async def create_post(author_id: CurrentUserId, post: PostCreateRequest, cur: Cu
         }
     )
 
-    new_post_model = PostListItem(
+    new_post_model = PostDetail(
         id=post_id,
         author=author_id,
         title=post.title,
+        content=post.content,
         view_count=0,
         like_count=0,
         created_at=now,
+        updated_at=now
     )
 
     return new_post_model

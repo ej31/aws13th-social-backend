@@ -15,10 +15,17 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     cookie_secure: bool = True
+
     users_file: Path = Path(__file__).resolve().parent / "data/users.json"
     posts_file: Path = Path(__file__).resolve().parent / "data/posts.json"
     comments_file: Path = Path(__file__).resolve().parent / "data/comments.json"
     likes_file: Path = Path(__file__).resolve().parent / "data/likes.json"
+
+    db_host: str
+    db_port: int
+    db_user: str
+    db_password: str
+    db_name: str
 
 
 settings = Settings()

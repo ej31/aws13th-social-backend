@@ -2,10 +2,11 @@ import uuid
 from datetime import datetime, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie, Request
+from aiomysql import IntegrityError
 
 from config import settings
-from schemas.commons import UserId
+from schemas.commons import UserId, CurrentCursor
 from schemas.user import (
     UserMyProfile,
     UserUpdateRequest, UserProfile,
@@ -14,9 +15,8 @@ from schemas.user import (
 )
 from utils.auth import (
     hash_password, verify_password, create_access_token, create_refresh_token,
-    decode_token, DUMMY_HASH, get_current_user_id
+    decode_token, DUMMY_HASH, get_current_user_id, hash_token
 )
-from utils.data import read_json, write_json
 
 router = APIRouter(
     tags=["USERS"],
@@ -27,31 +27,31 @@ CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 
 @router.post("/users", response_model=UserCreateResponse,
              status_code=status.HTTP_201_CREATED)
-def create_user(user: UserCreateRequest) -> UserCreateResponse:
+async def create_user(user: UserCreateRequest, cur: CurrentCursor) -> UserCreateResponse:
     """회원가입"""
-    users = read_json(settings.users_file)
-
-    # 이메일 중복 확인
-    if any(u["email"] == user.email for u in users):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered"
-        )
-
     new_id = f"user_{uuid.uuid4().hex}"
     now = datetime.now(UTC)
 
-    new_user = {
-        "id": new_id,
-        "email": user.email,
-        "nickname": user.nickname,
-        "password": hash_password(user.password),
-        "profile_img": user.profile_img,
-        "created_at": now.isoformat(),
-    }
-
-    users.append(new_user)
-    write_json(settings.users_file, users)
+    try:
+        await cur.execute(
+            """
+            INSERT INTO users (id, email, nickname, password, profile_img, created_at)
+            VALUES (%(id)s, %(email)s, %(nickname)s, %(password)s, %(profile_img)s, %(created_at)s)
+            """,
+            {
+                "id": new_id,
+                "email": user.email,
+                "nickname": user.nickname,
+                "password": hash_password(user.password),
+                "profile_img": user.profile_img,
+                "created_at": now,
+            }
+        )
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        )
 
     return UserCreateResponse(
         id=new_id,
@@ -65,18 +65,24 @@ REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
 
 
 @router.post("/auth/tokens", response_model=UserLoginResponse)
-def get_auth_tokens(user: UserLoginRequest, response: Response) -> UserLoginResponse:
+async def get_auth_tokens(
+        user: UserLoginRequest,
+        request: Request,
+        response: Response,
+        cur: CurrentCursor
+) -> UserLoginResponse:
     """로그인"""
-    users = read_json(settings.users_file)
-
-    # 이메일로 유저 찾기
-    db_user = next((u for u in users if u["email"] == user.email), None)
+    await cur.execute(
+        "SELECT id, password FROM users WHERE email = %s",
+        (user.email,)
+    )
+    db_user = await cur.fetchone()
 
     # 타이밍 공격 방지: 유저 존재 여부와 관계없이 항상 해시 비교 수행
     hashed_password = db_user["password"] if db_user else DUMMY_HASH
     is_password_correct = verify_password(user.password, hashed_password)
 
-    if not db_user or not is_password_correct:
+    if db_user is None or not is_password_correct:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -86,6 +92,23 @@ def get_auth_tokens(user: UserLoginRequest, response: Response) -> UserLoginResp
     token_data = {"sub": db_user["id"]}
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(data=token_data)
+
+    # 세션 생성
+    session_id = f"sess_{uuid.uuid4().hex}"
+    device_info = request.headers.get("User-Agent", "Unknown")
+
+    await cur.execute(
+        """
+        INSERT INTO user_sessions (id, user_id, refresh_token, device_info)
+        VALUES (%(session_id)s, %(user_id)s, %(refresh_token)s, %(device_info)s)
+        """,
+        {
+            "session_id": session_id,
+            "user_id": db_user["id"],
+            "refresh_token": hash_token(refresh_token),
+            "device_info": device_info
+        }
+    )
 
     # Refresh token을 HttpOnly 쿠키로 설정
     response.set_cookie(
@@ -102,10 +125,12 @@ def get_auth_tokens(user: UserLoginRequest, response: Response) -> UserLoginResp
 
 
 @router.post("/auth/tokens/refresh", response_model=TokenRefreshResponse)
-def refresh_access_token(
-    refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
+async def refresh_access_token(
+        cur: CurrentCursor,
+        response: Response,
+        refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
 ) -> TokenRefreshResponse:
-    """Access Token 갱신 (쿠키에서 refresh_token 읽음)"""
+    """Access Token 갱신 (쿠키에서 refresh_token 읽음) + Refresh Token Rotation"""
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -119,86 +144,166 @@ def refresh_access_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid token",
         )
-    users = read_json(settings.users_file)
-    if not any(user["id"] == user_id for user in users):
+
+    # DB에서 해당 세션 조회 (해시된 토큰으로 검색)
+    hashed_token = hash_token(refresh_token)
+    await cur.execute(
+        "SELECT id, user_id FROM user_sessions WHERE refresh_token = %s",
+        (hashed_token,)
+    )
+    session = await cur.fetchone()
+
+    if not session:
+        # 토큰이 DB에 없음 → 이미 사용된 토큰 (탈취 의심)
+        # 해당 유저의 이 세션만 삭제 (세션 ID를 모르므로 user_id 기준으로는 불가)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid token",
         )
 
-    # 새 access token 발급
-    access_token = create_access_token(data={"sub": user_id})
-    return TokenRefreshResponse(access_token=access_token)
+    # user_id 일치 확인
+    if session["user_id"] != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid token",
+        )
+
+    # 새 토큰 발급
+    token_data = {"sub": user_id}
+    new_access_token = create_access_token(data=token_data)
+    new_refresh_token = create_refresh_token(data=token_data)
+
+    # 새 refresh token으로 업데이트 + last_used_at 갱신
+    await cur.execute(
+        """
+        UPDATE user_sessions
+        SET refresh_token = %s, last_used_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+        """,
+        (hash_token(new_refresh_token), session["id"])
+    )
+
+    # 새 refresh token을 쿠키에 설정 (원본)
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        value=new_refresh_token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        path="/",
+    )
+
+    return TokenRefreshResponse(access_token=new_access_token)
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response) -> None:
-    """로그아웃 (refresh_token 쿠키 삭제)"""
+async def logout(
+        response: Response,
+        cur: CurrentCursor,
+        refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
+) -> None:
+    """로그아웃 (refresh_token 쿠키 삭제 + DB 세션 삭제)"""
+    if refresh_token:
+        # 해당 세션만 삭제
+        await cur.execute(
+            "DELETE FROM user_sessions WHERE refresh_token = %s",
+            (hash_token(refresh_token),)
+        )
     response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY, path="/")
 
 
 @router.get("/users/me", response_model=UserMyProfile)
-def get_my_profile(user_id: CurrentUserId) -> UserMyProfile:
+async def get_my_profile(user_id: CurrentUserId, cur: CurrentCursor) -> UserMyProfile:
     """내 프로필 조회"""
-    users = read_json(settings.users_file)
+    await cur.execute(
+        """
+        SELECT id, email, nickname, profile_img, created_at
+        FROM users
+        WHERE id = %s
+        """,
+        (user_id,)
+    )
+    user = await cur.fetchone()
 
-    user = next((u for u in users if u["id"] == user_id), None)
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
-    return user
+    return UserMyProfile(**user)
+
+
+ALLOWED_UPDATE_COLUMNS = frozenset({"nickname", "profile_img"})
 
 
 @router.patch("/users/me", response_model=UserMyProfile)
-def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest) -> UserMyProfile:
+async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest,
+                            cur: CurrentCursor) -> UserMyProfile:
     """내 프로필 수정"""
-    users = read_json(settings.users_file)
+    # 전달된 필드만 추출
+    update_fields = update_data.model_dump(exclude_unset=True)
+    update_fields = {k: v for k, v in update_fields.items() if k in ALLOWED_UPDATE_COLUMNS}
 
-    user_index = next((i for i, user in enumerate(users) if user["id"] == user_id), None)
-    if user_index is None:
+    if not update_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid fields to update"
+        )
+
+    # 동적 SET 절 생성: "nickname = %(nickname)s, profile_img = %(profile_img)s"
+    set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)
+    update_data = {**update_fields, "user_id": user_id}
+
+    await cur.execute(
+        f"UPDATE users SET {set_clause} WHERE id = %(user_id)s",
+        update_data
+    )
+
+    if cur.rowcount == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
-    # 변경할 필드만 업데이트
-    update_field = update_data.model_dump(exclude_unset=True)
-    users[user_index].update(update_field)
+    # 수정된 데이터 조회
+    await cur.execute(
+        "SELECT id, email, nickname, profile_img, created_at FROM users WHERE id = %s",
+        (user_id,)
+    )
+    user = await cur.fetchone()
 
-    write_json(settings.users_file, users)
-
-    return users[user_index]
+    return UserMyProfile(**user)
 
 
 @router.get("/users/{user_id}", response_model=UserProfile)
-def get_specific_user(user_id: UserId) -> UserProfile:
+async def get_specific_user(user_id: UserId, cur: CurrentCursor) -> UserProfile:
     """특정 유저 프로필 조회"""
-    users = read_json(settings.users_file)
+    await cur.execute(
+        "SELECT id, nickname, profile_img FROM users WHERE id = %s",
+        (user_id,)
+    )
+    user = await cur.fetchone()
 
-    user = next((u for u in users if u["id"] == user_id), None)
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
-    return user
+    return UserProfile(**user)
 
 
 @router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
-def delete_my_account(user_id: CurrentUserId) -> None:
+async def delete_my_account(user_id: CurrentUserId, cur: CurrentCursor) -> None:
     """회원 탈퇴"""
-    users = read_json(settings.users_file)
-
-    user_index = next((i for i, user in enumerate(users) if user["id"] == user_id), None)
-    if user_index is None:
+    await cur.execute(
+        "DELETE FROM users WHERE id = %s",
+        (user_id,)
+    )
+    if cur.rowcount == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-
-    users.pop(user_index)
-    write_json(settings.users_file, users)

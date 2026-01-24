@@ -1,3 +1,4 @@
+from enum import Enum
 from fastapi import APIRouter, status, Query, Depends, HTTPException
 from schemas.post import PostCreate, PostUpdate
 from utils.auth import get_current_user
@@ -6,12 +7,17 @@ from datetime import datetime, timezone
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
+#Enum 클래스 추가
+class SortOption(str, Enum):
+    LATEST = "latest"
+    VIEWS = "views"
+    LIKES = "likes"
 
 @router.get("")
 def get_posts(
         page: int = Query(1, ge=1),  # 기본값 1페이지, 1보다 커야됌
         limit: int = Query(20, ge=1, le=100),  # 한 페이지당 20개, 최대 100개
-        sort: str = Query("latest", pattern="^(latest|views|likes)$"),
+        sort: SortOption = Query(SortOption.LATEST),
 ):
     """
         게시글 목록 조회
@@ -28,18 +34,18 @@ def get_posts(
         p for p in posts if not p.get("is_deleted", False)
     ]
     # 정렬 추가
-    if sort == "latest":
+    if sort == SortOption.LATEST:
         active_posts.sort(
             key=lambda p: p.get("created_at", ""),
             reverse=True
         )
-    elif sort == "views":
+    elif sort == SortOption.VIEWS:
         active_posts.sort(
             key=lambda p: p.get("viewCount", 0),
             reverse=True
         )
 
-    elif sort == "likes":
+    elif sort == SortOption.LIKES:
         active_posts.sort(
             key=lambda p: p.get("likeCount", 0),
             reverse=True
@@ -91,7 +97,7 @@ def create_post(
     # 게시글 데이터 로드
     posts = load_data("posts")
     # postId 생성
-    new_post_Id = (  # 마지막 게시글 ID에 1 추가해 고우 ID 생성
+    new_post_id = (  # 마지막 게시글 ID에 1 추가해 고우 ID 생성
             max([p["postId"] for p in posts], default=0) + 1
     )
     # 현재 시간
@@ -99,7 +105,7 @@ def create_post(
 
     # 게시글 작성
     new_post = {
-        "postId": new_post_Id,
+        "postId": new_post_id,
         "userId": current_user["userId"],  # 작성자 userId
         "title": data.title.strip(),
         "content": data.content.strip(),
@@ -174,7 +180,7 @@ def search_posts(
 def get_my_posts(
         page: int = Query(1, ge=1),
         limit: int = Query(20, ge=1, le=100),
-        sort: str = Query("latest", pattern="^(latest|views|likes)$"),
+        sort: SortOption = Query(SortOption.LATEST),
         current_user: dict = Depends(get_current_user),
 ):
     posts = load_data("posts")
@@ -187,11 +193,11 @@ def get_my_posts(
     ]
 
     # 정렬
-    if sort == "latest":
+    if sort == SortOption.LATEST:
         my_posts.sort(key=lambda p: p.get("created_at", ""), reverse=True)
-    elif sort == "views":
+    elif sort == SortOption.VIEWS:
         my_posts.sort(key=lambda p: p.get("viewCount", 0), reverse=True)
-    elif sort == "likes":
+    elif sort == SortOption.LIKES:
         my_posts.sort(key=lambda p: p.get("likeCount", 0), reverse=True)
 
     # 페이지네이션

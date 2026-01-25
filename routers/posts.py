@@ -74,7 +74,7 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
         SELECT id, author_id, title, view_count, like_count, created_at
         FROM posts
         {where_clause}
-        ORDER BY {query.sort.value} {query.order.value.upper()}
+        ORDER BY {query.sort.value} {query.order.value.upper()}, created_at DESC
         LIMIT %s OFFSET %s
         """,
         (*search_params, PAGE_SIZE, offset)

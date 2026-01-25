@@ -10,7 +10,6 @@ from schemas.comment import (
     CommentCreateRequest,
     CommentBase,
     CommentUpdateRequest,
-    # CommentUpdateResponse,
     CommentListResponse,
 )
 from utils.database import read_json, write_json
@@ -143,24 +142,53 @@ async def create_comment(
 
 
 @router.patch("/posts/{post_id}/comments/{comment_id}", response_model=CommentBase)
-def update_comment(
+async def update_comment(
         post_id: PostId,
         comment_id: CommentId,
         user_id: CurrentUserId,
-        update_data: CommentUpdateRequest
+        update_data: CommentUpdateRequest,
+        cur: CurrentCursor
 ) -> CommentBase:
     """댓글 수정"""
-    _verify_post_exists(post_id)
-    comments = read_json(settings.comments_file)
+    # 댓글 존재 + 작성자 확인
+    await cur.execute(
+        "SELECT author_id FROM comments WHERE id = %s AND post_id = %s",
+        (comment_id, post_id)
+    )
+    comment = await cur.fetchone()
 
-    comment_index = _get_comment_index_and_verify_author(comments, comment_id, post_id, user_id)
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
 
-    comments[comment_index]["content"] = update_data.content
-    comments[comment_index]["updated_at"] = datetime.now(UTC).isoformat()
+    if comment["author_id"] != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to modify this comment"
+        )
 
-    write_json(settings.comments_file, comments)
+    # 댓글 수정
+    await cur.execute(
+        "UPDATE comments SET content = %s WHERE id = %s",
+        (update_data.content, comment_id)
+    )
 
-    return CommentBase(**comments[comment_index])
+    # 수정된 댓글 조회
+    await cur.execute(
+        "SELECT id, post_id, author_id, content, created_at FROM comments WHERE id = %s",
+        (comment_id,)
+    )
+    updated_comment = await cur.fetchone()
+
+    if not updated_comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
+
+    return CommentBase(**updated_comment)
 
 
 @router.delete("/posts/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)

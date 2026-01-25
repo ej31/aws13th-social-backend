@@ -13,7 +13,7 @@ class CommentBase(BaseModel):
     """댓글 생성/조회에서 공통으로 쓰는 필드"""
     id: CommentId
     post_id: PostId
-    author: UserId
+    author_id: UserId
     content: Content
     created_at: datetime
 
@@ -22,8 +22,7 @@ class CommentUpdateRequest(BaseModel):
     content: Content
 
 
-class CommentUpdateResponse(CommentBase):
-    updated_at: datetime
+# CommentUpdateResponse = CommentBase
 
 
 class CommentListResponse(BaseModel):

@@ -5,12 +5,12 @@ from fastapi import APIRouter, HTTPException, status
 
 from config import settings
 from routers.users import CurrentUserId
-from schemas.commons import PostId, Page, CommentId, Pagination
+from schemas.commons import PostId, Page, CommentId, Pagination, CurrentCursor
 from schemas.comment import (
     CommentCreateRequest,
     CommentBase,
     CommentUpdateRequest,
-    CommentUpdateResponse,
+    # CommentUpdateResponse,
     CommentListResponse,
 )
 from utils.database import read_json, write_json
@@ -44,7 +44,8 @@ def _get_comment_index_and_verify_author(
 
 def _verify_post_exists(post_id: PostId) -> None:
     """게시글 존재 확인"""
-    posts = read_json(settings.posts_file)
+    # posts = read_json(settings.posts_file)
+
     if not any(p["id"] == post_id for p in posts):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -75,36 +76,53 @@ def get_comments(post_id: PostId, page: Page = 1) -> CommentListResponse:
 
 @router.post("/posts/{post_id}/comments", response_model=CommentBase,
              status_code=status.HTTP_201_CREATED)
-def create_comment(post_id: PostId, user_id: CurrentUserId, comment: CommentCreateRequest) -> CommentBase:
+async def create_comment(
+        post_id: PostId, user_id: CurrentUserId, comment: CommentCreateRequest, cur: CurrentCursor) -> CommentBase:
     """댓글 작성"""
-    _verify_post_exists(post_id)
-    comments = read_json(settings.comments_file)
+    # 게시글 존재 확인
+    await cur.execute(
+        "SELECT id FROM posts WHERE id = %s",
+        (post_id,)
+    )
+    if not await cur.fetchone():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
 
     comment_id = f"comment_{uuid.uuid4().hex}"
     now = datetime.now(UTC)
 
-    new_comment = {
-        "id": comment_id,
-        "post_id": post_id,
-        "author": user_id,
-        "content": comment.content,
-        "created_at": now.isoformat(),
-        "updated_at": now.isoformat(),
-    }
+    await cur.execute(
+        """
+        INSERT INTO comments (id, post_id, author_id, content, created_at)
+        VALUES (%(comments_id)s, %(post_id)s, %(author_id)s, %(content)s, %(created_at)s)
+        """,
+        {
+            "comment_id": comment_id,
+            "post_id": post_id,
+            "author_id": user_id,
+            "content": comment.content,
+            "created_at": now
+        }
+    )
 
-    comments.append(new_comment)
-    write_json(settings.comments_file, comments)
+    return CommentBase(
+        id=comment_id,
+        post_id=post_id,
+        author_id=user_id,
+        content=comment.content,
+        created_at=now,
+    )
 
-    return CommentBase(**new_comment)
 
-
-@router.patch("/posts/{post_id}/comments/{comment_id}", response_model=CommentUpdateResponse)
+@router.patch("/posts/{post_id}/comments/{comment_id}", response_model=CommentBase)
 def update_comment(
         post_id: PostId,
         comment_id: CommentId,
         user_id: CurrentUserId,
         update_data: CommentUpdateRequest
-) -> CommentUpdateResponse:
+) -> CommentBase:
     """댓글 수정"""
     _verify_post_exists(post_id)
     comments = read_json(settings.comments_file)
@@ -116,7 +134,7 @@ def update_comment(
 
     write_json(settings.comments_file, comments)
 
-    return CommentUpdateResponse(**comments[comment_index])
+    return CommentBase(**comments[comment_index])
 
 
 @router.delete("/posts/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)

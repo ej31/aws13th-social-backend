@@ -148,22 +148,26 @@ def get_posts_mine(user_id: CurrentUserId, page: Page = 1) -> ListPostsResponse:
 
 
 @router.get("/posts/{post_id}", response_model=PostDetail)
-def get_single_post(post_id: PostId) -> PostDetail:
+async def get_single_post(post_id: PostId, cur: CurrentCursor) -> PostDetail:
     """게시글 상세 조회"""
-    posts = read_json(settings.posts_file)
+    await cur.execute(
+        "UPDATE posts SET view_count = view_count + 1 WHERE id = %s",
+        (post_id,)
+    )
 
-    post_index = next((i for i, post in enumerate(posts) if post["id"] == post_id), None)
-    if post_index is None:
+    if cur.rowcount == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
 
-    # 조회수 증가
-    posts[post_index]["view_count"] = posts[post_index].get("view_count", 0) + 1
-    write_json(settings.posts_file, posts)
+    await cur.execute(
+        "SELECT * FROM posts WHERE id = %s",
+        (post_id,)
+    )
+    post = await cur.fetchone()
 
-    return PostDetail(**posts[post_index])
+    return PostDetail(**post)
 
 
 ALLOWED_POST_UPDATE_COLUMNS = frozenset({"title", "content"})

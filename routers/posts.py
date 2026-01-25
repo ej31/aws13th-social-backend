@@ -23,10 +23,10 @@ router = APIRouter(
 )
 
 
-async def _get_post_and_verify_author(cur, post_id: PostId, author_id: str) -> dict:
-    """게시글 조회 + 작성자 검증. 검증 통과 시 게시글 반환."""
+async def _verify_post_author(cur, post_id: PostId, author_id: str) -> None:
+    """게시글 존재 여부 + 작성자 검증."""
     await cur.execute(
-        "SELECT * FROM posts WHERE id = %s",
+        "SELECT author_id FROM posts WHERE id = %s",
         (post_id,)
     )
     post = await cur.fetchone()
@@ -42,8 +42,6 @@ async def _get_post_and_verify_author(cur, post_id: PostId, author_id: str) -> d
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this post"
         )
-
-    return post
 
 
 @router.get("/posts", response_model=ListPostsResponse)
@@ -168,30 +166,48 @@ def get_single_post(post_id: PostId) -> PostDetail:
     return PostDetail(**posts[post_index])
 
 
+ALLOWED_POST_UPDATE_COLUMNS = frozenset({"title", "content"})
+
+
 @router.patch("/posts/{post_id}", response_model=PostDetail)
-def update_post(author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest) -> PostDetail:
+async def update_post(
+        author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest, cur: CurrentCursor) -> PostDetail:
     """게시글 수정"""
-    posts = read_json(settings.posts_file)
+    await _verify_post_author(cur, post_id, author_id)
 
-    post_index = _get_post_index_and_verify_author(posts, post_id, author_id)
+    # 전달된 필드만 추출
+    update_fields = update_data.model_dump(exclude_unset=True)
+    update_fields = {k: v for k, v in update_fields.items() if k in ALLOWED_POST_UPDATE_COLUMNS}
 
-    if update_data.title is not None:
-        posts[post_index]["title"] = update_data.title
-    if update_data.content is not None:
-        posts[post_index]["content"] = update_data.content
+    if not update_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid fields to update"
+        )
 
-    posts[post_index]["updated_at"] = datetime.now(UTC).isoformat()
+    # 동적 SET 절 생성
+    set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)
+    update_data = {**update_fields, "post_id": post_id}
 
-    write_json(settings.posts_file, posts)
+    await cur.execute(
+        f"UPDATE posts SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = %(post_id)s",
+        update_data
+    )
 
-    return PostDetail(**posts[post_index])
+    # 수정된 데이터 조회
+    await cur.execute(
+        "SELECT * FROM posts WHERE id = %s",
+        (post_id,)
+    )
+    post = await cur.fetchone()
+
+    return PostDetail(**post)
 
 
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(author_id: CurrentUserId, post_id: PostId, cur: CurrentCursor) -> None:
     """게시글 삭제"""
-    await _get_post_and_verify_author(cur, post_id, author_id)
-
+    await _verify_post_author(cur, post_id, author_id)
     await cur.execute(
         "DELETE FROM posts WHERE id = %s",
         (post_id,)

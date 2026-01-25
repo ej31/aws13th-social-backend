@@ -18,52 +18,54 @@ class DuplicateResourceError(Exception):
 class UserCreateFailedError(Exception):
     pass
 
+
+class DataPersistenceError:
+    pass
+
+
+class ResourceBusyError:
+    pass
+
+
 def create_user(user: UserCreate) -> Dict[str, Any]:
-    # 파일 접근을 제어하기 위한 잠금 장치 설정
     lock = FileLock(LOCK_PATH, timeout=5)
 
     try:
         with lock:
-            # 1. 기존 데이터 로드 (메모리로 가져오기)
+            # 1. 파일에서 데이터 로드 (lock 안에서!)
             users = load_json("users.json")
 
-            # 2. 중복 검사 (비즈니스 로직)
+            # 2. 중복 검사
             if any(u["email"] == user.email for u in users):
                 raise DuplicateResourceError(field="email")
 
             if any(u["nickname"] == user.nickname for u in users):
                 raise DuplicateResourceError(field="nickname")
 
-            # 3. 새로운 유저 객체 생성 (아직 리스트에 넣지 않음)
+            # 3. 새 사용자 생성
             new_user = {
                 "id": generate_id("user", users),
                 "email": user.email,
                 "nickname": user.nickname,
                 "profile_image_url": user.profile_image_url,
                 "password": hash_password(user.password),
-                "created_at": datetime.now(timezone.utc).isoformat()
+                "created_at": datetime.utcnow().isoformat(),
             }
 
-            # 기존 users 리스트를 직접 수정하지 않고,
-            # 새로운 리스트를 만들어 저장을 시도 (Copy-on-Write 방식)
+            # 4. Copy-on-Write 방식으로 리스트 생성
             updated_users = users + [new_user]
 
-            # 4. 파일 저장 시도
+            # 5. 원자적 저장
             if not save_json("users.json", updated_users):
-                logger.error("users.json 파일 저장 실패")
+                logger.error("users.json 저장 실패")
                 raise UserCreateFailedError()
 
-            # 저장에 성공했을 때만 생성된 유저 정보를 반환.
             return new_user
 
-    except DuplicateResourceError:
-        raise
-
     except Timeout:
-        logger.error("파일 잠금 획득 시간 초과")
+        logger.error("파일 잠금 획득 실패 (동시 요청 과다)")
         raise UserCreateFailedError()
 
     except Exception:
-        # 민감 정보 누출 방지를 위해 구체적인 데이터 대신 예외 유형만 기록
-        logger.exception("회원 생성 프로세스 중 시스템 오류 발생")
+        logger.exception("회원 생성 중 시스템 오류 발생")
         raise UserCreateFailedError()

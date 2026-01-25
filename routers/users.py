@@ -34,7 +34,7 @@ def register_user(
     except DuplicateResourceError as e:
         message_map = {
             "email": "이미 사용 중인 이메일 입니다.",
-            "nickname": "이미 사용 중인 닉네임 입니다"
+            "nickname": "이미 사용 중인 닉네임 입니다."
         }
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

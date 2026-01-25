@@ -18,21 +18,12 @@ class DuplicateResourceError(Exception):
 class UserCreateFailedError(Exception):
     pass
 
-
-class DataPersistenceError:
-    pass
-
-
-class ResourceBusyError:
-    pass
-
-
 def create_user(user: UserCreate) -> Dict[str, Any]:
     lock = FileLock(LOCK_PATH, timeout=5)
 
     try:
         with lock:
-            # 1. 파일에서 데이터 로드 (lock 안에서!)
+            # 1. 파일에서 데이터 로드 (lock 안에서)
             users = load_json("users.json")
 
             # 2. 중복 검사

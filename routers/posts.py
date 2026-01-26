@@ -211,11 +211,11 @@ async def update_post(
 
     # 동적 SET 절 생성
     set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)
-    update_data = {**update_fields, "post_id": post_id}
+    query_params = {**update_fields, "post_id": post_id}
 
     await cur.execute(
         f"UPDATE posts SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = %(post_id)s",
-        update_data
+        query_params
     )
 
     # 수정된 데이터 조회

@@ -15,6 +15,8 @@ from schemas.comment import (
 
 COMMENT_PAGE_SIZE = 10
 
+# TODO: COUNT(*) -> redis 연결로 성능 개선
+
 # SQL Injection 방어: UPDATE 허용 필드 -> DB 컬럼 명시적 매핑
 COMMENT_UPDATE_COLUMN_MAP = {
     "content": "content",

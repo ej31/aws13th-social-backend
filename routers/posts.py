@@ -19,9 +19,16 @@ from schemas.post import (
 
 PAGE_SIZE = 20
 
-# SQL Injection 방어: ORDER BY 절에 사용할 수 있는 컬럼/정렬 whitelist
-ALLOWED_SORT_COLUMNS = frozenset({"created_at", "view_count", "like_count"})
-ALLOWED_SORT_ORDERS = frozenset({"ASC", "DESC"})
+# SQL Injection 방어: ORDER BY 절 명시적 매핑
+SORT_COLUMN_MAP = {
+    "created_at": "created_at",
+    "view_count": "view_count",
+    "like_count": "like_count",
+}
+SORT_ORDER_MAP = {
+    "asc": "ASC",
+    "desc": "DESC",
+}
 
 router = APIRouter(
     tags=["POSTS"],
@@ -61,9 +68,9 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
     """
     offset = (query.page - 1) * PAGE_SIZE
 
-    # ORDER BY 절 whitelist 검증
-    sort_column = query.sort.value if query.sort.value in ALLOWED_SORT_COLUMNS else "created_at"
-    sort_order = query.order.value.upper() if query.order.value.upper() in ALLOWED_SORT_ORDERS else "DESC"
+    # ORDER BY 절 명시적 매핑 (하드코딩된 값만 SQL에 들어감)
+    sort_column = SORT_COLUMN_MAP.get(query.sort.value, "created_at")
+    sort_order = SORT_ORDER_MAP.get(query.order.value, "DESC")
 
     # 검색 조건
     if query.q:

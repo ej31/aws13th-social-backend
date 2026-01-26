@@ -1,6 +1,6 @@
 """
 Post Repository
-- 게시글 데이터 CRUD
+- 게시글 데이터 CRUD (SQL 쿼리 기반)
 """
 from typing import Any, Literal
 
@@ -70,8 +70,10 @@ class PostRepository(BaseRepository):
         params = []
         
         if search:
+            # LIKE 와일드카드 이스케이프 처리
+            escaped_search = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+            search_param = f"%{escaped_search}%"
             where_clause = "WHERE p.title LIKE %s OR p.content LIKE %s"
-            search_param = f"%{search}%"
             params = [search_param, search_param]
         
         # 전체 개수 조회
@@ -143,16 +145,27 @@ class PostRepository(BaseRepository):
         """
         게시글 정보 수정
         """
+        # 화이트리스트: 업데이트 가능한 필드만 허용
+        ALLOWED_FIELDS = {'title', 'content'}
+        
         if not updates:
             return False
         
-        set_clause = ", ".join([f"{key} = %s" for key in updates.keys()])
+        # 허용되지 않은 필드 필터링
+        filtered_updates = {k: v for k, v in updates.items() if k in ALLOWED_FIELDS}
+        
+        if not filtered_updates:
+            return False
+        
+        # SET 절 생성
+        set_clause = ", ".join([f"{key} = %s" for key in filtered_updates.keys()])
         query = f"UPDATE posts SET {set_clause} WHERE post_id = %s"
         
-        params = list(updates.values()) + [post_id]
+        params = list(filtered_updates.values()) + [post_id]
         affected = self.db.execute_query(query, tuple(params), commit=True)
         
-        return affected > 0 if affected else False
+        # affected가 None이면 실패, 0 이상이면 성공 (같은 값 업데이트도 성공으로 간주)
+        return affected is not None and affected >= 0
     
     def increment_views(self, post_id: int) -> bool:
         """

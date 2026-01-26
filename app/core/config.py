@@ -21,12 +21,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Database 설정 (MariaDB)
-    DATABASE_HOST: str = "localhost"
-    DATABASE_PORT: int = 3306
-    DATABASE_USER: str
-    DATABASE_PASSWORD: str
-    DATABASE_NAME: str
-    DATABASE_CHARSET: str = "utf8mb4"
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 3306
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_NAME: str
+    DB_CHARSET: str = "utf8mb4"
     
     # Connection Pool 설정
     DB_POOL_SIZE: int = 5

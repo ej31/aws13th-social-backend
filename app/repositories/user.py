@@ -1,6 +1,6 @@
 """
 User Repository
-- 사용자 데이터 CRUD
+- 사용자 데이터 CRUD (SQL 쿼리 기반)
 """
 from datetime import datetime, timezone
 from typing import Any
@@ -89,26 +89,37 @@ class UserRepository(BaseRepository):
         """
         사용자 정보 수정
         """
+        # 화이트리스트: 업데이트 가능한 필드만 허용
+        ALLOWED_FIELDS = {'nickname', 'profile_image', 'password'}
+        
         if not updates:
             return False
         
-        # 비밀번호가 포함되어 있으면 해싱
-        if "password" in updates and updates["password"]:
-            updates["password"] = get_password_hash(updates["password"])
+        # 허용되지 않은 필드 필터링
+        filtered_updates = {k: v for k, v in updates.items() if k in ALLOWED_FIELDS}
         
-        # SET 절 생성
-        set_clause = ", ".join([f"{key} = %s" for key in updates.keys()])
+        if not filtered_updates:
+            return False
+        
+        # 비밀번호가 포함되어 있으면 해싱
+        if "password" in filtered_updates and filtered_updates["password"]:
+            filtered_updates["password"] = get_password_hash(filtered_updates["password"])
+        
+        # SET 절 생성 (화이트리스트 검증된 필드만 사용)
+        set_clause = ", ".join([f"{key} = %s" for key in filtered_updates.keys()])
         query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
         
-        params = list(updates.values()) + [user_id]
+        params = list(filtered_updates.values()) + [user_id]
         affected = self.db.execute_query(query, tuple(params), commit=True)
         
-        return affected > 0 if affected else False
+        # affected가 None이면 실패, 0 이상이면 성공 (같은 값 업데이트도 성공으로 간주)
+        return affected is not None and affected >= 0
     
     # 삭제 메서드
     
     def delete_user(self, user_id: int) -> bool:
         """
         사용자 삭제
+
         """
         return self.delete("user_id", user_id)

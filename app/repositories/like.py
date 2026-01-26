@@ -1,6 +1,6 @@
 """
 Like Repository
-- 좋아요 데이터 CRUD
+- 좋아요 데이터 CRUD (SQL 쿼리 기반)
 """
 from typing import Any
 
@@ -96,16 +96,17 @@ class LikeRepository(BaseRepository):
         """
         좋아요 생성
         """
-        # 중복 체크 (이미 있으면 기존 데이터 반환)
-        existing = self.find_by_post_and_user(post_id, user_id)
-        if existing:
-            return existing
-        
         query = "INSERT INTO likes (post_id, user_id) VALUES (%s, %s)"
-        self.db.execute_query(query, (post_id, user_id), commit=True)
         
-        # 생성된 좋아요 조회
-        return self.find_by_post_and_user(post_id, user_id)
+        try:
+            self.db.execute_query(query, (post_id, user_id), commit=True)
+            # 생성된 좋아요 조회
+            return self.find_by_post_and_user(post_id, user_id)
+        except Exception as e:
+            # UNIQUE 제약조건 위반 시 기존 데이터 반환
+            if "Duplicate entry" in str(e) or "1062" in str(e):
+                return self.find_by_post_and_user(post_id, user_id)
+            raise
     
     # 삭제 메서드
     

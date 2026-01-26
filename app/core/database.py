@@ -31,12 +31,12 @@ class Database:
             maxusage=None,
             setsession=[],
             ping=1 if settings.DB_POOL_PRE_PING else 0,
-            host=settings.DATABASE_HOST,
-            port=settings.DATABASE_PORT,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD,
-            database=settings.DATABASE_NAME,
-            charset=settings.DATABASE_CHARSET,
+            host=settings.DB_HOST,
+            port=settings.DB_PORT,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+            database=settings.DB_NAME,
+            charset=settings.DB_CHARSET,
             cursorclass=DictCursor,  # 결과를 dict로 반환
             autocommit=False  # 명시적 commit 사용
         )

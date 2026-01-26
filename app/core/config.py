@@ -1,5 +1,10 @@
+"""
+애플리케이션 설정
+- MariaDB 연결 정보 포함
+"""
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import cache
+
 
 class Settings(BaseSettings):
     """애플리케이션 설정"""
@@ -15,20 +20,42 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # 데이터 저장소 설정
-    DATA_DIR: str = "./data"
-    USE_DATABASE: bool = False
-    DATABASE_URL: str = "sqlite:///./community.db"  # USE_DATABASE=True일 때 사용
+    # Database 설정 (MariaDB)
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: int = 3306
+    DATABASE_USER: str
+    DATABASE_PASSWORD: str
+    DATABASE_NAME: str
+    DATABASE_CHARSET: str = "utf8mb4"
     
-    # MongoDB 설정
-    # MONGODB_URL: Optional[str] = None
+    # Connection Pool 설정
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_RECYCLE: int = 3600  # 1시간
+    DB_POOL_PRE_PING: bool = True
+    
+    # 기존 JSON 방식 (마이그레이션 완료 후 제거 예정)
+    DATA_DIR: str = "./data"
 
     model_config = SettingsConfigDict(
-        env_file=".env",        # .env 파일을 읽어옴
-        case_sensitive=True,    # 대소문자 구분
-        extra="ignore"         # 정의되지 않은 환경변수가 있어도 에러내지 않고 무시
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"
     )
+    
+    @property
+    def database_url(self) -> str:
+        """
+        PyMySQL 연결 문자열 생성
+        """
+        return (
+            f"mysql+pymysql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
+            f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+            f"?charset={self.DATABASE_CHARSET}"
+        )
+
 
 @cache
 def get_settings() -> Settings:
+    """설정 싱글톤 인스턴스 반환"""
     return Settings()

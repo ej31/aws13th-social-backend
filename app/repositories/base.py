@@ -1,10 +1,9 @@
 """
 Base Repository
-- JSON 파일 기반 공통 CRUD 로직
 - 모든 Repository의 기본 클래스
 """
-from typing import Any, Callable
-from app.utils.json_handler import JsonFileHandler
+from typing import Any
+from app.core.database import get_database, Database
 
 
 class BaseRepository:
@@ -12,15 +11,17 @@ class BaseRepository:
     모든 Repository의 기본 클래스
     
     Attributes:
-        handler: JSON 파일 핸들러
+        db: Database 인스턴스
+        table_name: 테이블 이름
     """
     
-    def __init__(self, file_path: str):
+    def __init__(self, table_name: str):
         """
         Args:
-            file_path: JSON 파일 경로
+            table_name: 대상 테이블 이름
         """
-        self.handler = JsonFileHandler(file_path)
+        self.db: Database = get_database()
+        self.table_name = table_name
     
     def find_by_id(self, id_field: str, id_value: Any) -> dict[str, Any] | None:
         """
@@ -33,7 +34,8 @@ class BaseRepository:
         Returns:
             dict[str, Any] | None: 찾은 항목 또는 None
         """
-        return self.handler.find_one(lambda x: x.get(id_field) == id_value)
+        query = f"SELECT * FROM {self.table_name} WHERE {id_field} = %s"
+        return self.db.execute_query(query, (id_value,), fetch_one=True)
     
     def find_all(self) -> list[dict[str, Any]]:
         """
@@ -42,70 +44,9 @@ class BaseRepository:
         Returns:
             list[dict[str, Any]]: 전체 항목 리스트
         """
-        return self.handler.read()
-    
-    def find_many(
-        self, 
-        condition: Callable[[dict[str, Any]], bool] | None = None
-    ) -> list[dict[str, Any]]:
-        """
-        조건에 맞는 항목들 찾기
-        
-        Args:
-            condition: 필터 조건 함수, None이면 전체 반환
-            
-        Returns:
-            list[dict[str, Any]]: 조건에 맞는 항목 리스트
-        """
-        return self.handler.find_many(condition)
-    
-    def create(self, item: dict[str, Any]) -> dict[str, Any]:
-        """
-        항목 생성
-        
-        Args:
-            item: 생성할 항목 데이터
-            
-        Returns:
-            dict[str, Any]: 생성된 항목
-        """
-        self.handler.append(item)
-        return item
-    
-    def update(
-        self, 
-        id_field: str, 
-        id_value: Any, 
-        updates: dict[str, Any]
-    ) -> bool:
-        """
-        항목 수정
-        
-        Args:
-            id_field: ID 필드명
-            id_value: ID 값
-            updates: 수정할 필드들
-            
-        Returns:
-            bool: 수정 성공 여부
-        """
-        return self.handler.update(
-            lambda x: x.get(id_field) == id_value,
-            updates
-        )
-    
-    def delete(self, id_field: str, id_value: Any) -> bool:
-        """
-        항목 삭제
-        
-        Args:
-            id_field: ID 필드명
-            id_value: ID 값
-            
-        Returns:
-            bool: 삭제 성공 여부
-        """
-        return self.handler.delete(lambda x: x.get(id_field) == id_value)
+        query = f"SELECT * FROM {self.table_name}"
+        result = self.db.execute_query(query, fetch_all=True)
+        return result if result else []
     
     def exists(self, id_field: str, id_value: Any) -> bool:
         """
@@ -118,4 +59,32 @@ class BaseRepository:
         Returns:
             bool: 존재 여부
         """
-        return self.find_by_id(id_field, id_value) is not None
+        query = f"SELECT COUNT(*) as cnt FROM {self.table_name} WHERE {id_field} = %s"
+        result = self.db.execute_query(query, (id_value,), fetch_one=True)
+        return result['cnt'] > 0 if result else False
+    
+    def delete(self, id_field: str, id_value: Any) -> bool:
+        """
+        항목 삭제
+        
+        Args:
+            id_field: ID 필드명
+            id_value: ID 값
+            
+        Returns:
+            bool: 삭제 성공 여부
+        """
+        query = f"DELETE FROM {self.table_name} WHERE {id_field} = %s"
+        affected = self.db.execute_query(query, (id_value,), commit=True)
+        return affected > 0 if affected else False
+    
+    def count(self) -> int:
+        """
+        전체 항목 개수
+        
+        Returns:
+            int: 항목 개수
+        """
+        query = f"SELECT COUNT(*) as cnt FROM {self.table_name}"
+        result = self.db.execute_query(query, fetch_one=True)
+        return result['cnt'] if result else 0

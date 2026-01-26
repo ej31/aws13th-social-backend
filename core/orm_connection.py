@@ -1,28 +1,28 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-
-from core.db_connection import get_db_connection
-
-con = None
-try:
-    con = get_db_connection()
-
-    host = con.host
-    port = con.port
-    user = con.user
-    password = con.password
-    db = con.db
-    charset = con.charset
-
-    URL = f'mysql+pymysql://{user}:{password}@{host}:{port}/{db}?charset={charset}'
-    print(URL)
-    engine = create_engine(URL, echo=True)
-
-    Base = declarative_base()
-
-finally:
-    if con:
-        con.close()
+# from sqlalchemy import create_engine
+# from sqlalchemy.orm import declarative_base
+#
+# from core.db_connection import get_db_connection
+#
+# con = None
+# try:
+#     con = get_db_connection()
+#
+#     host = con.host
+#     port = con.port
+#     user = con.user
+#     password = con.password
+#     db = con.db
+#     charset = con.charset
+#
+#     URL = f'mysql+pymysql://{user}:{password}@{host}:{port}/{db}?charset={charset}'
+#     print(URL)
+#     engine = create_engine(URL, echo=True)
+#
+#     Base = declarative_base()
+#
+# finally:
+#     if con:
+#         con.close()
 
 #
 #

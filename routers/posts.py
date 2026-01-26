@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 
 from routers.users import CurrentUserId
 from schemas.commons import Page, PostId, Pagination, CurrentCursor
+from utils.query import build_set_clause
 from schemas.post import (
     ListPostsQuery,
     PostCreateRequest,
@@ -200,7 +201,11 @@ async def get_single_post(post_id: PostId, cur: CurrentCursor) -> PostDetail:
     return PostDetail(**{**post, "view_count": post["view_count"] + 1})
 
 
-ALLOWED_POST_UPDATE_COLUMNS = frozenset({"title", "content"})
+# SQL Injection 방어: UPDATE 허용 필드 -> DB 컬럼 명시적 매핑
+POST_UPDATE_COLUMN_MAP = {
+    "title": "title",
+    "content": "content",
+}
 
 
 @router.patch("/posts/{post_id}", response_model=PostDetail)
@@ -209,20 +214,18 @@ async def update_post(
     """게시글 수정"""
     post = await _get_verified_post(cur, post_id, author_id)
 
-    # 전달된 필드만 추출
+    # 전달된 필드만 추출 + 안전한 SET 절 생성
     update_fields = update_data.model_dump(exclude_unset=True)
-    update_fields = {k: v for k, v in update_fields.items() if k in ALLOWED_POST_UPDATE_COLUMNS}
+    set_clause, params = build_set_clause(update_fields, POST_UPDATE_COLUMN_MAP)
 
-    if not update_fields:
+    if set_clause is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No valid fields to update"
         )
 
-    # 동적 SET 절 생성
-    set_clause = ", ".join(f"{key} = %({key})s" for key in update_fields)
     now = datetime.now(UTC)
-    query_params = {**update_fields, "post_id": post_id, "author_id": author_id, "updated_at": now}
+    query_params = {**params, "post_id": post_id, "author_id": author_id, "updated_at": now}
 
     await cur.execute(
         f"UPDATE posts SET {set_clause}, updated_at = %(updated_at)s WHERE id = %(post_id)s AND author_id = %(author_id)s",
@@ -236,7 +239,7 @@ async def update_post(
         )
 
     # 조회한 데이터 + 변경값으로 응답
-    return PostDetail(**{**post, **update_fields, "updated_at": now})
+    return PostDetail(**{**post, **params, "updated_at": now})
 
 
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

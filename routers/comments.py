@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from routers.users import CurrentUserId
 from schemas.commons import PostId, Page, CommentId, Pagination, CurrentCursor
+from utils.query import build_set_clause
 from schemas.comment import (
     CommentCreateRequest,
     CommentBase,
@@ -13,6 +14,11 @@ from schemas.comment import (
 )
 
 COMMENT_PAGE_SIZE = 10
+
+# SQL Injection 방어: UPDATE 허용 필드 -> DB 컬럼 명시적 매핑
+COMMENT_UPDATE_COLUMN_MAP = {
+    "content": "content",
+}
 
 router = APIRouter(
     tags=["COMMENTS"],
@@ -137,14 +143,21 @@ async def update_comment(
             detail="Not authorized to modify this comment"
         )
 
-    # 댓글 수정
+    # 안전한 SET 절 생성
+    update_fields = update_data.model_dump(exclude_unset=True)
+    set_clause, params = build_set_clause(update_fields, COMMENT_UPDATE_COLUMN_MAP)
+
+    if not set_clause:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid fields to update"
+        )
+
+    query_params = {**params, "comment_id": comment_id, "author_id": user_id}
+
     await cur.execute(
-        "UPDATE comments SET content = %(content)s WHERE id = %(comment_id)s AND author_id = %(author_id)s",
-        {
-            "content": update_data.content,
-            "comment_id": comment_id,
-            "author_id": user_id
-        }
+        f"UPDATE comments SET {set_clause} WHERE id = %(comment_id)s AND author_id = %(author_id)s",
+        query_params
     )
     if cur.rowcount == 0:
         raise HTTPException(
@@ -153,10 +166,10 @@ async def update_comment(
         )
 
     return CommentBase(
-        id=comment_id,
+        id=comment["id"],
         post_id=comment["post_id"],
         author_id=comment["author_id"],
-        content=update_data.content,
+        content=params.get("content", comment["content"]),
         created_at=comment["created_at"],
     )
 

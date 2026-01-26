@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-
 import pymysql
 from dotenv import load_dotenv
 from pymysql.cursors import DictCursor

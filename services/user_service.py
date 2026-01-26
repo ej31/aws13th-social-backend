@@ -1,10 +1,10 @@
 from fastapi import HTTPException
-
 from core.db_connection import get_db_connection
 from models.auth import UserUpdate
 from repositories.user_repo import get_user_by_id
 from services.auth_service import get_password_hash
 
+ALLOWED_USER_FILED = {'email', 'password', 'nickname', 'profile_image_url'}
 
 def get_my_profile(current_user: dict) -> dict:
     return current_user
@@ -27,8 +27,7 @@ def update_my_profile(current_user: dict, patch_data: dict) -> dict:
     try:
         con = get_db_connection()
         with con.cursor() as cursor:
-            allowed_fields = {'email', 'password', 'nickname','profile_image_url'}
-            safe_fields= [k for k in patch_data.keys() if k in allowed_fields]
+            safe_fields= [k for k in patch_data.keys() if k in ALLOWED_USER_FILED]
 
             if not safe_fields:
                 raise HTTPException(status_code=401, detail="유효한 필드가 아닙니다.")
@@ -48,9 +47,7 @@ def update_my_profile(current_user: dict, patch_data: dict) -> dict:
         # with con.cursor() as cursor:
         #     cursor.execute("SELECT email,nickname,profile_image_url FROM users WHERE user_id = %s", (current_user["user_id"],))
         #     update_user = cursor.fetchone()
-
         update_user = UserUpdate(**patch_data).model_dump(mode="json")
-
         return update_user
 
     except Exception:

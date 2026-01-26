@@ -1,9 +1,7 @@
 from datetime import datetime, timezone
 from typing import Annotated
-
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
-
 from dependencies.auth import get_current_user
 from models.auth import UserSignUp, UserLogin, UserUpdate, signup_form_reader, update_form_reader
 from models.user import AuthResponse, UserPublic
@@ -32,7 +30,7 @@ async def login(form_data : Annotated[OAuth2PasswordRequestForm,Depends()]):
     return AuthResponse(
         access_token=token,
         expires_in=expires,
-        user=user,
+        user=UserPublic(**user),
         issued_at=datetime.now(timezone.utc),
     )
 

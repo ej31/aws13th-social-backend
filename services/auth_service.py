@@ -18,10 +18,10 @@ def verify_password(plain_password : str, hashed_password :str):
     return pwd_context.verify(plain_password, hashed_password)
 
 def signup_user(data: UserSignUp):
-    con = None
+    conn = None
     try:
-        con = get_db_connection()
-        with con.cursor() as cursor:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
             check_sql = "SELECT email FROM users WHERE email = %s"
             cursor.execute(check_sql, (data.email, ))
             if cursor.fetchone():
@@ -50,15 +50,15 @@ def signup_user(data: UserSignUp):
                 profile_image_url=data.profile_image_url,
                 created_at=user_created_at
             )
-        con.commit()
+        conn.commit()
         token, expires = create_access_token(user.user_id)
         return user, token, expires
     except Exception :
-        con.rollback()
+        conn.rollback()
         raise
     finally:
-        if con :
-            con.close()
+        if conn :
+            conn.close()
 
 def login_user(data: UserLogin):
     conn = None
@@ -72,7 +72,7 @@ def login_user(data: UserLogin):
                 raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다.")
 
             if not verify_password(data.password, user_record["password"]):
-                raise HTTPException(401, "이메일 또는 비밀번호가 올바르지 않습니다.")
+                raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다.")
             token, expires = create_access_token(user_record["user_id"])
 
             # safe_user = {k: v for k, v in user_record.items() if k != "password"}

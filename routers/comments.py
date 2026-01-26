@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, UTC
 
 from fastapi import APIRouter, HTTPException, status
+from pymysql import IntegrityError
 
 from routers.users import CurrentUserId
 from schemas.commons import PostId, Page, CommentId, Pagination, CurrentCursor
@@ -79,34 +80,28 @@ async def get_comments(post_id: PostId, cur: CurrentCursor, page: Page = 1) -> C
 async def create_comment(
         post_id: PostId, user_id: CurrentUserId, comment: CommentCreateRequest, cur: CurrentCursor) -> CommentBase:
     """댓글 작성"""
-    # 게시글 존재 확인
-    await cur.execute(
-        "SELECT id FROM posts WHERE id = %s",
-        (post_id,)
-    )
-    if not await cur.fetchone():
+    comment_id = f"comment_{uuid.uuid4().hex}"
+    now = datetime.now(UTC)
+
+    try:
+        await cur.execute(
+            """
+            INSERT INTO comments (id, post_id, author_id, content, created_at)
+            VALUES (%(comment_id)s, %(post_id)s, %(author_id)s, %(content)s, %(created_at)s)
+            """,
+            {
+                "comment_id": comment_id,
+                "post_id": post_id,
+                "author_id": user_id,
+                "content": comment.content,
+                "created_at": now
+            }
+        )
+    except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
-
-    comment_id = f"comment_{uuid.uuid4().hex}"
-    now = datetime.now(UTC)
-
-    await cur.execute(
-        """
-        INSERT INTO comments (id, post_id, author_id, content, created_at)
-        VALUES (%(comment_id)s, %(post_id)s, %(author_id)s, %(content)s, %(created_at)s)
-        """,
-        {
-            "comment_id": comment_id,
-            "post_id": post_id,
-            "author_id": user_id,
-            "content": comment.content,
-            "created_at": now
-        }
-    )
-
     return CommentBase(
         id=comment_id,
         post_id=post_id,

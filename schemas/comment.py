@@ -1,11 +1,13 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from schemas.commons import Content, CommentId, Pagination, PostId, UserId
 
 
 class CommentCreateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     content: Content
 
 
@@ -19,6 +21,8 @@ class CommentBase(BaseModel):
 
 
 class CommentUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     content: Content
 
 

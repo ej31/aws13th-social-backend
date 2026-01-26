@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Annotated
 
-from pydantic import StringConstraints, BaseModel, Field, model_validator
+from pydantic import StringConstraints, BaseModel, Field, model_validator, ConfigDict
 
 from schemas.commons import PostId, UserId, Pagination, Page, Content, Title, Count
 
@@ -33,6 +33,8 @@ class PostDetail(PostListItem):
 
 
 class ListPostsQuery(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     q: Annotated[
         str | None,
         StringConstraints(strip_whitespace=True, min_length=1, max_length=20),
@@ -49,11 +51,15 @@ class ListPostsResponse(BaseModel):
 
 
 class PostCreateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     title: Title
     content: Content
 
 
 class PostUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
     title: Title | None = None
     content: Content | None = None
 

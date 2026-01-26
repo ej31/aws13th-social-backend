@@ -139,8 +139,12 @@ async def update_comment(
 
     # 댓글 수정
     await cur.execute(
-        "UPDATE comments SET content = %s WHERE id = %s",
-        (update_data.content, comment_id)
+        "UPDATE comments SET content = %(content)s WHERE id = %(comment_id)s AND author_id = %(author_id)s",
+        {
+            "content": update_data.content,
+            "comment_id": comment_id,
+            "author_id": user_id
+        }
     )
 
     # 수정된 댓글 조회

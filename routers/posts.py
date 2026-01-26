@@ -13,6 +13,8 @@ from schemas.post import (
     ListPostsResponse,
     PostDetail)
 
+# TODO: liked_count -> Elasticsearch로 성능 개선 고려
+
 
 PAGE_SIZE = 20
 
@@ -34,7 +36,7 @@ async def _verify_post_author(cur, post_id: PostId, author_id: str) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
-    # TODO: Elasticsearch로 성능 개선 고려
+
     if post["author_id"] != author_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

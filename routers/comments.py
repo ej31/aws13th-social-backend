@@ -146,22 +146,19 @@ async def update_comment(
             "author_id": user_id
         }
     )
-
-    # 수정된 댓글 조회
-    await cur.execute(
-        "SELECT id, post_id, author_id, content, created_at FROM comments WHERE id = %s",
-        (comment_id,)
-    )
-    updated_comment = await cur.fetchone()
-
-    if not updated_comment:
+    if cur.rowcount == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Comment not found"
         )
 
-    return CommentBase(**updated_comment)
-
+    return CommentBase(
+        id=comment_id,
+        post_id=comment["post_id"],
+        author_id=comment["author_id"],
+        content=update_data.content,
+        created_at=comment["created_at"],
+    )
 
 @router.delete("/posts/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(

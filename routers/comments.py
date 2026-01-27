@@ -143,7 +143,11 @@ async def update_comment(
     # whitelist 검증
     update_fields = update_data.model_dump(exclude_unset=True)
     field_keys = frozenset(update_fields.keys())
-    assert field_keys.issubset(ALLOWED_COMMENT_UPDATE_FIELDS), f"Invalid fields: {field_keys}"
+    if not field_keys.issubset(ALLOWED_COMMENT_UPDATE_FIELDS):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid update fields: {field_keys}"
+        )
 
     await cur.execute(
         "UPDATE comments SET content = %(content)s WHERE id = %(comment_id)s AND author_id = %(author_id)s",

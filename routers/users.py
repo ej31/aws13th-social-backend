@@ -248,8 +248,9 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
     # 먼저 사용자 조회
     await cur.execute(
         """
-        SELECT id, email, nickname, profile_img, created_at FOR UPDATE
+        SELECT id, email, nickname, profile_img, created_at 
         FROM users WHERE id = %s
+        FOR UPDATE
         """,
         (user_id,)
     )
@@ -261,12 +262,16 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
             detail="User not found"
         )
 
-    # 안전한 SET 절 생성
+    # whitelist 검증 + SET 절 하드코딩 매핑
     update_fields = update_data.model_dump(exclude_unset=True)
     field_keys = frozenset(update_fields.keys())
-    assert field_keys.issubset(ALLOWED_PROFILE_UPDATE_FIELDS), f"Invalid fields: {field_keys}"
-    set_clause = PROFILE_SET_CLAUSE_MAP.get(field_keys)
+    if not field_keys.issubset(ALLOWED_PROFILE_UPDATE_FIELDS):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid fields: {field_keys}"
+        )
 
+    set_clause = PROFILE_SET_CLAUSE_MAP.get(field_keys)
     if not set_clause:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -276,9 +281,7 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
     query_params = {**update_fields, "user_id": user_id}
 
     await cur.execute(
-        """
-        UPDATE users SET {set_clause} WHERE id = %(user_id)s
-        """,
+        "UPDATE users SET " + set_clause + " WHERE id = %(user_id)s",
         query_params
     )
 

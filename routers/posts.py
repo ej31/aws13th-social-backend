@@ -223,12 +223,16 @@ async def update_post(
     """게시글 수정"""
     post = await _get_verified_post(cur, post_id, author_id)
 
-    # 전달된 필드만 추출 + whitelist 검증 + SET 절 하드코딩 매핑
+    # whitelist 검증 + SET 절 하드코딩 매핑
     update_fields = update_data.model_dump(exclude_unset=True)
     field_keys = frozenset(update_fields.keys())
-    assert field_keys.issubset(ALLOWED_POST_UPDATE_FIELDS), f"Invalid fields: {field_keys}"
-    set_clause = POST_SET_CLAUSE_MAP.get(field_keys)
+    if not field_keys.issubset(ALLOWED_POST_UPDATE_FIELDS):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid fields: {field_keys}"
+        )
 
+    set_clause = POST_SET_CLAUSE_MAP.get(field_keys)
     if not set_clause:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -239,11 +243,7 @@ async def update_post(
     query_params = {**update_fields, "post_id": post_id, "author_id": author_id, "updated_at": now}
 
     await cur.execute(
-        """
-        UPDATE posts
-        SET {set_clause}, updated_at = %(updated_at)s
-        WHERE id = %(post_id)s AND author_id = %(author_id)s
-        """,
+        "UPDATE posts SET " + set_clause + ", updated_at = %(updated_at)s WHERE id = %(post_id)s AND author_id = %(author_id)s",
         query_params
     )
 

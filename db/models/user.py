@@ -1,6 +1,5 @@
 from datetime import datetime as dt
 
-from pydantic import ConfigDict
 from sqlalchemy import String, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 

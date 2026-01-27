@@ -1,15 +1,15 @@
-from typing import Optional, List, Text
+from typing import Optional, List
 
-from sqlalchemy import String, func, ForeignKey
+from sqlalchemy import String, func, ForeignKey, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship
-from sqlalchemy.testing.schema import mapped_column
+from sqlalchemy.orm import mapped_column
 from datetime import datetime
 
 class Base(DeclarativeBase):
     pass
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "users"
 
     id:Mapped[int] = mapped_column(primary_key=True,autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
@@ -31,6 +31,9 @@ class Post(Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     like_count: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    #default = 0 파이썬에서 객체를 생성할 때 0을 넣어준다.
+    #server_default = 0 실제 mariaDB 테이블 생성 시 DEFAULT 0 제약 조건을 걸어준다.
+    views: Mapped[int] = mapped_column(default=0,server_default="0")
 
     # 관계 설정
     author: Mapped["User"] = relationship(back_populates="posts")

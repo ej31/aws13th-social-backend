@@ -1,35 +1,87 @@
 from fastapi import HTTPException
-from repositories.user_repo import get_users, save_users,find_user_by_id
+from models.user import UserPublic
+from repositories.user_repo import get_user_by_id
+from services.auth_service import get_password_hash
+from datetime import datetime, timezone
+
+ALLOWED_USER_FIELDS = {'email', 'password', 'nickname', 'profile_image_url'}
 
 def get_my_profile(current_user: dict) -> dict:
     return current_user
 
-def get_user_profile(user_id: str) -> dict:
-    user = find_user_by_id(user_id)
-    if not user:
+def get_user_profile(db,user_id: str) -> dict:
+    users = get_user_by_id(db, user_id)
+    if not users:
         raise HTTPException(status_code=404, detail="해당 사용자를 찾을 수 없습니다")
-    return user
+    return users
 
-def update_my_profile(current_user: dict, patch_data: dict) -> dict:
-    users = get_users()
+def update_my_profile(db, current_user: dict, patch_data: dict) -> dict:
+    if not patch_data:
+        raise HTTPException(status_code=400, detail="수정할 데이터가 없습니다.")
 
-    index = next(
-        (i for i, u in enumerate(users) if u["user_id"] == current_user["user_id"]),
-        None,
-    )
+    if "email" in patch_data:
+        new_email = patch_data["email"]
+        if new_email != current_user["email"]:
+           with db.cursor() as cursor:
+               cursor.execute("SELECT user_id FROM users WHERE email = %s", (new_email,))
+               if cursor.fetchone():
+                   raise HTTPException(status_code=409, detail="이미 사용중인 이메일 입니다.")
 
-    if index is None:
-        raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+    password = patch_data.get("password")
+    if password : patch_data["password"] = get_password_hash(password)
 
-    users[index].update(patch_data)
-    save_users(users)
-    return users[index]
+    try:
+        with db.cursor() as cursor:
+            safe_fields= [k for k in patch_data.keys() if k in ALLOWED_USER_FIELDS]
+            if not safe_fields:
+                raise HTTPException(status_code=401, detail="유효한 필드가 아닙니다.")
 
-def delete_my_account(current_user: dict) -> None:
-    users = get_users()
-    new_users = [u for u in users if u["user_id"] != current_user["user_id"]]
+            sql_fields = ",".join([f"{key} = %s"for key in safe_fields])
+            update_sql = "UPDATE users SET " + sql_fields + " WHERE user_id = %s"
 
-    if len(users) == len(new_users):
-        raise HTTPException(status_code=404, detail="삭제할 유저를 찾을 수 없습니다")
+            values = [patch_data[k] for k in safe_fields]
+            values.append(current_user["user_id"])
 
-    save_users(new_users)
+            cursor.execute(update_sql, tuple(values))
+
+            select_sql = "SELECT * FROM users WHERE user_id = %s"
+            cursor.execute(select_sql, (current_user["user_id"],))
+            updated_user_row = cursor.fetchone()
+            if not updated_user_row:
+                raise HTTPException(status_code=404, detail="해당 유저를 찾을 수 없습니다.")
+
+        db.commit()
+        update_user = UserPublic(**updated_user_row).model_dump(mode="json")
+        print(update_user)
+        print(current_user)
+        return update_user
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception as e:
+        db.rollback()
+        print(f"Service Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+def delete_my_account(db,current_user: dict) -> None:
+    try:
+        with db.cursor() as cursor:
+            update_sql = "UPDATE users SET is_activate = 0, deleted_at = %s WHERE user_id = %s"
+            cursor.execute(update_sql, (datetime.now(timezone.utc), current_user["user_id"]))
+
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+        db.commit()
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception as e:
+        db.rollback()
+        print(f"Service Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+

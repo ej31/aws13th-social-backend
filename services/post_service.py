@@ -1,46 +1,56 @@
+from datetime import datetime, timezone
+from typing import Optional
 import uuid
-from typing import Annotated, List, Optional
-from models.post import Post, PostInternal, PostQuery
 from fastapi import HTTPException
-from repositories.posts_repo import get_post, save_post
-from datetime import datetime,timezone
+from models.post import Post, PostQuery, PostPublic
+from repositories.posts_repo import get_post_by_id, get_all_posts
 
-def write_posts(data: Post, current_user: dict):
-    posts = get_post()
+def write_posts(db, data: Post, current_user: dict):
+    try:
+        with db.cursor() as cursor:
+            #posts 테이블 title에 unique조건 활성화 - race condition 해소
+            user_id = current_user["user_id"]
+            post_id = str(uuid.uuid4())
+            post_created_at = datetime.now(timezone.utc)
 
-    if any(u["title"] == data.title for u in posts):
-        raise HTTPException(400, "이미 존재하는 게시물 타이틀")
+            insert_sql = "INSERT INTO posts (user_id, post_id,title, content, media, created_at) VALUES (%s, %s, %s, %s, %s, %s)"
+            param =(user_id, post_id, data.title, data.content, data.media, post_created_at)
+            cursor.execute(insert_sql, param)
 
-    post_created_at = datetime.now(timezone.utc)
+            post_response= PostPublic(
+                title=data.title,
+                content=data.content,
+                media=data.media,
+            )
+        db.commit()
+        return post_response
 
-    my_post = PostInternal(
-        user_id=current_user["user_id"],
-        post_id=str(uuid.uuid4()),
-        view_count=0,
-        title=data.title,
-        content=data.content,
-        media=data.media,
-        created_at=post_created_at
-    ).model_dump(mode="json")
+    except HTTPException:
+        db.rollback()
+        raise
 
-    posts.append(my_post)
-    save_post(posts)
-    return my_post
+    except Exception as e:
+        db.rollback()
+        print(f"Service Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def get_user_post(post_id: str) -> dict:
-    posts = get_post()
-    user_post = next((u for u in posts if u["post_id"] == post_id), None)
-    if user_post is None:
-        raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다")
+
+def get_user_post(db, post_id: str) -> dict:
+    user_post = get_post_by_id(post_id,db)
+    if not user_post:
+        raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다.")
 
     if "view_count" not in user_post:
         user_post["view_count"] = 0
-    user_post["view_count"] += 1
-    save_post(posts)
+
+    sql = "update posts set view_count = view_count + 1 where post_id = %s"
+
+
     return user_post
 
+
 def update_my_post(post_id:str, post_dict: dict, current_user: dict) -> dict:
-    posts = get_post()
+    posts = get_all_posts
     user_post = next((u for u in posts if u["post_id"] == post_id), None)
     if user_post is None:
         raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다")
@@ -50,12 +60,11 @@ def update_my_post(post_id:str, post_dict: dict, current_user: dict) -> dict:
 
     index = posts.index(user_post)
     posts[index].update(post_dict)
-    save_post(posts)
     return posts[index]
 
 
 def delete_my_post(post_id:str,current_user: dict) -> None:
-    posts = get_post()
+    posts = get_all_posts
     target_post = next((u for u in posts if u["post_id"] == post_id), None)
     if not target_post:
         raise HTTPException(status_code=404, detail="게시물을 찾을 수 없습니다.")
@@ -66,10 +75,10 @@ def delete_my_post(post_id:str,current_user: dict) -> None:
             detail="본인의 게시물만 삭제할 수 있습니다."
         )
     updated_posts = [p for p in posts if p["post_id"] != post_id]
-    save_post(updated_posts)
+
 
 def query_post(param: PostQuery, get_optional_user: Optional[dict]) -> dict:
-    data = get_post()
+    data = get_all_posts
 
     if get_optional_user :
         return data

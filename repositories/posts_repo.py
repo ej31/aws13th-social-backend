@@ -1,16 +1,28 @@
-import json, os
-from pathlib import Path
-DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "posts.json"
+from fastapi import HTTPException
 
-def get_post():
-    if not os.path.exists(DB_FILE):
-        return []
-    with open(DB_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+def get_all_posts(db):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM posts")
+            return cursor.fetchall()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+       db.rollback()
+       print(f"Service Error: {e}")
+       raise HTTPException(status_code=500, detail="Internal Server Error")
 
-def save_post(post: list[dict]):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(post, f, indent=4, ensure_ascii=False)
+def get_post_by_id(db,post_id):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM posts WHERE post_id = %s", (post_id,))
+            return cursor.fetchone()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+       db.rollback()
+       print(f"Service Error: {e}")
+       raise HTTPException(status_code=500, detail="Internal Server Error")
+

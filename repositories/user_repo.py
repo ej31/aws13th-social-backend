@@ -1,33 +1,20 @@
-import json, os
-from typing import Optional
-from pathlib import Path
-from pymysql.cursors import DictCursor
 
-from core.db_connection import get_db_connection
+from fastapi import HTTPException
 
-DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "users.json"
+def get_user_by_id(db, user_id):
+    try:
+       with db.cursor() as cursor:
+            cursor.execute("SELECT user_id, email, nickname, profile_image_url FROM users WHERE user_id = %s", (user_id,))
+            return cursor.fetchone()
 
-def get_users_db():
-    con= get_db_connection()
-    with con:
-        with DictCursor(con) as cursor:
-            cursor.execute("SELECT * FROM users")
-            return cursor.fetchall()
+    except HTTPException:
+        db.rollback()
+        raise
 
-def get_users():
-    if not os.path.exists(DB_FILE):
-        return []
-    with open(DB_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
-
-def save_users(users: list[dict]):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+       db.rollback()
+       print(f"Service Error: {e}")
+       raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-def find_user_by_id(user_id: str) -> Optional[dict]:
-    users = get_users()
-    return next((u for u in users if u["user_id"] == user_id), None)
+

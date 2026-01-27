@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends
 from typing import Annotated
-from models.like import LikeResponse, LikeCreate
-from repositories.posts_repo import get_post
-from services.likes_service import toggle_like_service, get_likes_service, get_my_likes
-from dependencies.auth import get_current_user
-from repositories.comments_repo import get_comments
+
+from fastapi import APIRouter, Depends
 from fastapi import HTTPException
+
+from dependencies.auth import get_current_user
+from models.like import LikeResponse, LikeCreate
+from repositories.comments_repo import get_all_comments_db
+from repositories.posts_repo import get_all_posts
+from services.likes_service import toggle_like_service, get_likes_service, get_my_likes
 
 router = APIRouter(tags=["likes"])
 
@@ -21,7 +23,7 @@ def toggle_like(
 def post_like_post(post_id: str,
               current_user: Annotated[dict, Depends(get_current_user)]
     ):
-    posts = get_post()
+    posts = get_all_posts
     target_posts = next((u for u in posts if u["post_id"] == post_id), None)
     if not target_posts:
         raise HTTPException(status_code=404, detail="해당 게시물을 찾을 수 없습니다.")
@@ -34,7 +36,7 @@ def post_like_comment(
     comment_id: str,
     current_user: Annotated[dict, Depends(get_current_user)]
 ):
-    comments = get_comments()
+    comments = get_all_comments_db
     target_comment = next((u for u in comments if u["comment_id"] == comment_id), None)
     if not target_comment:
         raise HTTPException(status_code=404, detail="해당 댓글을 찾을 수 없습니다.")
@@ -45,7 +47,7 @@ def post_like_comment(
 @router.get("/posts/{post_id}/likes", response_model=LikeResponse)
 def get_likes_post(post_id: str,
               current_user: Annotated[dict, Depends(get_current_user)]):
-    posts = get_post()
+    posts = get_all_posts
     target_posts = next((u for u in posts if u["post_id"] == post_id), None)
     if not target_posts:
         raise HTTPException(status_code=404, detail="해당 게시물을 찾을 수 없습니다.")
@@ -56,7 +58,7 @@ def get_likes_post(post_id: str,
 @router.get("/comments/{comment_id}/likes", response_model=LikeResponse)
 def get_like_comment(comment_id: str,
                  current_user: Annotated[dict, Depends(get_current_user)]):
-    comments = get_comments()
+    comments = get_all_comments_db
     target_comment = next((u for u in comments if u["comment_id"] == comment_id), None)
     if not target_comment:
         raise HTTPException(status_code=404, detail="해당 댓글을 찾을 수 없습니다.")

@@ -1,11 +1,12 @@
+from datetime import datetime, timezone
+from typing import Optional, List
 import uuid
-from datetime import datetime,timezone
 from models.like import LikeCreate, LikeResponse
-from repositories.likes_repo import get_likes, save_likes
-from typing import Optional, Annotated, Any, Generator,List
+from repositories.likes_repo import get_all_likes
+
 
 def toggle_like_service(user_id: str, like_in: LikeCreate):
-    likes = get_likes()
+    likes = get_all_likes
 
     existing_like = next((l for l in likes if l["user_id"] == user_id
                           and l["target_type"] == like_in.target_type
@@ -26,8 +27,6 @@ def toggle_like_service(user_id: str, like_in: LikeCreate):
         likes.append(new_like_data)
         like_id = new_like_data["like_id"]
 
-    save_likes(likes)
-
     current_total = len([like for like in likes if like["target_id"] == like_in.target_id
                          and like["target_type"] == like_in.target_type])
 
@@ -41,7 +40,7 @@ def toggle_like_service(user_id: str, like_in: LikeCreate):
     )
 
 def get_likes_service(user_id: str, like_in: LikeCreate ) -> Optional[LikeResponse]:
-    likes = get_likes()
+    likes = get_all_likes
     existing = next((like for like in likes if like["user_id"] == user_id
                      and like["target_type"] == like_in.target_type
                      and like["target_id"] == like_in.target_id), None)
@@ -65,7 +64,7 @@ def get_likes_service(user_id: str, like_in: LikeCreate ) -> Optional[LikeRespon
     )
 
 def get_my_likes(user_id: str) -> List[dict]:
-    likes = get_likes()
+    likes = get_all_likes
     my_likes  = [like for like in likes if like["user_id"] == user_id]
     return my_likes
 

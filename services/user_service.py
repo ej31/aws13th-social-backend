@@ -49,7 +49,6 @@ def update_my_profile(db, current_user: dict, patch_data: dict) -> dict:
             updated_user_row = cursor.fetchone()
             if not updated_user_row:
                 raise HTTPException(status_code=404, detail="해당 유저를 찾을 수 없습니다.")
-
         db.commit()
         update_user = UserPublic(**updated_user_row).model_dump(mode="json")
         print(update_user)

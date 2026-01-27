@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, status, HTTPException
 
 from routers.users import CurrentUserId
 from schemas.commons import Page, PostId, Pagination, CurrentCursor
-from utils.query import build_set_clause
 from schemas.post import (
     ListPostsQuery,
     PostCreateRequest,
@@ -16,18 +15,25 @@ from schemas.post import (
 
 # TODO: liked_count -> Elasticsearch로 성능 개선 고려
 
-
 PAGE_SIZE = 20
 
-# SQL Injection 방어: ORDER BY 절 명시적 매핑
-SORT_COLUMN_MAP = {
-    "created_at": "created_at",
-    "view_count": "view_count",
-    "like_count": "like_count",
+# SQL Injection 방어: ORDER BY 절 전체 하드코딩
+ORDER_BY_MAP = {
+    ("created_at", "desc"): "ORDER BY created_at DESC, created_at DESC",
+    ("created_at", "asc"): "ORDER BY created_at ASC, created_at DESC",
+    ("view_count", "desc"): "ORDER BY view_count DESC, created_at DESC",
+    ("view_count", "asc"): "ORDER BY view_count ASC, created_at DESC",
+    ("like_count", "desc"): "ORDER BY like_count DESC, created_at DESC",
+    ("like_count", "asc"): "ORDER BY like_count ASC, created_at DESC",
 }
-SORT_ORDER_MAP = {
-    "asc": "ASC",
-    "desc": "DESC",
+
+# UPDATE 허용 필드 whitelist
+ALLOWED_POST_UPDATE_FIELDS = frozenset(["title", "content"])
+
+POST_SET_CLAUSE_MAP = {
+    frozenset(["title"]): "title = %(title)s",
+    frozenset(["content"]): "content = %(content)s",
+    frozenset(["title", "content"]): "title = %(title)s, content = %(content)s",
 }
 
 router = APIRouter(
@@ -68,9 +74,10 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
     """
     offset = (query.page - 1) * PAGE_SIZE
 
-    # ORDER BY 절 명시적 매핑 (하드코딩된 값만 SQL에 들어감)
-    sort_column = SORT_COLUMN_MAP.get(query.sort.value, "created_at")
-    sort_order = SORT_ORDER_MAP.get(query.order.value, "DESC")
+    # ORDER BY 절 전체 하드코딩 + 검증
+    order_by_key = (query.sort.value, query.order.value)
+    assert order_by_key in ORDER_BY_MAP, f"Invalid sort: {order_by_key}"
+    order_by_clause = ORDER_BY_MAP[order_by_key]
 
     # 검색 조건
     if query.q:
@@ -95,7 +102,7 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
         SELECT id, author_id, title, view_count, like_count, comment_count, created_at
         FROM posts
         {where_clause}
-        ORDER BY {sort_column} {sort_order}, created_at DESC
+        {order_by_clause}
         LIMIT %s OFFSET %s
         """,
         (*search_params, PAGE_SIZE, offset)
@@ -209,22 +216,17 @@ async def get_single_post(post_id: PostId, cur: CurrentCursor) -> PostDetail:
     return PostDetail(**{**post, "view_count": post["view_count"] + 1})
 
 
-# SQL Injection 방어: UPDATE 허용 필드 -> DB 컬럼 명시적 매핑
-POST_UPDATE_COLUMN_MAP = {
-    "title": "title",
-    "content": "content",
-}
-
-
 @router.patch("/posts/{post_id}", response_model=PostDetail)
 async def update_post(
         author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest, cur: CurrentCursor) -> PostDetail:
     """게시글 수정"""
     post = await _get_verified_post(cur, post_id, author_id)
 
-    # 전달된 필드만 추출 + 안전한 SET 절 생성
+    # 전달된 필드만 추출 + whitelist 검증 + SET 절 하드코딩 매핑
     update_fields = update_data.model_dump(exclude_unset=True)
-    set_clause, params = build_set_clause(update_fields, POST_UPDATE_COLUMN_MAP)
+    field_keys = frozenset(update_fields.keys())
+    assert field_keys.issubset(ALLOWED_POST_UPDATE_FIELDS), f"Invalid fields: {field_keys}"
+    set_clause = POST_SET_CLAUSE_MAP.get(field_keys)
 
     if not set_clause:
         raise HTTPException(
@@ -233,7 +235,7 @@ async def update_post(
         )
 
     now = datetime.now(UTC)
-    query_params = {**params, "post_id": post_id, "author_id": author_id, "updated_at": now}
+    query_params = {**update_fields, "post_id": post_id, "author_id": author_id, "updated_at": now}
 
     await cur.execute(
         f"UPDATE posts SET {set_clause}, updated_at = %(updated_at)s WHERE id = %(post_id)s AND author_id = %(author_id)s",
@@ -247,7 +249,7 @@ async def update_post(
         )
 
     # 조회한 데이터 + 변경값으로 응답
-    return PostDetail(**{**post, **params, "updated_at": now})
+    return PostDetail(**{**post, **update_fields, "updated_at": now})
 
 
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

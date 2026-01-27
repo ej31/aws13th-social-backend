@@ -1,28 +1,22 @@
 from pathlib import Path
-
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
-ROOT_DIR = Path(__file__).resolve().parent
+
+BASE_DIR = Path(__file__).resolve().parent
+env_db_path = BASE_DIR / ".env"
+
+# verbose=True를 넣으면 로드 과정을 상세히 출력해줍니다.
+if load_dotenv(dotenv_path=env_db_path, verbose=True):
+    print(f"✅ .env 로드 성공! (경로: {env_db_path})")
+else:
+    print(f"❌ .env 로드 실패! (파일이 해당 경로에 있는지 확인하세요: {env_db_path})")
 
 class AllSettings(BaseSettings):
     # jwt토큰 검증 pydantic모델, 토큰 기본값은 2시간
     SECRET_KEY: str =Field(..., min_length=32)
     ALGORITHM: str ="HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
-
-    # db 세팅
-    MYSQL_HOST: str = "127.0.0.1"
-    MYSQL_PORT: int = 3306
-    MYSQL_USER: str = "root"
-    MYSQL_PASSWORD: str
-    MYSQL_DB: str
-    MYSQL_CHARSET: str = "utf8mb4"
-
-    model_config = SettingsConfigDict(
-        env_file=(ROOT_DIR / ".env", ROOT_DIR / ".env_DB")
-    )
-
-
 
 jwt_settings = AllSettings()

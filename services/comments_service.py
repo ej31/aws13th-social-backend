@@ -1,18 +1,13 @@
 from datetime import datetime, timezone
 from typing import Optional
-
 import uuid
 from fastapi import HTTPException
-
 from models.comment import Comment, CommentResponse
-from repositories.comments_repo import get_comments, save_comments
-from repositories.posts_repo import get_post
+from repositories.posts_repo import get_all_posts
 
 
 def write_comments(post_id:str, data: Comment, current_user : dict):
-    posts = get_post()
-    comments = get_comments()
-
+    posts = get_all_posts
     if not any(p["post_id"] == post_id for p in posts):
         raise HTTPException(400, "Post ID not valid")
 

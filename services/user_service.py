@@ -1,34 +1,38 @@
 from fastapi import HTTPException
-from core.db_connection import get_db_connection
-from models.auth import UserUpdate
+from models.user import UserPublic
 from repositories.user_repo import get_user_by_id
 from services.auth_service import get_password_hash
+from datetime import datetime, timezone
 
-ALLOWED_USER_FILED = {'email', 'password', 'nickname', 'profile_image_url'}
+ALLOWED_USER_FIELDS = {'email', 'password', 'nickname', 'profile_image_url'}
 
 def get_my_profile(current_user: dict) -> dict:
     return current_user
 
-def get_user_profile(user_id: str) -> dict:
-    users = get_user_by_id(user_id)
+def get_user_profile(db,user_id: str) -> dict:
+    users = get_user_by_id(db, user_id)
     if not users:
         raise HTTPException(status_code=404, detail="해당 사용자를 찾을 수 없습니다")
     return users
 
-def update_my_profile(current_user: dict, patch_data: dict) -> dict:
+def update_my_profile(db, current_user: dict, patch_data: dict) -> dict:
     if not patch_data:
         raise HTTPException(status_code=400, detail="수정할 데이터가 없습니다.")
 
+    if "email" in patch_data:
+        new_email = patch_data["email"]
+        if new_email != current_user["email"]:
+           with db.cursor() as cursor:
+               cursor.execute("SELECT user_id FROM users WHERE email = %s", (new_email,))
+               if cursor.fetchone():
+                   raise HTTPException(status_code=409, detail="이미 사용중인 이메일 입니다.")
+
     password = patch_data.get("password")
-    if "password" in patch_data:
-        patch_data["password"] = get_password_hash(password)
+    if password : patch_data["password"] = get_password_hash(password)
 
-    con = None
     try:
-        con = get_db_connection()
-        with con.cursor() as cursor:
-            safe_fields= [k for k in patch_data.keys() if k in ALLOWED_USER_FILED]
-
+        with db.cursor() as cursor:
+            safe_fields= [k for k in patch_data.keys() if k in ALLOWED_USER_FIELDS]
             if not safe_fields:
                 raise HTTPException(status_code=401, detail="유효한 필드가 아닙니다.")
 
@@ -40,41 +44,44 @@ def update_my_profile(current_user: dict, patch_data: dict) -> dict:
 
             cursor.execute(update_sql, tuple(values))
 
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
-        con.commit()
-        #
-        # with con.cursor() as cursor:
-        #     cursor.execute("SELECT email,nickname,profile_image_url FROM users WHERE user_id = %s", (current_user["user_id"],))
-        #     update_user = cursor.fetchone()
-        update_user = UserUpdate(**patch_data).model_dump(mode="json")
+            select_sql = "SELECT * FROM users WHERE user_id = %s"
+            cursor.execute(select_sql, (current_user["user_id"],))
+            updated_user_row = cursor.fetchone()
+            if not updated_user_row:
+                raise HTTPException(status_code=404, detail="해당 유저를 찾을 수 없습니다.")
+
+        db.commit()
+        update_user = UserPublic(**updated_user_row).model_dump(mode="json")
+        print(update_user)
+        print(current_user)
         return update_user
 
-    except Exception:
-        con.rollback()
+    except HTTPException:
+        db.rollback()
         raise
-    finally:
-        if con:
-            con.close()
 
-def delete_my_account(current_user: dict) -> None:
-    # users = get_all_users_db()
-    # list_users = list(users)
-    # user = next((u for u in list_users if u["user_id"] == current_user["user_id"]), None)
-    # if user is None:
-    #     raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+    except Exception as e:
+        db.rollback()
+        print(f"Service Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    con = None
+
+def delete_my_account(db,current_user: dict) -> None:
     try:
-        con = get_db_connection()
-        with con.cursor() as cursor:
-            delete_sql = "DELETE FROM users WHERE user_id = %s"
-            cursor.execute(delete_sql, (current_user["user_id"],))
+        with db.cursor() as cursor:
+            update_sql = "UPDATE users SET is_activate = 0, deleted_at = %s WHERE user_id = %s"
+            cursor.execute(update_sql, (datetime.now(timezone.utc), current_user["user_id"]))
 
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
-        con.commit()
-    except Exception:
-        con.rollback()
+        db.commit()
+
+    except HTTPException:
+        db.rollback()
         raise
+
+    except Exception as e:
+        db.rollback()
+        print(f"Service Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 

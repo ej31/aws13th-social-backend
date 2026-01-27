@@ -1,39 +1,29 @@
-import json
-import os
-from pathlib import Path
+from fastapi import HTTPException
 
-from core.db_connection import get_db_connection
+def get_all_likes(db):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM likes")
+            return cursor.fetchall()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+       db.rollback()
+       print(f"Service Error: {e}")
+       raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
-# def get_all_likes_db():
-#     con= get_db_connection()
-#     with con:
-#         with con.cursor() as cursor:
-#             cursor.execute("SELECT * FROM likes")
-#             return cursor.fetchall()
-#
-# def get_like_by_id(like_id):
-#     conn = get_db_connection()
-#     with conn:
-#         with conn.cursor() as cursor:
-#             cursor.execute("SELECT * FROM likes WHERE like_id = %s", (like_id,))
-#             return cursor.fetchone()
-
-
-
-
-DB_FILE = Path(__file__).resolve().parent.parent / "DB" / "likes.json"
-
-def get_likes() -> list[dict]:
-    if not os.path.exists(DB_FILE):
-        return []
-    with open(DB_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+def get_like_by_id(db,post_id):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM posts WHERE like_id = %s", (post_id,))
+            return cursor.fetchone()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+       db.rollback()
+       print(f"Service Error: {e}")
+       raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-def save_likes(post: list[dict]):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(post, f, indent=4, ensure_ascii=False)

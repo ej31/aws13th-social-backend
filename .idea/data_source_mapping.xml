@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/repositories/likes_repo.py" value="1739e37d-5f99-4aa1-b35c-74898abb9c3b" />
     <file url="file://$PROJECT_DIR$/repositories/user_repo.py" value="1739e37d-5f99-4aa1-b35c-74898abb9c3b" />
     <file url="file://$PROJECT_DIR$/services/auth_service.py" value="1739e37d-5f99-4aa1-b35c-74898abb9c3b" />
     <file url="file://$PROJECT_DIR$/services/post_service.py" value="1739e37d-5f99-4aa1-b35c-74898abb9c3b" />

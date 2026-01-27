@@ -46,6 +46,8 @@ class Member(Base):
     def __repr__(self):
         return f"<Member(member_id={self.member_id}, name='{self.name}')>"
 
+Team.metadata.create_all(engine)
+Member.metadata.create_all(engine)
 
 # ============================================================
 # 4. CRUD 함수들
@@ -106,9 +108,9 @@ def run_all():
     print("=" * 50)
     print("SQLAlchemy ORM CRUD 실습")
     print("=" * 50)
-    # create_data()
-    # read_data()
-    # update_data()
+    create_data()
+    read_data()
+    update_data()
     delete_data()
     print("\n실습 완료!")
 

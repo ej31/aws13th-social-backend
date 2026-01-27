@@ -1,6 +1,9 @@
+from contextlib import asynccontextmanager
 
 import fastapi
 import os
+
+from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
 from routers import users, posts, comments,likes
@@ -8,6 +11,18 @@ from routers import users, posts, comments,likes
 # static 디렉토리가 없으면 생성
 if not os.path.exists("static"):
     os.makedirs("static")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 시 실행
+    from common.database import engine
+    async with engine.begin() as conn:
+        # 테이블이 없으면 생성 (있으면 유지)
+        from models.base import Base
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # 서버 종료 시 실행 (필요하다면)
+
 app = fastapi.FastAPI()
 
 # 정적 파일 이미지를 외부에서 볼 수 있게 한다.

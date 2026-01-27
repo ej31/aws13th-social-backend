@@ -1,15 +1,27 @@
-from fastapi import UploadFile, HTTPException,status
+import os
+import uuid
+
+from fastapi import UploadFile, HTTPException, status
 
 from common.config import settings
-import uuid
-import os
+
 
 class FileUtil:
-    ALLOWED_EXTENSIONS = ["image/png","image/jpeg","image/jpg"]
-    MAX_FILE_SIZE = 5* 1024*1024 #5mb
+    ALLOWED_EXTENSIONS = ["image/png", "image/jpeg", "image/jpg"]
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5mb
+
+    @staticmethod
+    def _is_safe_path(base_dir: str, target_path: str) -> bool:
+        real_base = os.path.realpath(base_dir)
+        real_target = os.path.realpath(target_path)
+
+        try:
+            return os.path.commonpath([real_base, real_target]) == real_base
+        except ValueError:
+            return False
 
     @classmethod
-    async def validate_and_save_image(cls,file:UploadFile,folder:str = settings.upload_dir) -> str:
+    async def validate_and_save_image(cls, file: UploadFile, folder: str = settings.upload_dir) -> str:
         if file.content_type not in cls.ALLOWED_EXTENSIONS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -23,30 +35,43 @@ class FileUtil:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="5MB가 넘는 파일은 저장할 수 없습니다."
             )
-        #현재 파일이 전부 읽혀서 포인터가 맨 뒤로 가있으므로 다시 포인터를 맨 앞으로 옮긴다.
+        # 현재 파일이 전부 읽혀서 포인터가 맨 뒤로 가있으므로 다시 포인터를 맨 앞으로 옮긴다.
         await file.seek(0)
 
         if not os.path.exists(folder):
             os.makedirs(folder)
         filename = f"{uuid.uuid4()}_{file.filename}"
-        full_path = os.path.join(folder,filename)
+        full_path = os.path.join(folder, filename)
 
-        with open(full_path,"wb") as f:
+        if not cls._is_safe_path(folder,full_path):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="잘못된 경로에 대한 접근입니다."
+            )
+
+        with open(full_path, "wb") as f:
             f.write(content)
 
-        return  cls.as_url(full_path)
+        return cls.as_url(full_path)
+
 
     @staticmethod
     def delete_file(file_path: str) -> None:
         actual_path = file_path.lstrip("/")
+        if not FileUtil._is_safe_path(settings.upload_dir, actual_path):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="잘못된 경로에 대한 접근입니다."
+            )
+
         if os.path.exists(actual_path):
             os.remove(actual_path)
+
 
     @staticmethod
     # 어떤 경로든 "/static/profiles/file.png 형식으로 통일한다"
     def as_url(path: str) -> str:
-        path = path.replace("\\","/")
+        path = path.replace("\\", "/")
         if not path.startswith("/"):
             path = "/" + path
         return path
-

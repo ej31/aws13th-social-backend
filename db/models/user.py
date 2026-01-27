@@ -8,7 +8,6 @@ from db.base import Base
 
 class User(Base):
     __tablename__ = "users"
-    model_config = ConfigDict(from_attributes=True)
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)

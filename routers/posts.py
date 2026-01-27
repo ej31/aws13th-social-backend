@@ -1,4 +1,5 @@
 from typing import Annotated, Optional
+
 from fastapi import APIRouter, Depends
 from core.db_connection import get_db
 from dependencies.auth import get_current_user, get_optional_user

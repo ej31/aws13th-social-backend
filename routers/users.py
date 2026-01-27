@@ -1,8 +1,6 @@
 from fastapi import APIRouter, status, HTTPException, Depends, Response
 from schemas.user import UserCreate, UserUpdate
 from datetime import datetime, timezone
-
-from utils import data
 from utils.auth import get_password_hash, get_current_user
 from utils.data import load_data, save_data, find_user_by_id, soft_delete_user
 import uuid
@@ -128,10 +126,10 @@ def delete_me(current_user: dict = Depends(get_current_user)):
     return
 
 @router.get("/{userId}")
-def get_user(user_id: str):
+def get_user(userId: str):
     #로그인 필요없고 공개 정보만 반환
     users = load_data("users")
-    target_user = find_user_by_id(users, user_id)
+    target_user = find_user_by_id(users, userId)
 
     #유저가 없거나 탈퇴한 유저면
     if not target_user or target_user.get("is_deleted") is True:

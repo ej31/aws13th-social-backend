@@ -5,9 +5,12 @@ import shutil
 import tempfile   #임시파일 만들기(저장 안정성을 위해)
 from typing import Optional, Any, Dict, List
 from datetime import datetime, timezone
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 DATA_DIR = "data"
+
+data_lock = Lock()
 
 def load_data(filename: str):
 
@@ -74,3 +77,18 @@ def soft_delete_user(user: Dict[str, Any]) -> Dict[str, Any]:
         user["profile_image"] = None
 
     return user
+
+# utils/data.py
+def get_user_nickname_map(users: list) -> dict:
+    """
+    - 탈퇴한 사용자: "탈퇴한 사용자"
+    - 활성 사용자: 닉네임 (없으면 "알 수 없음")
+    """
+    return {
+        u["userId"]: (
+            "탈퇴한 사용자" if u.get("is_deleted")
+            else u.get("nickname", "알 수 없음")
+        )
+        for u in users
+        if u.get("userId") is not None
+    }

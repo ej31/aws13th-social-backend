@@ -1,6 +1,11 @@
 import os
+import html
 import re
 from fastapi import HTTPException, UploadFile
+
+#----- 코드리뷰 반영, XSS 방지 -------------------------------------------
+def sanitize_text(text: str) -> str:
+    return html.escape(text)
 
 #----- 환경 변수 검증 ----------------------------------------------------
 def validate_env(name: str, value):

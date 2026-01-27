@@ -5,9 +5,12 @@ import shutil
 import tempfile   #임시파일 만들기(저장 안정성을 위해)
 from typing import Optional, Any, Dict, List
 from datetime import datetime, timezone
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 DATA_DIR = "data"
+
+data_lock = Lock()
 
 def load_data(filename: str):
 

@@ -2,7 +2,7 @@ from enum import Enum
 from fastapi import APIRouter, status, Query, Depends, HTTPException
 from schemas.post import PostCreate, PostUpdate
 from utils.auth import get_current_user
-from utils.data import load_data, save_data, get_user_nickname_map
+from utils.data import load_data, save_data, get_user_nickname_map, data_lock
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
@@ -241,6 +241,9 @@ def get_post(
 
     posts = load_data("posts")
     users = load_data("users")
+
+    with data_lock:
+        posts = load_data("posts")
 
     # 해당 postId를 가진 게시글 찾기
     post = next(

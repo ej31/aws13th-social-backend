@@ -44,7 +44,7 @@ router = APIRouter(
 async def _get_verified_post(cur, post_id: PostId, author_id: str) -> dict:
     """게시글 존재 여부 + 작성자 검증 후 전체 데이터 반환."""
     await cur.execute(
-        "SELECT * FROM posts WHERE id = %s",
+        "SELECT * FROM posts WHERE id = %s FOR UPDATE",
         (post_id,)
     )
     post = await cur.fetchone()
@@ -242,7 +242,7 @@ async def update_post(
         """
         UPDATE posts
         SET {set_clause}, updated_at = %(updated_at)s
-        WHERE id = %(post_id)s AND author_id = %(author_id)s FOR UPDATE
+        WHERE id = %(post_id)s AND author_id = %(author_id)s
         """,
         query_params
     )
@@ -262,6 +262,6 @@ async def delete_post(author_id: CurrentUserId, post_id: PostId, cur: CurrentCur
     """게시글 삭제"""
     await _get_verified_post(cur, post_id, author_id)
     await cur.execute(
-        "DELETE FROM posts WHERE id = %s AND author_id = %s FOR UPDATE",
+        "DELETE FROM posts WHERE id = %s AND author_id = %s",
         (post_id, author_id)
     )

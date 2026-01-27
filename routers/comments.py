@@ -119,7 +119,10 @@ async def update_comment(
     """댓글 수정"""
     # 댓글 조회 + 작성자 확인
     await cur.execute(
-        "SELECT id, post_id, author_id, content, created_at FROM comments WHERE id = %s AND post_id = %s",
+        """
+        SELECT id, post_id, author_id, content, created_at FOR UPDATE
+        FROM comments WHERE id = %s AND post_id = %s,
+        """
         (comment_id, post_id)
     )
     comment = await cur.fetchone()
@@ -142,7 +145,7 @@ async def update_comment(
     assert field_keys.issubset(ALLOWED_COMMENT_UPDATE_FIELDS), f"Invalid fields: {field_keys}"
 
     await cur.execute(
-        "UPDATE comments SET content = %(content)s WHERE id = %(comment_id)s AND author_id = %(author_id)s FOR UPDATE",
+        "UPDATE comments SET content = %(content)s WHERE id = %(comment_id)s AND author_id = %(author_id)s",
         {"content": update_data.content, "comment_id": comment_id, "author_id": user_id}
     )
     if cur.rowcount == 0:
@@ -166,7 +169,7 @@ async def delete_comment(
     """댓글 삭제"""
     # 댓글 존재 + 작성자 확인
     await cur.execute(
-        "SELECT author_id FROM comments WHERE id = %s AND post_id = %s",
+        "SELECT author_id FROM comments WHERE id = %s AND post_id = %s FOR UPDATE",
         (comment_id, post_id)
     )
     comment = await cur.fetchone()
@@ -184,7 +187,7 @@ async def delete_comment(
         )
 
     await cur.execute(
-        "DELETE FROM comments WHERE id = %s AND author_id = %s FOR UPDATE",
+        "DELETE FROM comments WHERE id = %s AND author_id = %s",
         (comment_id, user_id)
     )
 

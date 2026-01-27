@@ -247,7 +247,10 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
     """내 프로필 수정"""
     # 먼저 사용자 조회
     await cur.execute(
-        "SELECT id, email, nickname, profile_img, created_at FROM users WHERE id = %s",
+        """
+        SELECT id, email, nickname, profile_img, created_at FOR UPDATE
+        FROM users WHERE id = %s
+        """,
         (user_id,)
     )
     user = await cur.fetchone()
@@ -273,7 +276,7 @@ async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateReque
     query_params = {**update_fields, "user_id": user_id}
 
     await cur.execute(
-        f"UPDATE users SET {set_clause} WHERE id = %(user_id)s FOR UPDATE",
+        f"UPDATE users SET {set_clause} WHERE id = %(user_id)s",
         query_params
     )
 

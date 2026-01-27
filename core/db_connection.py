@@ -7,35 +7,23 @@ from dbutils.pooled_db import PooledDB
 from starlette.exceptions import HTTPException
 
 BASE_DIR = Path(__file__).resolve().parent
-env_db_path = BASE_DIR / ".env_DB"
+dotenv_db_path = BASE_DIR / ".env_DB"
 
 # verbose=True를 넣으면 로드 과정을 상세히 출력해줍니다.
-if load_dotenv(dotenv_path=env_db_path, verbose=True):
-    print(f"✅ .env_DB 로드 성공! (경로: {env_db_path})")
+if load_dotenv(dotenv_path=dotenv_db_path, verbose=True):
+    print(f"✅ .env_DB 로드 성공! (경로: {dotenv_db_path})")
 else:
-    print(f"❌ .env_DB 로드 실패! (파일이 해당 경로에 있는지 확인하세요: {env_db_path})")
+    print(f"❌ .env_DB 로드 실패! (파일이 해당 경로에 있는지 확인하세요: {dotenv_db_path})")
 
 db_config = {
-    "host": os.getenv("MYSQL_HOST"),
-    "port": int(os.getenv("MYSQL_PORT")),
-    "db": os.getenv("MYSQL_DB"),
-    "user": os.getenv("MYSQL_USER"),
-    "password": os.getenv("MYSQL_PASSWORD"),
-    "charset": os.getenv("MYSQL_CHARSET"),
+    "host": os.getenv("MYSQL_HOST","localhost"),
+    "port": int(os.getenv("MYSQL_PORT", 3306)),
+    "db": os.getenv("MYSQL_DB", "my_app"),
+    "user": os.getenv("MYSQL_USER","root"),
+    "password": os.getenv("MYSQL_PASSWORD",""),
+    "charset": os.getenv("MYSQL_CHARSET","utf8"),
     "cursorclass" : DictCursor
 }
-#
-#
-# def get_db_connection():
-#     return pymysql.connect(
-#     host=os.getenv("MYSQL_HOST"),
-#     port=int(os.getenv("MYSQL_PORT")),
-#     user=os.getenv("MYSQL_USER"),
-#     password=os.getenv("MYSQL_PASSWORD"),
-#     db=os.getenv("MYSQL_DB"),
-#     charset=os.getenv("MYSQL_CHARSET"),
-#     cursorclass=DictCursor
-#     )
 
 pool = PooledDB(
     creator=pymysql,

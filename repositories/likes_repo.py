@@ -6,10 +6,8 @@ def get_all_likes(db):
             cursor.execute("SELECT * FROM likes")
             return cursor.fetchall()
     except HTTPException:
-        db.rollback()
         raise
     except Exception as e:
-       db.rollback()
        print(f"Service Error: {e}")
        raise HTTPException(status_code=500, detail="Internal Server Error")
 

@@ -1,92 +1,60 @@
 """
 User Repository
-- 사용자 데이터 CRUD
+- 사용자 데이터 CRUD (SQL 쿼리 기반)
 """
 from datetime import datetime, timezone
 from typing import Any
 
 from app.repositories.base import BaseRepository
-from app.utils.id_generator import generate_user_id
 from app.core.security import get_password_hash
 
 
 class UserRepository(BaseRepository):
     """
     사용자 데이터 저장소
-    
-    Attributes:
-        data_dir: 데이터 디렉토리 경로
     """
     
-    def __init__(self, data_dir: str = "./data"):
-        """
-        Args:
-            data_dir: 데이터 디렉토리 경로
-        """
-        super().__init__(f"{data_dir}/users.json")
-        self.data_dir = data_dir
+    def __init__(self):
+        """users 테이블 사용"""
+        super().__init__("users")
     
     # 조회 메서드
     
     def find_by_user_id(self, user_id: int) -> dict[str, Any] | None:
         """
         사용자 ID로 조회
-        
-        Args:
-            user_id: 사용자 ID
-            
-        Returns:
-            dict[str, Any] | None: 사용자 데이터 또는 None
         """
         return self.find_by_id("user_id", user_id)
     
     def find_by_email(self, email: str) -> dict[str, Any] | None:
         """
         이메일로 조회
-        
-        Args:
-            email: 이메일 주소
-            
-        Returns:
-            dict[str, Any] | None: 사용자 데이터 또는 None
         """
-        return self.handler.find_one(lambda x: x.get("email") == email)
+        query = "SELECT * FROM users WHERE email = %s"
+        return self.db.execute_query(query, (email,), fetch_one=True)
     
     def find_by_nickname(self, nickname: str) -> dict[str, Any] | None:
         """
         닉네임으로 조회
-        
-        Args:
-            nickname: 닉네임
-            
-        Returns:
-            dict[str, Any] | None: 사용자 데이터 또는 None
         """
-        return self.handler.find_one(lambda x: x.get("nickname") == nickname)
+        query = "SELECT * FROM users WHERE nickname = %s"
+        return self.db.execute_query(query, (nickname,), fetch_one=True)
     
     def exists_by_email(self, email: str) -> bool:
         """
         이메일 존재 여부 확인
-        
-        Args:
-            email: 이메일 주소
-            
-        Returns:
-            bool: 존재 여부
         """
-        return self.find_by_email(email) is not None
+        query = "SELECT COUNT(*) as cnt FROM users WHERE email = %s"
+        result = self.db.execute_query(query, (email,), fetch_one=True)
+        return result['cnt'] > 0 if result else False
     
     def exists_by_nickname(self, nickname: str) -> bool:
         """
         닉네임 존재 여부 확인
-        
-        Args:
-            nickname: 닉네임
-            
-        Returns:
-            bool: 존재 여부
         """
-        return self.find_by_nickname(nickname) is not None
+        query = "SELECT COUNT(*) as cnt FROM users WHERE nickname = %s"
+        result = self.db.execute_query(query, (nickname,), fetch_one=True)
+        return result['cnt'] > 0 if result else False
     
     # 생성 메서드
     
@@ -99,68 +67,59 @@ class UserRepository(BaseRepository):
     ) -> dict[str, Any]:
         """
         사용자 생성
-        
-        Args:
-            email: 이메일 주소
-            password: 비밀번호 (평문)
-            nickname: 닉네임
-            profile_image: 프로필 이미지 URL (선택)
-            
-        Returns:
-            dict[str, Any]: 생성된 사용자 데이터
         """
-        now = datetime.now(timezone.utc).isoformat()
+        hashed_password = get_password_hash(password)
+        default_image = profile_image or "https://example.com/default-profile.jpg"
         
-        user_data = {
-            "user_id": generate_user_id(self.data_dir),
-            "email": email,
-            "password": get_password_hash(password),  # 해싱된 비밀번호
-            "nickname": nickname,
-            "profile_image": profile_image or "https://example.com/default-profile.jpg",
-            "created_at": now,
-            "updated_at": now
-        }
+        query = """
+            INSERT INTO users (email, password, nickname, profile_image)
+            VALUES (%s, %s, %s, %s)
+        """
         
-        return self.create(user_data)
+        with self.db.get_cursor(commit=True) as cursor:
+            cursor.execute(query, (email, hashed_password, nickname, default_image))
+            user_id = cursor.lastrowid
+        
+        # 생성된 사용자 조회
+        return self.find_by_user_id(user_id)
     
     # 수정 메서드
     
     def update_user(self, user_id: int, **updates) -> bool:
         """
         사용자 정보 수정
-        
-        Args:
-            user_id: 사용자 ID
-            **updates: 수정할 필드들 (nickname, profile_image, password 등)
-            
-        Returns:
-            bool: 수정 성공 여부
-            
-        Example:
-            >>> repo.update_user(123, nickname="새닉네임", profile_image="...")
         """
-        # updated_at 자동 갱신
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        # 화이트리스트: 업데이트 가능한 필드만 허용
+        ALLOWED_FIELDS = {'nickname', 'profile_image', 'password'}
+        
+        if not updates:
+            return False
+        
+        # 허용되지 않은 필드 필터링
+        filtered_updates = {k: v for k, v in updates.items() if k in ALLOWED_FIELDS}
+        
+        if not filtered_updates:
+            return False
         
         # 비밀번호가 포함되어 있으면 해싱
-        if "password" in updates:
-            if updates["password"]:
-                updates["password"] = get_password_hash(updates["password"])
-            else:
-                updates.pop("password")
+        if "password" in filtered_updates and filtered_updates["password"]:
+            filtered_updates["password"] = get_password_hash(filtered_updates["password"])
         
-        return self.update("user_id", user_id, updates)
+        # SET 절 생성 (화이트리스트 검증된 필드만 사용)
+        set_clause = ", ".join([f"{key} = %s" for key in filtered_updates.keys()])
+        query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
+        
+        params = list(filtered_updates.values()) + [user_id]
+        affected = self.db.execute_query(query, tuple(params), commit=True)
+        
+        # affected가 None이면 실패, 0 이상이면 성공 (같은 값 업데이트도 성공으로 간주)
+        return affected is not None and affected >= 0
     
     # 삭제 메서드
     
     def delete_user(self, user_id: int) -> bool:
         """
         사용자 삭제
-        
-        Args:
-            user_id: 사용자 ID
-            
-        Returns:
-            bool: 삭제 성공 여부
+
         """
         return self.delete("user_id", user_id)

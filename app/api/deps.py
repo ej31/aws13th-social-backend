@@ -22,26 +22,26 @@ security = HTTPBearer()
 
 # Repository 의존성
 # 각 리포지토리(User, Post, Comment, Like)를 생성하여 반환
-# settings.DATA_DIR을 인자로 전달하여 리포지토리가 어디에 데이터를 저장/조회할지 결정함
+# DB 연결은 각 Repository 내부에서 get_database()로 자동 처리
 
 def get_user_repository() -> UserRepository:
     """UserRepository 의존성 주입"""
-    return UserRepository(settings.DATA_DIR)
+    return UserRepository()
 
 
 def get_post_repository() -> PostRepository:
     """PostRepository 의존성 주입"""
-    return PostRepository(settings.DATA_DIR)
+    return PostRepository()
 
 
 def get_comment_repository() -> CommentRepository:
     """CommentRepository 의존성 주입"""
-    return CommentRepository(settings.DATA_DIR)
+    return CommentRepository()
 
 
 def get_like_repository() -> LikeRepository:
     """LikeRepository 의존성 주입"""
-    return LikeRepository(settings.DATA_DIR)
+    return LikeRepository()
 
 
 # 인증 의존성
@@ -49,7 +49,7 @@ def get_like_repository() -> LikeRepository:
 
 # 1. 토큰 추출: HTTPBearer를 통해 HTTP Header의 Authorization: Bearer <token>에서 토큰을 가져옴
 # 2. 디코딩: decode_access_token으로 토큰의 유효성 검사
-# 3. DB/json 조회: 토큰 속 user_id로 실제 사용자가 DB에 존재하는지 확인
+# 3. DB 조회: 토큰 속 user_id로 실제 사용자가 DB에 존재하는지 확인
 # 4. 예외 처리: 토큰이 없거나, 유효하지 않거나, 사용자가 없으면 즉시 401 Unauthorized 에러를 던져 API 실행을 중단
 
 def get_current_user(

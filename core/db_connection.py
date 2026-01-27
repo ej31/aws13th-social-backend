@@ -34,6 +34,37 @@ pool = PooledDB(
     **db_config
 )
 
+db_config = {
+    "host": os.getenv("MYSQL_HOST"),
+    "port": int(os.getenv("MYSQL_PORT")),
+    "db": os.getenv("MYSQL_DB"),
+    "user": os.getenv("MYSQL_USER"),
+    "password": os.getenv("MYSQL_PASSWORD"),
+    "charset": os.getenv("MYSQL_CHARSET"),
+    "cursorclass" : DictCursor
+}
+#
+#
+# def get_db_connection():
+#     return pymysql.connect(
+#     host=os.getenv("MYSQL_HOST"),
+#     port=int(os.getenv("MYSQL_PORT")),
+#     user=os.getenv("MYSQL_USER"),
+#     password=os.getenv("MYSQL_PASSWORD"),
+#     db=os.getenv("MYSQL_DB"),
+#     charset=os.getenv("MYSQL_CHARSET"),
+#     cursorclass=DictCursor
+#     )
+
+pool = PooledDB(
+    creator=pymysql,
+    mincached=5,
+    maxcached=10,
+    maxconnections=20,
+    blocking=True, # 풀이 찼을 때 대기 여부
+    **db_config
+)
+
 def get_db_connection():
     return pool.connection()
 

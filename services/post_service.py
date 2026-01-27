@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from models.post import Post, PostQuery, PostPublic
 from repositories.posts_repo import get_post_by_id, get_all_posts
 
-ALLOWED_POST_FIELDS = {'title', 'content'}
+ALLOWED_POST_FIELDS = frozenset({'title', 'content'})
 
 def write_posts(db, data: Post, current_user: dict):
     try:
@@ -41,7 +41,6 @@ def get_user_post(db, post_id: str) -> dict:
     try:
         with db.cursor() as cursor:
             user_post = get_post_by_id(db, post_id)
-            print(user_post)
 
             if not user_post:
                 raise HTTPException(status_code=404, detail="해당 게시물을 찾을수 없습니다.")
@@ -74,7 +73,7 @@ def update_my_post(db, post_id:str, post_dict: dict, current_user: dict) -> dict
             safe_fields = [k for k in post_dict.keys() if k in ALLOWED_POST_FIELDS]
             if not safe_fields:
                 raise HTTPException(status_code=401, detail="유효한 필드가 아닙니다.")
-            sql_fields = ",".join([f"{key} = %s" for key in safe_fields])
+            sql_fields = ",".join([f"`{key}` = %s" for key in safe_fields])
             update_sql = "UPDATE posts SET " + sql_fields + " WHERE post_id = %s"
             values = [post_dict[k] for k in safe_fields]
             values.append(post_id)
@@ -99,20 +98,17 @@ def update_my_post(db, post_id:str, post_dict: dict, current_user: dict) -> dict
         print(f"Service Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
 def delete_my_post(db, post_id:str,current_user: dict) -> None:
-    posts = get_all_posts(db)
-    target_post = next((u for u in posts if u["post_id"] == post_id), None)
-    if not target_post:
-        raise HTTPException(status_code=404, detail="게시물을 찾을 수 없습니다.")
 
-    if target_post["user_id"] != current_user["user_id"]:
+    user_post = get_post_by_id(db, post_id)
+    if not user_post:
+        raise HTTPException(status_code=404, detail="게시물을 찾을 수 없습니다.")
+    if user_post["user_id"] != current_user["user_id"]:
         raise HTTPException(
             status_code=403,
             detail="본인의 게시물만 삭제할 수 있습니다."
         )
-    updated_posts = [p for p in posts if p["post_id"] != post_id]
-
+    updated_posts = [p for p in user_post if p["post_id"] != post_id]
 
 def query_post(db, param: PostQuery, get_optional_user: Optional[dict]) -> dict:
     data = get_all_posts(db)

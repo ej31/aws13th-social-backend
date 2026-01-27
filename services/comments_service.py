@@ -4,25 +4,42 @@ import uuid
 from fastapi import HTTPException
 from models.comment import Comment, CommentResponse
 from repositories.comments_repo import get_all_comments, get_comment_by_id
-from repositories.posts_repo import get_all_posts
+from repositories.posts_repo import get_all_posts, get_post_by_id
 
 
 def write_comments(db, post_id:str, data: Comment, current_user : dict):
-    posts = get_all_posts(db)
-    if not any(p["post_id"] == post_id for p in posts):
-        raise HTTPException(400, "Post ID not valid")
+    try:
+        with db.cursor() as cursor:
+            posts = get_post_by_id(db, post_id)
+            if not any(p["post_id"] == post_id for p in posts):
+                raise HTTPException(400, "Post ID not valid")
+            comment_created_at = datetime.now(timezone.utc)
+            user_id = current_user["user_id"]
+            comment_id = str(uuid.uuid4())
+            content = data.content
 
-    comment_created_at = datetime.now(timezone.utc)
+            insert_sql = "INSERT INTO comments (comment_id, post_id, user_id,content, created_at) VALUES (%s, %s, %s, %s, %s)"
+            param = (comment_id, post_id, user_id, content, comment_created_at)
+            cursor.execute(insert_sql, param)
+            my_comment = CommentResponse(
+                user_id = user_id,
+                post_id = post_id,
+                content=  content,
+                comment_id= comment_id,
+                created_at = comment_created_at
+            ).model_dump(mode="json")
+        db.commit()
+        return my_comment
 
-    my_comment = CommentResponse(
-        user_id = current_user["user_id"],
-        post_id = post_id,
-        content=data.content,
-        comment_id=str(uuid.uuid4()),
-        created_at = comment_created_at
-    ).model_dump(mode="json")
+    except HTTPException:
+        db.rollback()
+        raise
 
-    return my_comment
+    except Exception as e:
+        db.rollback()
+        print(f"Service Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 def get_usr_comments(db, post_id:str, get_optional_user: Optional[dict] = None):
     all_data = get_all_comments(db)

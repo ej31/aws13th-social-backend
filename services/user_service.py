@@ -4,7 +4,8 @@ from repositories.user_repo import get_user_by_id
 from services.auth_service import get_password_hash
 from datetime import datetime, timezone
 
-ALLOWED_USER_FIELDS = {'email', 'password', 'nickname', 'profile_image_url'}
+# 백틱 금지. 동적으로 컬럼 생성하는거니까 절대 백틱금지! 써야하는 경우
+ALLOWED_USER_FIELDS = frozenset({'email', 'password', 'nickname', 'profile_image_url'})
 TABLES = ["posts","comments", "likes"]
 
 def get_my_profile(current_user: dict) -> dict:
@@ -74,6 +75,7 @@ def delete_my_account(db,current_user: dict) -> None:
             cursor.execute(update_sql, (delete_time, current_user["user_id"]))
 
             user_deleted = cursor.rowcount
+
             # posts, comments, likes 테이블 is_actives 일괄 처리
             # dbms가 아닌 서비스 코드에서 처리 함
             for table in TABLES:

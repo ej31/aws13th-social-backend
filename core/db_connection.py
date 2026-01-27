@@ -15,13 +15,19 @@ if load_dotenv(dotenv_path=dotenv_db_path, verbose=True):
 else:
     print(f"❌ .env_DB 로드 실패! (파일이 해당 경로에 있는지 확인하세요: {dotenv_db_path})")
 
+def get_env(key:str, default=None):
+    value = os.getenv(key, default)
+    if value is None:
+        raise RuntimeError(f"환경변수 누락 : {key}")
+    return value
+
 db_config = {
-    "host": os.getenv("MYSQL_HOST","localhost"),
-    "port": int(os.getenv("MYSQL_PORT", 3306)),
-    "db": os.getenv("MYSQL_DB", "my_app"),
-    "user": os.getenv("MYSQL_USER","root"),
-    "password": os.getenv("MYSQL_PASSWORD",""),
-    "charset": os.getenv("MYSQL_CHARSET","utf8"),
+    "host": get_env("MYSQL_HOST","localhost"),
+    "port": int(get_env("MYSQL_PORT", 3306)),
+    "db": get_env("MYSQL_DB", "my_app"),
+    "user": get_env("MYSQL_USER","root"),
+    "password": get_env("MYSQL_PASSWORD"),
+    "charset": get_env("MYSQL_CHARSET","utf8mb4"),
     "cursorclass" : DictCursor
 }
 

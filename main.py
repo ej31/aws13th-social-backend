@@ -12,7 +12,24 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
 import pymysql
-from pymysql.cursors import DictCursor
+
+
+
+def get_db():
+    conn = pymysql.connect(
+
+    host = os.getenv('DB_HOST'),
+    port = int(os.getenv('DB_PORT')),
+    password = os.getenv('DB_PASSWORD'),
+    db = os.getenv('DB_NAME'),
+    charset = 'utf8mb4'
+    )
+
+    try:
+        yield conn
+
+    finally:
+        conn.close()
 
 
 load_dotenv()

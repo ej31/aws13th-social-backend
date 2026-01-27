@@ -4,7 +4,9 @@ from repositories.user_repo import get_user_by_id
 from services.auth_service import get_password_hash
 from datetime import datetime, timezone
 
-ALLOWED_USER_FIELDS = {'email', 'password', 'nickname', 'profile_image_url'}
+# 백틱 금지. 동적으로 컬럼 생성하는거니까 절대 백틱금지! 써야하는 경우
+ALLOWED_USER_FIELDS = frozenset({'email', 'password', 'nickname', 'profile_image_url'})
+TABLES = ["posts","comments", "likes"]
 
 def get_my_profile(current_user: dict) -> dict:
     return current_user
@@ -36,7 +38,7 @@ def update_my_profile(db, current_user: dict, patch_data: dict) -> dict:
             if not safe_fields:
                 raise HTTPException(status_code=401, detail="유효한 필드가 아닙니다.")
 
-            sql_fields = ",".join([f"{key} = %s"for key in safe_fields])
+            sql_fields = ",".join([f"`{key}` = %s"for key in safe_fields])
             update_sql = "UPDATE users SET " + sql_fields + " WHERE user_id = %s"
 
             values = [patch_data[k] for k in safe_fields]
@@ -49,7 +51,6 @@ def update_my_profile(db, current_user: dict, patch_data: dict) -> dict:
             updated_user_row = cursor.fetchone()
             if not updated_user_row:
                 raise HTTPException(status_code=404, detail="해당 유저를 찾을 수 없습니다.")
-
         db.commit()
         update_user = UserPublic(**updated_user_row).model_dump(mode="json")
         print(update_user)
@@ -69,11 +70,21 @@ def update_my_profile(db, current_user: dict, patch_data: dict) -> dict:
 def delete_my_account(db,current_user: dict) -> None:
     try:
         with db.cursor() as cursor:
+            delete_time = datetime.now(timezone.utc)
             update_sql = "UPDATE users SET is_activate = 0, deleted_at = %s WHERE user_id = %s"
-            cursor.execute(update_sql, (datetime.now(timezone.utc), current_user["user_id"]))
+            cursor.execute(update_sql, (delete_time, current_user["user_id"]))
 
-            if cursor.rowcount == 0:
+            user_deleted = cursor.rowcount
+
+            # posts, comments, likes 테이블 is_actives 일괄 처리
+            # dbms가 아닌 서비스 코드에서 처리 함
+            for table in TABLES:
+                sql= "UPDATE " + table +" SET is_activate = 0, deleted_at = %s WHERE user_id = %s"
+                cursor.execute(sql, (delete_time, current_user["user_id"]))
+
+            if user_deleted == 0:
                 raise HTTPException(status_code=404, detail="해당 유저가 없습니다")
+
         db.commit()
 
     except HTTPException:

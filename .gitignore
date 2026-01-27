@@ -209,3 +209,4 @@ core/.env
 DB/users.json
 DB/posts.json
 core/.env_DB
+.idea

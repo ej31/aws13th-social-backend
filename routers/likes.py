@@ -28,8 +28,7 @@ def post_like_post(
             db = Depends(get_db)
     ):
     posts = get_post_by_id(db, post_id)
-    target_posts = next((u for u in posts if u["post_id"] == post_id), None)
-    if not target_posts:
+    if not posts:
         raise HTTPException(status_code=404, detail="해당 게시물을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="PostLike", target_id=post_id)
@@ -42,8 +41,7 @@ def post_like_comment(
     db = Depends(get_db)
 ):
     comments = get_comment_by_id(db, comment_id)
-    target_comment = next((u for u in comments if u["comment_id"] == comment_id), None)
-    if not target_comment:
+    if not comments:
         raise HTTPException(status_code=404, detail="해당 댓글을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="CommentLike", target_id=comment_id)
@@ -56,8 +54,7 @@ def get_likes_post(
         db = Depends(get_db)
 ):
     posts = get_post_by_id(db, post_id)
-    target_posts = next((u for u in posts if u["post_id"] == post_id), None)
-    if not target_posts:
+    if not posts:
         raise HTTPException(status_code=404, detail="해당 게시물을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="PostLike", target_id=post_id)
@@ -70,8 +67,7 @@ def get_like_comment(
         db = Depends(get_db)
 ):
     comments = get_comment_by_id(db, comment_id)
-    target_comment = next((u for u in comments if u["comment_id"] == comment_id), None)
-    if not target_comment:
+    if not comments:
         raise HTTPException(status_code=404, detail="해당 댓글을 찾을 수 없습니다.")
     user_id = current_user["user_id"]
     like_in = LikeCreate(target_type="CommentLike", target_id=comment_id)

@@ -108,7 +108,10 @@ def delete_my_post(db, post_id:str,current_user: dict) -> None:
             status_code=403,
             detail="본인의 게시물만 삭제할 수 있습니다."
         )
-    updated_posts = [p for p in user_post if p["post_id"] != post_id]
+    # updated_posts = [p for p in user_post if p["post_id"] != post_id]
+    with db.cursor() as cursor:
+        cursor.execute("DELETE FROM posts WHERE post_id = %s", (post_id,))
+        db.commit()
 
 def query_post(db, param: PostQuery, get_optional_user: Optional[dict]) -> dict:
     data = get_all_posts(db)

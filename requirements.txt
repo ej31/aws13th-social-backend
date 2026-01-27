@@ -1,0 +1,11 @@
+
+fastapi
+pydantic
+python-dotenv
+fastapi
+pydantic
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+uvicorn
+pyjwt

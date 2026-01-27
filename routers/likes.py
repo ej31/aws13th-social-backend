@@ -51,7 +51,7 @@ async def get_posts_liked(user_id: CurrentUserId, cur: CurrentCursor, page: Page
 async def create_like(post_id: PostId, user_id: CurrentUserId, cur: CurrentCursor) -> LikeStatusResponse:
     """좋아요 등록"""
     # 게시글 존재 확인
-    await cur.execute("SELECT id FROM posts WHERE id = %s FOR UPDATE", (post_id,))
+    await cur.execute("SELECT id FROM posts WHERE id = %s", (post_id,))
     if not await cur.fetchone():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

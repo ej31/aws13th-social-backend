@@ -1,10 +1,8 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from schemas.comment import CommentOut
-from schemas.post import PostOut
-from schemas.user import UserOut, NickNameUpdateIn
-from utils.auth import get_current_user
+from schemas.user import UserOut, NickNameUpdateIn, PasswordChangeIn
+from utils.auth import get_current_user, verify_password, hash_password
 from utils.data import read_json, write_json
 
 router = APIRouter(
@@ -27,7 +25,7 @@ def getuser():
 @router.patch("/me",response_model=UserOut)
 def update_profile_nickname(
         payload: NickNameUpdateIn,
-        current_user = Depends(get_current_user)):
+        current_user : dict = Depends(get_current_user)):
 
     users = read_json("users.json", default=[])
 
@@ -36,7 +34,7 @@ def update_profile_nickname(
         raise HTTPException(status_code=404, detail="User not found")
 
     if any(u["nickname"] == payload.nickname and u["id"] != current_user["id"] for u in users):
-        raise HTTPException(status_code=400, detail="Nickname already taken")
+        raise HTTPException(status_code=409, detail="Nickname already taken")
 
     user["nickname"] = payload.nickname
 
@@ -48,10 +46,23 @@ def update_profile_nickname(
 def update_profile_image():
     pass
 
-# 비밀번호 변경
-@router.put("/me/password")
-def update_profile_password():
-    pass
+# 비밀번호 변경 (DONE!)
+@router.patch("/me/password")
+def change_password(
+        payload: PasswordChangeIn,
+        current_user : dict = Depends(get_current_user),
+):
+    users = read_json("users.json", default=[])
+
+    user = next((u for u in users if u["id"] == current_user["id"]), None)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(payload.old_password, current_user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Incorrect password")
+
+    user["hashed_password"] = hash_password(payload.new_password)
+    write_json("users.json", users)
 
 # 회원 탈퇴
 @router.delete("me")

@@ -22,3 +22,6 @@ class LoginInsert(BaseModel):
 class NickNameUpdateIn(BaseModel):
     nickname: str
 
+class PasswordChangeIn(BaseModel):
+    new_password: str
+    old_password: str

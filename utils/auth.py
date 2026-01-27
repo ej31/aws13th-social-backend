@@ -1,10 +1,4 @@
 
-# 인증/인가 유틸 + Depends 제공
-# 1. 비밀번호 해시/검증
-# 2. 토큰(JWT) 발급/검증
-# (현재 구현은 알할거지만)
-# 권한 체크 헬퍼 (Require_admin, require_owner)
-
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -21,14 +15,13 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES","60"))
 
-if not SECRET_KEY or not ACCESS_TOKEN_EXPIRE_MINUTES or not ALGORITHM:
-    raise ValueError("Environment is not set")
+# if not SECRET_KEY or not ACCESS_TOKEN_EXPIRE_MINUTES or not ALGORITHM:
+#     raise ValueError("Environment is not set")
 # os.getenv(a,b) .env or 환경변수에 a 이름 있으면 앞에꺼 없으면 뒤에꺼(기본값)
 # os.getenv 쓰려면 환경변수 등록하거나 .env 파일에 정의해두고 main 에서 앱 실행 후 load_dotenv() 한번만 해주면 됨.
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-# oauth2 인증 스킴/ Bearer<token> 형식, auth/login에서 발급받는다
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)

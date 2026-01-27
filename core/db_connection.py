@@ -20,7 +20,6 @@ def get_env(key:str, default=None):
     if value is None:
         raise RuntimeError(f"환경변수 누락 : {key}")
     return value
-
 db_config = {
     "host": get_env("MYSQL_HOST","localhost"),
     "port": int(get_env("MYSQL_PORT", 3306)),

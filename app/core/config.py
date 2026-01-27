@@ -49,9 +49,9 @@ class Settings(BaseSettings):
         PyMySQL 연결 문자열 생성
         """
         return (
-            f"mysql+pymysql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
-            f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
-            f"?charset={self.DATABASE_CHARSET}"
+            f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            f"?charset={self.DB_CHARSET}"
         )
 
 

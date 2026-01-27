@@ -1,8 +1,12 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException,status
 from fastapi.security import HTTPAuthorizationCredentials,HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from common.database import get_db
 from common.jwt import decode_access_token
+from models.base import User
 from repositories.user_repository import UserRepository
 from services.user_service import UserService
 
@@ -13,10 +17,10 @@ security = HTTPBearer()
 #비인증 사용자도 게시글이나 댓글을 조회할 수 있게 한다.
 optional_security = HTTPBearer(auto_error=False)
 
-def get_user_repo() -> UserRepository:
-    return UserRepository()
+def get_user_repo(db: Annotated[AsyncSession, Depends(get_db)]) -> UserRepository:
+    return UserRepository(db)
 
-def get_auth_service(
+def get_user_service(
         repo: Annotated[UserRepository, Depends(get_user_repo)]
 ) -> UserService:
     return UserService(user_repo = repo)
@@ -24,7 +28,7 @@ def get_auth_service(
 async def get_current_optional_user(
         auth: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],
         user_repo : Annotated[UserRepository, Depends(get_user_repo)]
-) -> dict | None:
+) -> Optional[User] | None:
 
     #토큰 자체가 없는 경우 (비 인증 사용자)
     if not auth:
@@ -32,7 +36,7 @@ async def get_current_optional_user(
 
     email = decode_access_token(auth.credentials)
 
-    user = user_repo.find_by_email(email)
+    user = await user_repo.find_by_email(email)
 
     if not user:
         raise HTTPException(
@@ -43,8 +47,8 @@ async def get_current_optional_user(
 
 #jwt 인증된 사용자인지 확인
 async def get_current_user(
-        user: Annotated[dict | None, Depends(get_current_optional_user)],
-) -> dict:
+        user: Annotated[Optional[User] | None, Depends(get_current_optional_user)],
+) -> User:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

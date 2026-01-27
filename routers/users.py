@@ -11,14 +11,19 @@ router = APIRouter(
 )
 
 
-# 내 프로필 조회
-@router.get("/me")
-def getprofile():
-    pass
+# 내 프로필 조회 (DONE!)
+@router.get("/me",response_model=UserOut)
+def get_profile(current_user : dict = Depends(get_current_user)):
+    users = read_json("users.json", default=[])
+    user = next((u for u in users if u["id"] == current_user["id"]), None)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    print(f"내 프로필 조회 : {user} ")
+    return user
 
 # 특정 회원 조회
 @router.get("/{user_id}")
-def getuser():
+def get_user():
     pass
 
 # 프로필 닉네임 수정 (DONE!)
@@ -37,7 +42,6 @@ def update_profile_nickname(
         raise HTTPException(status_code=409, detail="Nickname already taken")
 
     user["nickname"] = payload.nickname
-
     write_json("users.json", users)
     return user
 

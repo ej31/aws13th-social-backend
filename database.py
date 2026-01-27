@@ -31,13 +31,12 @@ comments_file_lock = threading.Lock()
 def load_users():
     # 디렉토리 유무 확인 (없으면 mkdir)
     os.makedirs(DATA_DIR, exist_ok=True)
-    temp_path = users_json_path + ".tmp"
     # 코드리뷰 반영
     with users_file_lock:
         try:
             with open(users_json_path, "r", encoding="utf-8") as f:
                 #코드 리뷰 반영 -- Race Condition
-                data = json.load(f, ensure_ascii=False, indent=4)
+                data = json.load(f)
                 f.flush()
                 os.fsync(f.fileno())
                 return data if isinstance(data, list) else []
@@ -58,7 +57,7 @@ def save_users(users: list):
     temp_path = users_json_path + ".tmp"
     # 코드리뷰 반영
     with users_file_lock:
-        with open(users_json_path, "w", encoding="utf-8") as f:
+        with open(temp_path, "w", encoding="utf-8") as f: # 코드리뷰 반영
             json.dump(users, f, ensure_ascii=False, indent=4)
             f.flush()
             os.fsync(f.fileno())  # 디스크에 강제 반영

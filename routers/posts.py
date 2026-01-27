@@ -62,9 +62,23 @@ async def patch_posts(
         post_id: str,
         title: Annotated[str | None, Form()] = None,
         contents : Annotated[str | None, Form()] = None,
-        contents_image : Annotated[UploadFile | None, File()] = None
+        contents_image : Annotated[UploadFile | None, File()] = None,
+        target_user: dict = Depends(get_current_user)
 ):
+    # post_id에 매핑되는 게시글 찾아오기
     posts_json_path = load_posts()
+    # 코드리뷰 반영 -- 삭제 처럼 수정에도 검증 로직 추가
+    target_post = None
+    for post in posts_json_path:
+        if post["post_id"]==post_id:
+            target_post=post
+            break
+    # 게시글 유무 확인
+    if target_post is None:
+        raise HTTPException(status_code=404, detail="게시물을 찾을 수 없습니다.")
+    # 게시글 ~ 작성자 매핑 여부
+    if posts_json_path(target_post)["author"]["user_id"] != target_user["user_id"]:
+        raise HTTPException(status_code=403, detail="게시글 작성자가 아닙니다. 삭제할 권한이 없습니다.")
     # 3가지 중 최소 1개 요청 여부 확인
     if not any([title, contents, contents_image]):
         raise HTTPException(status_code=400, detail="수정할 정보를 입력해주세요.")
@@ -85,6 +99,7 @@ async def patch_posts(
     if contents is not None:
         if len(contents) > 5000:
             raise HTTPException(status_code=400, detail="게시글 본문이 너무 깁니다.")
+        target_post["contents"] = contents
     # 이미지 변경 요청된 경우
     if contents_image:
         contents_image_url = await validate_and_process_image(contents_image)
@@ -116,8 +131,10 @@ async def delete_posts(
     # post_id에 매핑되는 게시글 찾아오기
     posts_json_path = load_posts()
     target_post = None
-    for post in posts_json_path:
+    target_index = None
+    for idx, post in enumerate(posts_json_path):
         if post["post_id"] == post_id:
+            target_index = idx
             target_post = post
             break
     # 게시글 유무 확인
@@ -127,7 +144,7 @@ async def delete_posts(
     if posts_json_path(target_post)["author"]["user_id"] != target_user["user_id"]:
         raise HTTPException(status_code=403, detail="게시글 작성자가 아닙니다. 삭제할 권한이 없습니다.")
     # 모든 검증 로직 통화, 삭제 수행
-    posts_json_path.pop(posts_json_path(target_post))
+    posts_json_path.pop(target_index)
     save_posts(posts_json_path)
     return {
         "status" : "success",

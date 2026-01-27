@@ -190,4 +190,11 @@ async def delete_comment(
     all_comments.pop(target_idx)
     save_comments(all_comments)
 
-    return HTTPException(status_code=204)
+    return {
+        "status": "success",
+        "message": "댓글 삭제 성공하였습니다.",
+        "data": {
+            "post_id": post_id,
+            "comment_id": comment_id
+        }
+    }

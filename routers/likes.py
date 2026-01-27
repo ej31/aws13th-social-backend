@@ -101,7 +101,7 @@ async def delete_like(post_id: PostId, user_id: CurrentUserId, cur: CurrentCurso
                 detail="Post not found"
             )
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_400_BAD_REQUEST_NOT_FOUND,
             detail="Like not found"
         )
 

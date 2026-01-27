@@ -12,7 +12,7 @@ class PostRepository:
         result = await self.db.execute(select(Post).order_by(Post.created_at.desc()))
         return list(result.scalars().all())
 
-    async def find_by_id(self, post_id: int) -> dict | None:
+    async def find_by_id(self, post_id: int) -> Post | None:
         result = await self.db.execute(select(Post).where(Post.id == post_id))
         return result.scalars().first()
 

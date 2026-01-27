@@ -64,11 +64,11 @@ def decode_refresh_token(token: str) -> str:
         )
 
         if payload.get("type") != "refresh":
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="잘못된 토큰 타입입니다..")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="잘못된 토큰 타입입니다..")
 
         subject = payload.get("sub")
         if subject is None:
-            raise HTTPException(status_code=status.HTTP_401_NOT_FOUND,detail="토큰에 정보가 유효하지 않습니다.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="토큰에 정보가 유효하지 않습니다.")
 
         return subject
     except ExpiredSignatureError:

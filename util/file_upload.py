@@ -43,6 +43,12 @@ class FileUtil:
         filename = f"{uuid.uuid4()}_{file.filename}"
         full_path = os.path.join(folder, filename)
 
+        if not cls._is_safe_path(folder,full_path):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="잘못된 경로에 대한 접근입니다."
+            )
+
         with open(full_path, "wb") as f:
             f.write(content)
 

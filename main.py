@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from starlette.responses import JSONResponse
 
 from routers import users, posts, comments, likes
+from db.session import engine
 from utils.database import init_db_pool, close_db_pool
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ async def lifespan(app: FastAPI):
     await init_db_pool()
     yield
     await close_db_pool()
+    await engine.dispose()
 
 
 app = FastAPI(lifespan=lifespan)

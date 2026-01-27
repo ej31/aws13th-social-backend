@@ -17,27 +17,6 @@ router = APIRouter(
 )
 
 
-def _get_post_or_404(post_id: PostId, posts: list[dict] | None = None) -> tuple[dict, list[dict]]:
-    """게시글 존재 확인 및 반환 (posts 리스트도 함께 반환)"""
-    if posts is None:
-        posts = read_json(settings.posts_file)
-    post = next((post for post in posts if post["id"] == post_id), None)
-    if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
-    return post, posts
-
-
-def _update_post_like_count(posts: list[dict], post_id: PostId, delta: int) -> None:
-    """게시글의 좋아요 수 업데이트 (posts 리스트를 받아서 처리)"""
-    post_index = next((i for i, post in enumerate(posts) if post["id"] == post_id), None)
-    if post_index is not None:
-        posts[post_index]["like_count"] = max(0, posts[post_index].get("like_count", 0) + delta)
-        write_json(settings.posts_file, posts)
-
-
 @router.get("/posts/liked", response_model=ListPostILiked)
 def get_posts_liked(user_id: CurrentUserId, page: Page = 1) -> ListPostILiked:
     """내가 좋아요한 게시글 목록"""
@@ -141,17 +120,25 @@ async def delete_like(post_id: PostId, user_id: CurrentUserId, cur: CurrentCurso
 
 
 @router.get("/posts/{post_id}/likes", response_model=LikeStatusResponse)
-def get_like_status(post_id: PostId, user_id: CurrentUserId) -> LikeStatusResponse:
+async def get_like_status(post_id: PostId, user_id: CurrentUserId, cur: CurrentCursor) -> LikeStatusResponse:
     """좋아요 상태 확인"""
-    post, _ = _get_post_or_404(post_id)
-    likes = read_json(settings.likes_file)
+    await cur.execute("SELECT like_count FROM posts WHERE id = %s", (post_id,))
+    post = await cur.fetchone()
 
-    is_liked = any(
-        like["post_id"] == post_id and like["user_id"] == user_id
-        for like in likes
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+
+    # 좋아요 여부 확인
+    await cur.execute(
+        "SELECT 1 FROM likes WHERE post_id = %s AND user_id = %s",
+        (post_id, user_id)
     )
+    is_liked = await cur.fetchone() is not None
 
     return LikeStatusResponse(
         liked=is_liked,
-        like_count=post.get("like_count", 0)
+        like_count=post["like_count"]
     )

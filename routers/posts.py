@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, UTC
 
 from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from db.models.post import Post
 from db.models.user import User
@@ -118,7 +118,6 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
     )
 
 
-# TODO: id가 아닌 닉네임이 표시되게 하기
 @router.post("/posts", response_model=PostListItem,
              status_code=status.HTTP_201_CREATED)
 async def create_post(author_id: CurrentUserId, post: PostCreateRequest, db: DBSession) -> PostListItem:
@@ -245,10 +244,20 @@ async def update_post(
 
 
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(author_id: CurrentUserId, post_id: PostId, cur: CurrentCursor) -> None:
+async def delete_post(author_id: CurrentUserId, post_id: PostId, db: DBSession) -> None:
     """게시글 삭제"""
-    await _get_verified_post(cur, post_id, author_id)
-    await cur.execute(
-        "DELETE FROM posts WHERE id = %s AND author_id = %s",
-        (post_id, author_id)
-    )
+    result = await db.execute(delete(Post).where(Post.id == post_id, Post.author_id == author_id))
+    post = result.scalar_one_or_none()
+
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    if post.author_id != author_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
+
+    await db.delete(post)

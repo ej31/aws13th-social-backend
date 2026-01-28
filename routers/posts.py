@@ -41,10 +41,24 @@ router = APIRouter(
 )
 
 
-async def get_post_or_404(db, post_id: str) -> Post:
-    """게시글 조회 (없으면 404)"""
+async def get_post_with_author(db, post_id: str) -> Post:
+    """게시글 상세 조회용 (author JOIN)"""
     result = await db.execute(
         select(Post).options(joinedload(Post.author)).where(Post.id == post_id)
+    )
+    post = result.scalar_one_or_none()
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    return post
+
+
+async def lock_post_for_update(db, post_id: str) -> Post:
+    """게시글 수정/삭제용 (row lock)"""
+    result = await db.execute(
+        select(Post).where(Post.id == post_id).with_for_update()
     )
     post = result.scalar_one_or_none()
     if post is None:
@@ -159,7 +173,7 @@ async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) 
 @router.get("/posts/{post_id}", response_model=PostDetail)
 async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
     """게시글 상세 조회"""
-    post = await get_post_or_404(db, post_id)
+    post = await get_post_with_author(db, post_id)
     post.view_count += 1
     await db.flush()
 
@@ -170,7 +184,7 @@ async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
 async def update_post(
         author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest, db: DBSession) -> None:
     """게시글 수정"""
-    post = await get_post_or_404(db, post_id)
+    post = await lock_post_for_update(db, post_id)
     check_post_author(post, author_id)
 
     update_fields = update_data.model_dump(exclude_unset=True)
@@ -184,6 +198,6 @@ async def update_post(
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(author_id: CurrentUserId, post_id: PostId, db: DBSession) -> None:
     """게시글 삭제"""
-    post = await get_post_or_404(db, post_id)
+    post = await lock_post_for_update(db, post_id)
     check_post_author(post, author_id)
     await db.delete(post)

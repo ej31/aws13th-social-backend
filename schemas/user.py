@@ -55,6 +55,8 @@ class UserCreateRequest(BaseModel):
 
 
 class UserCreateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UserId
     nickname: Nickname
     email: EmailStr
@@ -70,6 +72,7 @@ class UserLoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
 
 

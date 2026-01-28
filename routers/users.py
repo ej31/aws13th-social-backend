@@ -1,13 +1,14 @@
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie, Request
-from aiomysql import IntegrityError
-from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, delete
 
 from config import settings
 from db.models.user import User
+from db.models.user_session import UserSession
 from schemas.commons import UserId, CurrentCursor, DBSession
 from schemas.user import (
     UserMyProfile,
@@ -35,38 +36,27 @@ PROFILE_SET_CLAUSE_MAP = {
 
 @router.post("/users", response_model=UserCreateResponse,
              status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreateRequest, cur: CurrentCursor) -> UserCreateResponse:
+async def create_user(user: UserCreateRequest, db: DBSession) -> UserCreateResponse:
     """회원가입"""
-    new_id = f"user_{uuid.uuid4().hex}"
-    now = datetime.now(UTC)
+    new_user = User(
+        id=f"user_{uuid.uuid4().hex}",
+        email=user.email,
+        nickname=user.nickname,
+        password=hash_password(user.password),
+        profile_img=user.profile_img,
+    )
+    db.add(new_user)
 
     try:
-        await cur.execute(
-            """
-            INSERT INTO users (id, email, nickname, password, profile_img, created_at)
-            VALUES (%(id)s, %(email)s, %(nickname)s, %(password)s, %(profile_img)s, %(created_at)s)
-            """,
-            {
-                "id": new_id,
-                "email": user.email,
-                "nickname": user.nickname,
-                "password": hash_password(user.password),
-                "profile_img": user.profile_img,
-                "created_at": now,
-            }
-        )
+        await db.flush()
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         )
+    await db.refresh(new_user)
 
-    return UserCreateResponse(
-        id=new_id,
-        email=user.email,
-        nickname=user.nickname,
-        created_at=now,
-    )
+    return UserCreateResponse.model_validate(new_user)
 
 
 REFRESH_TOKEN_COOKIE_KEY = "refresh_token"
@@ -77,17 +67,14 @@ async def get_auth_tokens(
         user: UserLoginRequest,
         request: Request,
         response: Response,
-        cur: CurrentCursor
+        db: DBSession,
 ) -> UserLoginResponse:
     """로그인"""
-    await cur.execute(
-        "SELECT id, password FROM users WHERE email = %s",
-        (user.email,)
-    )
-    db_user = await cur.fetchone()
+    result = await db.execute(select(User).where(User.email == user.email))
+    db_user = result.scalar_one_or_none()
 
     # 타이밍 공격 방지: 유저 존재 여부와 관계없이 항상 해시 비교 수행
-    hashed_password = db_user["password"] if db_user else DUMMY_HASH
+    hashed_password = db_user.password if db_user else DUMMY_HASH
     is_password_correct = verify_password(user.password, hashed_password)
 
     if db_user is None or not is_password_correct:
@@ -96,27 +83,30 @@ async def get_auth_tokens(
             detail="Incorrect email or password",
         )
 
+    # 오래된 세션 정리
+    await db.execute(
+        delete(UserSession).where(
+            UserSession.user_id == db_user.id,
+            UserSession.last_used_at < datetime.now(UTC) - timedelta(days=settings.refresh_token_expire_days),
+        )
+    )
+
     # 토큰 생성
-    token_data = {"sub": db_user["id"]}
+    token_data = {"sub": db_user.id}
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(data=token_data)
+    hashed_refresh_token = hash_token(refresh_token)
 
     # 세션 생성
-    session_id = f"sess_{uuid.uuid4().hex}"
-    device_info = request.headers.get("User-Agent", "Unknown")
-
-    await cur.execute(
-        """
-        INSERT INTO user_sessions (id, user_id, refresh_token, device_info)
-        VALUES (%(session_id)s, %(user_id)s, %(refresh_token)s, %(device_info)s)
-        """,
-        {
-            "session_id": session_id,
-            "user_id": db_user["id"],
-            "refresh_token": hash_token(refresh_token),
-            "device_info": device_info
-        }
+    new_session = UserSession(
+        id=f"session_{uuid.uuid4().hex}",
+        user_id=db_user.id,
+        refresh_token=hashed_refresh_token,
+        device_info=request.headers.get("User-Agent", "Unknown"),
     )
+
+    db.add(new_session)
+    await db.flush()
 
     # Refresh token을 HttpOnly 쿠키로 설정
     response.set_cookie(
@@ -129,12 +119,12 @@ async def get_auth_tokens(
         path="/",
     )
 
-    return UserLoginResponse(access_token=access_token)
+    return UserLoginResponse(access_token=access_token, refresh_token=hashed_refresh_token)
 
 
 @router.post("/auth/tokens/refresh", response_model=TokenRefreshResponse)
 async def refresh_access_token(
-        cur: CurrentCursor,
+        db: DBSession,
         response: Response,
         refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
 ) -> TokenRefreshResponse:
@@ -154,23 +144,21 @@ async def refresh_access_token(
         )
 
     # DB에서 해당 세션 조회 (해시된 토큰으로 검색)
-    hashed_token = hash_token(refresh_token)
-    await cur.execute(
-        "SELECT id, user_id FROM user_sessions WHERE refresh_token = %s",
-        (hashed_token,)
+    hashed_refresh_token = hash_token(refresh_token)
+    result = await db.execute(
+        select(UserSession).where(UserSession.refresh_token == hashed_refresh_token)
     )
-    session = await cur.fetchone()
+    session = result.scalar_one_or_none()
 
     if not session:
         # 토큰이 DB에 없음 → 이미 사용된 토큰 (탈취 의심)
-        # 해당 유저의 이 세션만 삭제 (세션 ID를 모르므로 user_id 기준으로는 불가)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid token",
         )
 
     # user_id 일치 확인
-    if session["user_id"] != user_id:
+    if session.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid token",
@@ -182,14 +170,8 @@ async def refresh_access_token(
     new_refresh_token = create_refresh_token(data=token_data)
 
     # 새 refresh token으로 업데이트 + last_used_at 갱신
-    await cur.execute(
-        """
-        UPDATE user_sessions
-        SET refresh_token = %s, last_used_at = CURRENT_TIMESTAMP
-        WHERE id = %s
-        """,
-        (hash_token(new_refresh_token), session["id"])
-    )
+    session.refresh_token = hash_token(new_refresh_token)
+    session.last_used_at = datetime.now(UTC)
 
     # 새 refresh token을 쿠키에 설정 (원본)
     response.set_cookie(
@@ -202,21 +184,20 @@ async def refresh_access_token(
         path="/",
     )
 
-    return TokenRefreshResponse(access_token=new_access_token)
+    return TokenRefreshResponse(access_token=new_access_token, refresh_token=session.refresh_token)
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
         response: Response,
-        cur: CurrentCursor,
+        db: DBSession,
         refresh_token: str | None = Cookie(None, alias=REFRESH_TOKEN_COOKIE_KEY)
 ) -> None:
     """로그아웃 (refresh_token 쿠키 삭제 + DB 세션 삭제)"""
     if refresh_token:
         # 해당 세션만 삭제
-        await cur.execute(
-            "DELETE FROM user_sessions WHERE refresh_token = %s",
-            (hash_token(refresh_token),)
+        await db.execute(
+            delete(UserSession).where(UserSession.refresh_token == hash_token(refresh_token))
         )
     response.delete_cookie(key=REFRESH_TOKEN_COOKIE_KEY, path="/")
 
@@ -233,7 +214,7 @@ async def get_my_profile(user_id: CurrentUserId, db: DBSession) -> UserMyProfile
             detail="User not found"
         )
 
-    return user
+    return UserMyProfile.model_validate(user)
 
 
 @router.patch("/users/me", response_model=UserMyProfile)

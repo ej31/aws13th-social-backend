@@ -205,42 +205,31 @@ async def get_single_post(post_id: PostId, cur: CurrentCursor) -> PostDetail:
 
 @router.patch("/posts/{post_id}", response_model=PostDetail)
 async def update_post(
-        author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest, cur: CurrentCursor) -> PostDetail:
+        author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest, db: DBSession) -> PostDetail:
     """게시글 수정"""
-    post = await _get_verified_post(cur, post_id, author_id)
 
-    # whitelist 검증 + SET 절 하드코딩 매핑
-    update_fields = update_data.model_dump(exclude_unset=True)
-    field_keys = frozenset(update_fields.keys())
-    if not field_keys.issubset(ALLOWED_POST_UPDATE_FIELDS):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid fields: {field_keys}"
-        )
+    result = await db.execute(select(Post).where(Post.id == post_id))
+    post = result.scalar_one_or_none()
 
-    set_clause = POST_SET_CLAUSE_MAP.get(field_keys)
-    if not set_clause:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No valid fields to update"
-        )
-
-    now = datetime.now(UTC)
-    query_params = {**update_fields, "post_id": post_id, "author_id": author_id, "updated_at": now}
-
-    await cur.execute(
-        "UPDATE posts SET " + set_clause + ", updated_at = %(updated_at)s WHERE id = %(post_id)s AND author_id = %(author_id)s",
-        query_params
-    )
-
-    if cur.rowcount == 0:
+    if post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
+    if post.author_id != author_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
 
-    # 조회한 데이터 + 변경값으로 응답
-    return PostDetail(**{**post, **update_fields, "updated_at": now})
+    update_fields = update_data.model_dump(exclude_unset=True)
+    for field, value in update_fields.items():
+        setattr(post, field, value)
+
+    await db.flush()
+    await db.refresh(post)
+
+    return PostDetail.model_validate(post)
 
 
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

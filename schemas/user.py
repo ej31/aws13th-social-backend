@@ -91,7 +91,7 @@ class UserMyProfile(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', from_attributes=True)
 
     nickname: Nickname | None = None
     profile_img: str | None = None

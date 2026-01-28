@@ -9,7 +9,7 @@ from sqlalchemy import select, delete
 from config import settings
 from db.models.user import User
 from db.models.user_session import UserSession
-from schemas.commons import UserId, CurrentCursor, DBSession
+from schemas.commons import UserId, DBSession
 from schemas.user import (
     UserMyProfile,
     UserUpdateRequest, UserProfile,
@@ -219,56 +219,24 @@ async def get_my_profile(user_id: CurrentUserId, db: DBSession) -> UserMyProfile
 
 @router.patch("/users/me", response_model=UserMyProfile)
 async def update_my_profile(user_id: CurrentUserId, update_data: UserUpdateRequest,
-                            cur: CurrentCursor) -> UserMyProfile:
+                            db: DBSession) -> UserMyProfile:
     """내 프로필 수정"""
-    # 먼저 사용자 조회
-    await cur.execute(
-        """
-        SELECT id, email, nickname, profile_img, created_at 
-        FROM users WHERE id = %s
-        FOR UPDATE
-        """,
-        (user_id,)
-    )
-    user = await cur.fetchone()
-
-    if not user:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
 
-    # whitelist 검증 + SET 절 하드코딩 매핑
     update_fields = update_data.model_dump(exclude_unset=True)
-    field_keys = frozenset(update_fields.keys())
-    if not field_keys.issubset(ALLOWED_PROFILE_UPDATE_FIELDS):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid fields: {field_keys}"
-        )
+    for field, value in update_fields.items():
+        setattr(user, field, value)
 
-    set_clause = PROFILE_SET_CLAUSE_MAP.get(field_keys)
-    if not set_clause:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No valid fields to update"
-        )
+    await db.flush()
+    await db.refresh(user)
 
-    query_params = {**update_fields, "user_id": user_id}
-
-    await cur.execute(
-        "UPDATE users SET " + set_clause + " WHERE id = %(user_id)s",
-        query_params
-    )
-
-    if cur.rowcount == 0:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-    # 조회한 데이터 + 변경값으로 응답
-    return UserMyProfile(**{**user, **update_fields})
+    return UserMyProfile.model_validate(user)
 
 
 @router.get("/users/{user_id}", response_model=UserProfile)

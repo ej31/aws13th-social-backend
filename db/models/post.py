@@ -22,7 +22,7 @@ class Post(Base):
     like_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     comment_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[dt] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[dt] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[dt] = mapped_column(DateTime, server_default=func.now())
 
     author: Mapped["User"] = relationship(lazy="joined")
     

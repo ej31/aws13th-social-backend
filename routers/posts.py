@@ -196,9 +196,9 @@ async def update_post(
     update_fields = update_data.model_dump(exclude_unset=True)
     for field, value in update_fields.items():
         setattr(post, field, value)
+    post.updated_at = datetime.now(UTC)
 
     await db.flush()
-    await db.refresh(post)
 
     return PostDetail.model_validate(post)
 

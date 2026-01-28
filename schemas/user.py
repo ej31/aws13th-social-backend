@@ -55,6 +55,8 @@ class UserCreateRequest(BaseModel):
 
 
 class UserCreateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UserId
     nickname: Nickname
     email: EmailStr
@@ -78,6 +80,8 @@ TokenRefreshResponse = TokenResponse
 
 
 class UserMyProfile(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UserId
     email: EmailStr
     nickname: Nickname
@@ -86,7 +90,7 @@ class UserMyProfile(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', from_attributes=True)
 
     nickname: Nickname | None = None
     profile_img: str | None = None
@@ -106,6 +110,8 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserProfile(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UserId
     nickname: Nickname
     profile_img: str | None = None

@@ -21,11 +21,16 @@ class Settings(BaseSettings):
     comments_file: Path = Path(__file__).resolve().parent / "data/comments.json"
     likes_file: Path = Path(__file__).resolve().parent / "data/likes.json"
 
+    # TODO: 삭제
     db_host: str
     db_port: int
     db_user: str
     db_password: str
     db_name: str
 
+    db_url: str
+    db_echo: bool = False
+
+    cors_origins: list[str]
 
 settings = Settings()

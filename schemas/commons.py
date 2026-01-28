@@ -3,7 +3,9 @@ from typing import Annotated
 from aiomysql import Cursor
 from fastapi import Depends
 from pydantic import Field, BaseModel, StringConstraints
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.session import get_db
 from utils.database import get_cursor
 
 UserId = Annotated[
@@ -42,6 +44,7 @@ Content = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=2000),
 ]
+
 Title = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=50),
@@ -50,6 +53,8 @@ Title = Annotated[
 Count = Annotated[int, Field(ge=0)]
 
 CurrentCursor = Annotated[Cursor, Depends(get_cursor)]
+
+DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 class Pagination(BaseModel):

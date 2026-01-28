@@ -18,9 +18,14 @@ from schemas.post import (
 # TODO: liked_count -> Elasticsearch로 성능 개선 고려
 
 PAGE_SIZE = 20
+ALLOWED_SORT_FIELDS = frozenset({"created_at", "view_count", "like_count"})
 
-# 정렬 옵션 매핑
+
 def get_order_by(sort: str, order: str) -> list:
+    """정렬 옵션 매핑"""
+    if sort not in ALLOWED_SORT_FIELDS:
+        raise ValueError(f"Invalid sort field: {sort}")
+
     column = getattr(Post, sort)
     ordered = column.desc() if order == "desc" else column.asc()
     if sort != "created_at":

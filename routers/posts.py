@@ -2,9 +2,12 @@ import uuid
 from datetime import datetime, UTC
 
 from fastapi import APIRouter, Depends, status, HTTPException
-
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from db.models.post import Post
+from db.models.user import User
 from routers.users import CurrentUserId
-from schemas.commons import Page, PostId, Pagination, CurrentCursor
+from schemas.commons import Page, PostId, Pagination, CurrentCursor, DBSession
 from schemas.post import (
     ListPostsQuery,
     PostCreateRequest,
@@ -118,43 +121,27 @@ async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> Li
 # TODO: id가 아닌 닉네임이 표시되게 하기
 @router.post("/posts", response_model=PostListItem,
              status_code=status.HTTP_201_CREATED)
-async def create_post(author_id: CurrentUserId, post: PostCreateRequest, cur: CurrentCursor) -> PostListItem:
+async def create_post(author_id: CurrentUserId, post: PostCreateRequest, db: DBSession) -> PostListItem:
     """ 게시글 생성 """
-    post_id = f"post_{uuid.uuid4().hex}"
+    result = await db.execute(select(User).where(User.id == author_id))
+    user = result.scalar_one()
+
     now = datetime.now(UTC)
 
-    await cur.execute(
-        """
-        INSERT INTO posts (id, author_id, title, content, view_count, like_count, comment_count, created_at, updated_at)
-        VALUES (%(id)s, %(author_id)s, %(title)s, %(content)s, %(view_count)s, %(like_count)s, %(comment_count)s, %(created_at)s,
-                %(updated_at)s)
-        """,
-        {
-            "id": post_id,
-            "author_id": author_id,
-            "title": post.title,
-            "content": post.content,
-            "view_count": 0,
-            "like_count": 0,
-            "comment_count": 0,
-            "created_at": now,
-            "updated_at": now
-        }
-    )
-
-    new_post_model = PostDetail(
-        id=post_id,
+    new_post = Post(
+        id=f"post_{uuid.uuid4().hex}",
         author_id=author_id,
         title=post.title,
         content=post.content,
-        view_count=0,
-        like_count=0,
-        comment_count=0,
         created_at=now,
-        updated_at=now
+        updated_at=now,
     )
+    new_post.author = user
 
-    return new_post_model
+    db.add(new_post)
+    await db.flush()
+
+    return PostDetail.model_validate(new_post)
 
 
 @router.get("/posts/me", response_model=ListPostsResponse)

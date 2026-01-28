@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import StringConstraints, BaseModel, Field, model_validator, ConfigDict
+from pydantic import StringConstraints, BaseModel, Field, model_validator, ConfigDict, computed_field
 
 from schemas.commons import PostId, UserId, Pagination, Page, Content, Title, Count
 
@@ -19,13 +19,21 @@ class SortOrder(str, Enum):
 
 
 class PostListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: PostId
     author_id: UserId
+    author: Any = Field(exclude=True)
     title: Title
     view_count: Count = 0
     like_count: Count = 0
     comment_count: Count = 0
     created_at: datetime
+
+    @computed_field
+    @property
+    def author_nickname(self) -> str:
+        return self.author.nickname
 
 
 class PostDetail(PostListItem):

@@ -9,7 +9,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     nickname: Mapped[str] = mapped_column(String(15), nullable=False)
     profile_img: Mapped[str | None] = mapped_column(String(500))

@@ -83,13 +83,7 @@ async def get_auth_tokens(
             detail="Incorrect email or password",
         )
 
-    # 오래된 세션 정리
-    await db.execute(
-        delete(UserSession).where(
-            UserSession.user_id == db_user.id,
-            UserSession.last_used_at < datetime.now(UTC) - timedelta(days=settings.refresh_token_expire_days),
-        )
-    )
+    # TODO: 오래된 세션 정리 -> 배치 작업 처리
 
     # 토큰 생성
     token_data = {"sub": db_user.id}

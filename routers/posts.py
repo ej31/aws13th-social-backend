@@ -173,6 +173,7 @@ async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) 
 async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
     """게시글 상세 조회"""
     post = await get_post_with_author(db, post_id)
+    # TODO: Redis로 조회수 캐싱 후 배치 업데이트 예정
     post.view_count += 1
     await db.flush()
 

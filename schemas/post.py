@@ -18,22 +18,30 @@ class SortOrder(str, Enum):
     DESC = "desc"
 
 
-class PostListItem(BaseModel):
+class PostItemBase(BaseModel):
+    """게시글 목록 아이템 기본 스키마"""
     model_config = ConfigDict(from_attributes=True)
 
     id: PostId
     author_id: UserId
-    author: Any = Field(exclude=True)
     title: Title
     view_count: Count = 0
     like_count: Count = 0
     comment_count: Count = 0
     created_at: datetime
 
+
+class PostListItem(PostItemBase):
+    """게시글 목록 아이템 (author_nickname 포함)"""
+    author: Any = Field(exclude=True)
+
     @computed_field
     @property
     def author_nickname(self) -> str:
         return self.author.nickname if self.author else "Unknown"
+
+
+MyPostListItem = PostItemBase
 
 
 class PostDetail(PostListItem):
@@ -56,6 +64,11 @@ class ListPostsQuery(BaseModel):
 
 class ListPostsResponse(BaseModel):
     data: list[PostListItem]
+    pagination: Pagination
+
+
+class MyPostsResponse(BaseModel):
+    data: list[MyPostListItem]
     pagination: Pagination
 
 

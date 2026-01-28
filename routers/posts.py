@@ -14,6 +14,8 @@ from schemas.post import (
     PostListItem,
     PostUpdateRequest,
     ListPostsResponse,
+    MyPostListItem,
+    MyPostsResponse,
     PostDetail)
 
 # TODO: liked_count -> Elasticsearch로 성능 개선 고려
@@ -135,8 +137,8 @@ async def create_post(author_id: CurrentUserId, post: PostCreateRequest, db: DBS
     return PostDetail.model_validate(new_post)
 
 
-@router.get("/posts/me", response_model=ListPostsResponse)
-async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) -> ListPostsResponse:
+@router.get("/posts/me", response_model=MyPostsResponse)
+async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) -> MyPostsResponse:
     """내가 작성한 게시글 목록"""
     offset = (page - 1) * PAGE_SIZE
 
@@ -150,7 +152,6 @@ async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) 
     # 내 게시글 목록 조회
     result = await db.execute(
         select(Post)
-        .options(joinedload(Post.author))
         .where(Post.author_id == user_id)
         .order_by(Post.created_at.desc())
         .limit(PAGE_SIZE)
@@ -158,8 +159,8 @@ async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) 
     )
     posts = result.scalars().all()
 
-    return ListPostsResponse(
-        data=[PostListItem.model_validate(post) for post in posts],
+    return MyPostsResponse(
+        data=[MyPostListItem.model_validate(post) for post in posts],
         pagination=Pagination(page=page, total=total_pages)
     )
 

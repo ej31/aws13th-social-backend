@@ -1,4 +1,4 @@
-from datetime import datetime as dt
+from datetime import datetime
 
 from sqlalchemy import String, ForeignKey, Integer, DateTime, func, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -21,8 +21,8 @@ class Post(Base):
     view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     like_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     comment_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[dt] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[dt] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     author: Mapped["User"] = relationship()
     

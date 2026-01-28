@@ -44,6 +44,27 @@ router = APIRouter(
 )
 
 
+async def get_post_or_404(db, post_id: str) -> Post:
+    """게시글 조회 (없으면 404)"""
+    result = await db.execute(select(Post).where(Post.id == post_id))
+    post = result.scalar_one_or_none()
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    return post
+
+
+def check_post_author(post: Post, author_id: str) -> None:
+    """작성자 권한 확인 (아니면 403)"""
+    if post.author_id != author_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
+
+
 @router.get("/posts", response_model=ListPostsResponse)
 async def get_posts(cur: CurrentCursor, query: ListPostsQuery = Depends()) -> ListPostsResponse:
     """
@@ -161,13 +182,7 @@ async def get_posts_mine(user_id: CurrentUserId, cur: CurrentCursor, page: Page 
 @router.get("/posts/{post_id}", response_model=PostDetail)
 async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
     """게시글 상세 조회"""
-    result = await db.execute(select(Post).where(Post.id == post_id))
-    post = result.scalar_one_or_none()
-    if post is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
+    post = await get_post_or_404(db, post_id)
     post.view_count += 1
     await db.flush()
 
@@ -178,20 +193,8 @@ async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
 async def update_post(
         author_id: CurrentUserId, post_id: PostId, update_data: PostUpdateRequest, db: DBSession) -> PostDetail:
     """게시글 수정"""
-
-    result = await db.execute(select(Post).where(Post.id == post_id))
-    post = result.scalar_one_or_none()
-
-    if post is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
-    if post.author_id != author_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized"
-        )
+    post = await get_post_or_404(db, post_id)
+    check_post_author(post, author_id)
 
     update_fields = update_data.model_dump(exclude_unset=True)
     for field, value in update_fields.items():
@@ -206,18 +209,6 @@ async def update_post(
 @router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(author_id: CurrentUserId, post_id: PostId, db: DBSession) -> None:
     """게시글 삭제"""
-    result = await db.execute(select(Post).where(Post.id == post_id))
-    post = result.scalar_one_or_none()
-
-    if post is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
-    if post.author_id != author_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized"
-        )
-
+    post = await get_post_or_404(db, post_id)
+    check_post_author(post, author_id)
     await db.delete(post)

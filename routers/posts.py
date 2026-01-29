@@ -1,10 +1,13 @@
+import asyncio
 import uuid
 from datetime import datetime, UTC
 
 from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, update
+from sqlalchemy.ext.asyncio import async_session
 from sqlalchemy.orm import joinedload
 from db.models.post import Post
+from db.session import AsyncSessionLocal
 from routers.users import CurrentUserId
 from schemas.commons import Page, PostId, Pagination, DBSession
 from schemas.post import (
@@ -17,6 +20,7 @@ from schemas.post import (
     MyPostListItem,
     MyPostsResponse,
     PostDetail)
+from utils.redis import get_redis
 
 # TODO: liked_count -> Elasticsearch로 성능 개선 고려
 
@@ -169,15 +173,50 @@ async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) 
     )
 
 
+async def flush_view_counts():
+    redis = await get_redis()
+    keys = await redis.keys("views:*")
+    for key in keys:
+        post_id = key.split(":")[1]
+        count = await redis.getdel(key)
+
+        if count:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    update(Post)
+                    .where(Post.id == post_id)
+                    .values(view_count=Post.view_count + int(count))
+                )
+                await db.commit()
+
+
+async def view_count_scheduler(interval_seconds: int = 300):
+    while True:
+        await asyncio.sleep(interval_seconds)
+        try:
+            await flush_view_counts()
+            print(f"[Scheduler] View count flushed")
+        except Exception as e:
+            print(f"[Scheduler] View count failed: {e}")
+
+
+async def get_cached_view_count(post_id: str) -> int:
+    redis = get_redis()
+    count = await redis.get(f"views:{post_id}")
+    return int(count) if count else 0
+
+
 @router.get("/posts/{post_id}", response_model=PostDetail)
 async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
     """게시글 상세 조회"""
     post = await get_post_with_author(db, post_id)
-    # TODO: Redis로 조회수 캐싱 후 배치 업데이트 예정
-    post.view_count += 1
-    await db.flush()
+    redis = get_redis()
+    await redis.incr(f"views:{post_id}")
+    cached_views = await get_cached_view_count(post_id)
 
-    return PostDetail.model_validate(post)
+    response = PostDetail.model_validate(post)
+    response.view_count = post.view_count + cached_views
+    return response
 
 
 @router.patch("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

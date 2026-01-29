@@ -1,13 +1,17 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
+from sched import scheduler
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from redis.background import BackgroundScheduler
 
 from config import settings
 from routers import users, posts, comments, likes
 from db.session import engine
+from routers.posts import view_count_scheduler
 from utils.database import init_db_pool, close_db_pool
 from utils.redis import init_redis_pool, close_redis_pool
 
@@ -18,7 +22,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     await init_db_pool()
     await init_redis_pool()
+    scheduler_task = asyncio.create_task(view_count_scheduler(60))
+
     yield
+    scheduler_task.cancel()
     await close_db_pool()
     await close_redis_pool()
     await engine.dispose()

@@ -47,7 +47,11 @@ async def get_posts_liked(user_id: CurrentUserId, db: DBSession, page: Page = 1)
         select(Post)
         .join(Like, Post.id == Like.post_id)
         .options(joinedload(Post.author))
-        .where(Like.user_id == user_id)
+        .where(
+            Like.user_id == user_id,
+            Like.user_id.is_not(None),  # 명시적 None 체크
+            Post.author_id.is_not(None)  # author 없는 경우 제외
+        )
         .order_by(Like.created_at.desc())
         .limit(LIKES_PAGE_SIZE)
         .offset(offset)

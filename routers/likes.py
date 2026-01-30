@@ -76,7 +76,6 @@ async def create_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) ->
     try:
         await db.flush()
     except IntegrityError:
-        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Already liked"

@@ -1,24 +1,14 @@
-from datetime import datetime
-
 from pydantic import BaseModel
 
-from schemas.commons import PostId, UserId, Pagination, Count, Title
-
-
-class LikedListItem(BaseModel):
-    post_id: PostId
-    author: UserId
-    title: Title
-    view_count: Count
-    like_count: Count
-    created_at: datetime
-
-
-class ListPostILiked(BaseModel):
-    data: list[LikedListItem]
-    pagination: Pagination
+from schemas.commons import Pagination, Count
+from schemas.post import PostListItem
 
 
 class LikeStatusResponse(BaseModel):
     liked: bool
     like_count: Count
+
+
+class LikedPostsResponse(BaseModel):
+    data: list[PostListItem]
+    pagination: Pagination

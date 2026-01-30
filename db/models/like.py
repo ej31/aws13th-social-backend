@@ -25,7 +25,11 @@ class Like(Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         index=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     user: Mapped[User] = relationship(back_populates="likes", lazy="noload")
     post: Mapped[Post] = relationship(back_populates="likes", lazy="noload")

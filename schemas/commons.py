@@ -1,13 +1,11 @@
 from typing import Annotated
 
-from aiomysql import Cursor
 from fastapi import Depends
 from pydantic import Field, BaseModel, StringConstraints
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_db
 from utils.auth import get_current_user_id
-from utils.database import get_cursor
 
 UserId = Annotated[
     str,
@@ -52,8 +50,6 @@ Title = Annotated[
 ]
 
 Count = Annotated[int, Field(ge=0)]
-
-CurrentCursor = Annotated[Cursor, Depends(get_cursor)]
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 

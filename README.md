@@ -19,8 +19,20 @@
 `.env` 파일 생성:
 
 ```bash
+  # ========== AUTH ==========
   SECRET_KEY=your-secret-key-here
   PASSWORD_PEPPER=your-pepper-key-here
+  COOKIE_SECURE=false # 로컬 개발용
+  
+  # ========== DB ==========
+  DB_ECHO=True # 로컬 개발용
+  DB_URL=your-database_url-here
+  
+  # ========== REDIS ==========
+  REDIS_URL=your-redis_url-here
+  
+  # ========== CORS ==========
+  CORS_ORIGINS=[""]
 ```
 
 키 생성 방법:
@@ -28,25 +40,10 @@
   python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 3. 테스트 데이터 생성
-
-```bash
-  python scripts/seed.py
-```
-
-### 4. 서버 실행
+### 3. 서버 실행
 
 ```bash
   fastapi dev main.py
 ```
 
 Swagger UI: <http://127.0.0.1:8000/docs>
-
-## 테스트 계정
-
-| email | password | 설명 |
-|-------|----------|------|
-| test@example.com | Test1234! | 기본 테스트 계정 |
-| test2@example.com | Test1234! | 보조 테스트 계정 |
-
-> 테스트 계정은 `python scripts/seed.py` 실행 후 사용 가능합니다.

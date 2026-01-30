@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from db.models.post import Post
     from db.models.comment import Comment
+    from db.models.like import Like
 
 
 class User(Base):
@@ -24,3 +25,4 @@ class User(Base):
 
     posts: Mapped[list["Post"]] = relationship(back_populates="author", lazy="noload")
     comments: Mapped[list["Comment"]] = relationship(back_populates="author", lazy="noload")
+    likes: Mapped[list["Like"]] = relationship(back_populates="user", lazy="noload")

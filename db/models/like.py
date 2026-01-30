@@ -1,9 +1,11 @@
 from datetime import datetime
 
 from sqlalchemy import String, ForeignKey, DateTime, func, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.base import Base
+from db.models.post import Post
+from db.models.user import User
 
 
 class Like(Base):
@@ -24,3 +26,6 @@ class Like(Base):
         index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped[User] = relationship(back_populates="likes", lazy="noload")
+    post: Mapped[Post] = relationship(back_populates="likes", lazy="noload")

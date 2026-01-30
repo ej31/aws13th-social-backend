@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select, func, exists
@@ -14,6 +15,7 @@ from schemas.post import PostListItem
 
 LIKES_PAGE_SIZE = 20
 
+logger = logging.getLogger(__name__)
 router = APIRouter(
     tags=["LIKES"],
 )
@@ -81,6 +83,8 @@ async def create_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) ->
         )
     # 트리거가 like_count 자동 증가
     await db.refresh(post)
+    if post.like_count < 1:
+        logger.warning(f"Unexpected like_count for post {post_id}: {post.like_count}")
     return LikeStatusResponse(
         liked=True,
         like_count=post.like_count,

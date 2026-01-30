@@ -5,10 +5,10 @@ from datetime import datetime, UTC
 
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, func, or_, update
+from sqlalchemy.orm import joinedload
 from db.models.post import Post
 from db.session import AsyncSessionLocal
-from routers.users import CurrentUserId
-from schemas.commons import Page, PostId, Pagination, DBSession
+from schemas.commons import Page, PostId, Pagination, DBSession, CurrentUserId
 from schemas.post import (
     ListPostsQuery,
     PostCreateRequest,
@@ -24,16 +24,20 @@ from utils.redis import get_redis
 # TODO: liked_count -> Elasticsearch로 성능 개선 고려
 
 PAGE_SIZE = 20
-ALLOWED_SORT_FIELDS = frozenset({"created_at", "view_count", "like_count"})
+SORT_COLUMN_MAP = {
+    'created_at': Post.created_at,
+    'view_count': Post.view_count,
+    'like_count': Post.like_count
+}
 logger = logging.getLogger(__name__)
 
 
 def get_order_by(sort: str, order: str) -> list:
     """정렬 옵션 매핑"""
-    if sort not in ALLOWED_SORT_FIELDS:
+    column = SORT_COLUMN_MAP.get(sort)
+    if column is None:
         raise ValueError(f"Invalid sort field: {sort}")
 
-    column = getattr(Post, sort)
     ordered = column.desc() if order == "desc" else column.asc()
     if sort != "created_at":
         return [ordered, Post.created_at.desc()]
@@ -43,20 +47,6 @@ def get_order_by(sort: str, order: str) -> list:
 router = APIRouter(
     tags=["POSTS"],
 )
-
-
-async def get_post_with_author(db, post_id: str) -> Post:
-    """게시글 상세 조회용 (author JOIN)"""
-    result = await db.execute(
-        select(Post).where(Post.id == post_id)
-    )
-    post = result.scalar_one_or_none()
-    if post is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found"
-        )
-    return post
 
 
 async def lock_post_for_update(db, post_id: str) -> Post:
@@ -105,19 +95,18 @@ async def get_posts(db: DBSession, query: ListPostsQuery = Depends()) -> ListPos
     count_query = select(func.count()).select_from(Post)
     if where_condition is not None:
         count_query = count_query.where(where_condition)
-    count_result = await db.execute(count_query)
-    total_count = count_result.scalar()
+    total_count = (await db.execute(count_query)).scalar()
     total_pages = (total_count + PAGE_SIZE - 1) // PAGE_SIZE or 1
 
     # 게시글 목록 조회
-    posts_query = select(Post)
+    posts_query = select(Post).options(joinedload(Post.author))
     if where_condition is not None:
         posts_query = posts_query.where(where_condition)
     posts_query = posts_query.order_by(*get_order_by(query.sort.value, query.order.value))
     posts_query = posts_query.limit(PAGE_SIZE).offset(offset)
 
     result = await db.execute(posts_query)
-    posts = result.scalars().all()
+    posts = result.unique().scalars().all()
 
     return ListPostsResponse(
         data=[PostListItem.model_validate(post) for post in posts],
@@ -129,19 +118,16 @@ async def get_posts(db: DBSession, query: ListPostsQuery = Depends()) -> ListPos
              status_code=status.HTTP_201_CREATED)
 async def create_post(author_id: CurrentUserId, post: PostCreateRequest, db: DBSession) -> PostCreateResponse:
     """ 게시글 생성 """
-    now = datetime.now(UTC)
-
     new_post = Post(
         id=f"post_{uuid.uuid4().hex}",
         author_id=author_id,
         title=post.title,
         content=post.content,
-        created_at=now,
-        updated_at=now,
     )
 
     db.add(new_post)
     await db.flush()
+    await db.refresh(new_post)
 
     return PostCreateResponse.model_validate(new_post)
 
@@ -152,10 +138,10 @@ async def get_posts_mine(user_id: CurrentUserId, db: DBSession, page: Page = 1) 
     offset = (page - 1) * PAGE_SIZE
 
     # 총 개수 조회
-    total_count = await db.execute(
+    total_count = (await db.execute(
         select(func.count()).select_from(Post).where(Post.author_id == user_id)
-    )
-    total_pages = (total_count.scalar() + PAGE_SIZE - 1) // PAGE_SIZE or 1
+    )).scalar()
+    total_pages = (total_count + PAGE_SIZE - 1) // PAGE_SIZE or 1
 
     # 내 게시글 목록 조회
     result = await db.execute(
@@ -189,7 +175,10 @@ async def flush_view_counts():
 
     async with AsyncSessionLocal() as db:
         for key in keys:
-            post_id = key.split(":")[1]
+            parts = key.split(":")
+            if len(parts) != 2 or parts[0] != "views":
+                continue
+            post_id = parts[1]
             count = await redis.getdel(key)
 
             if count:
@@ -211,18 +200,27 @@ async def view_count_scheduler(interval_seconds: int = 300):
             logger.error(f"[Scheduler] View count failed: {e}", exc_info=True)
 
 
-async def get_cached_view_count(post_id: str) -> int:
-    redis = get_redis()
-    count = await redis.get(f"views:{post_id}")
-    return int(count) if count else 0
-
-
 @router.get("/posts/{post_id}", response_model=PostDetail)
 async def get_single_post(post_id: PostId, db: DBSession) -> PostDetail:
     """게시글 상세 조회"""
-    post = await get_post_with_author(db, post_id)
+    result = await db.execute(
+        select(Post)
+        .options(joinedload(Post.author))
+        .where(Post.id == post_id)
+    )
+    post = result.scalar_one_or_none()
+    if post is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+
     redis = get_redis()
-    cached_views = await redis.incr(f"views:{post_id}")
+    try:
+        cached_views = await redis.incr(f"views:{post_id}")
+    except Exception as e:
+        logger.warning(f"Redis incr failed: {e}")
+        cached_views = 0
 
     response = PostDetail.model_validate(post)
     response.view_count = post.view_count + cached_views

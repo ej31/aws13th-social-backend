@@ -90,7 +90,6 @@ async def create_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) ->
 @router.delete("/posts/{post_id}/likes", response_model=LikeStatusResponse)
 async def delete_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) -> LikeStatusResponse:
     """좋아요 취소"""
-    post = await _get_post_or_404(db, post_id)
     result = await db.execute(
         select(Like)
         .where(Like.post_id == post_id, Like.user_id == user_id)
@@ -101,9 +100,10 @@ async def delete_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) ->
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Like not found"
         )
-
     await db.delete(like)
     await db.flush()
+
+    post = await _get_post_or_404(db, post_id)
     await db.refresh(post)  # 트리거가 like_count 감소 → 최신값 가져오기
 
     return LikeStatusResponse(

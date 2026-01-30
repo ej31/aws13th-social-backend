@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, exists
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -115,20 +115,21 @@ async def delete_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) ->
 @router.get("/posts/{post_id}/likes", response_model=LikeStatusResponse)
 async def get_like_status(post_id: PostId, user_id: CurrentUserId, db: DBSession) -> LikeStatusResponse:
     """좋아요 상태 확인"""
-    # 게시글 조회
-    post_result = await db.execute(select(Post).where(Post.id == post_id))
-    post = post_result.scalar_one_or_none()
-    if post is None:
+    result = await db.execute(
+        select(
+            Post,
+            exists(
+                select(1).where(Like.post_id == post_id, Like.user_id == user_id)
+            )
+        ).where(Post.id == post_id)
+    )
+    row = result.one_or_none()
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
-
-    # 좋아요 여부 확인
-    like_result = await db.execute(
-        select(Like).where(Like.post_id == post_id, Like.user_id == user_id)
-    )
-    is_liked = like_result.scalar_one_or_none() is not None
+    post, is_liked = row
 
     return LikeStatusResponse(
         liked=is_liked,

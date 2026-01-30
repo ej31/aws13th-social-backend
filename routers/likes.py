@@ -52,7 +52,7 @@ async def get_posts_liked(user_id: CurrentUserId, db: DBSession, page: Page = 1)
         .limit(LIKES_PAGE_SIZE)
         .offset(offset)
     )
-    liked_posts = result.unique().scalars().all()
+    liked_posts = result.scalars().all()
 
     return LikedPostsResponse(
         data=[PostListItem.model_validate(post) for post in liked_posts],

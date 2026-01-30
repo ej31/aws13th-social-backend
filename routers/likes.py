@@ -1,11 +1,15 @@
-from datetime import datetime, UTC
+import uuid
 
-from aiomysql import IntegrityError
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
+from db.models.like import Like
+from db.models.post import Post
 from routers.users import CurrentUserId
-from schemas.commons import PostId, Page, Pagination, CurrentCursor
-from schemas.like import LikedListItem, ListPostILiked, LikeStatusResponse
+from schemas.commons import PostId, Page, Pagination, CurrentCursor, DBSession
+from schemas.like import LikeStatusResponse, LikedPostsResponse
+from schemas.post import PostListItem
 
 LIKES_PAGE_SIZE = 20
 
@@ -14,8 +18,8 @@ router = APIRouter(
 )
 
 
-@router.get("/posts/liked", response_model=ListPostILiked)
-async def get_posts_liked(user_id: CurrentUserId, cur: CurrentCursor, page: Page = 1) -> ListPostILiked:
+@router.get("/posts/liked", response_model=LikedPostsResponse)
+async def get_posts_liked(user_id: CurrentUserId, cur: CurrentCursor, page: Page = 1) -> LikedPostsResponse:
     """내가 좋아요한 게시글 목록"""
     offset = (page - 1) * LIKES_PAGE_SIZE
 
@@ -40,48 +44,43 @@ async def get_posts_liked(user_id: CurrentUserId, cur: CurrentCursor, page: Page
     )
     liked_posts = await cur.fetchall()
 
-    return ListPostILiked(
-        data=[LikedListItem(**post) for post in liked_posts],
+    return LikedPostsResponse(
+        data=[PostListItem(**post) for post in liked_posts],
         pagination=Pagination(page=page, total=total_pages)
     )
 
 
 @router.post("/posts/{post_id}/likes", response_model=LikeStatusResponse,
              status_code=status.HTTP_201_CREATED)
-async def create_like(post_id: PostId, user_id: CurrentUserId, cur: CurrentCursor) -> LikeStatusResponse:
+async def create_like(post_id: PostId, user_id: CurrentUserId, db: DBSession) -> LikeStatusResponse:
     """좋아요 등록"""
-    # 게시글 존재 확인
-    await cur.execute("SELECT id FROM posts WHERE id = %s", (post_id,))
-    if not await cur.fetchone():
+    result = await db.execute(select(Post).where(Post.id == post_id))
+    post = result.scalar_one_or_none()
+    if post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Post not found"
         )
 
-    # 좋아요 등록 (복합 PK이므로 중복 시 IntegrityError)
-    now = datetime.now(UTC)
+    new_like = Like(
+        id=f"like_{uuid.uuid4().hex}",
+        post_id=post_id,
+        user_id=user_id
+    )
+    db.add(new_like)
     try:
-        await cur.execute(
-            "INSERT INTO likes (post_id, user_id, created_at) VALUES (%(post_id)s, %(user_id)s, %(created_at)s)",
-            {
-                "post_id": post_id,
-                "user_id": user_id,
-                "created_at":now
-            }
-        )
+        await db.flush()
     except IntegrityError:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Already liked"
         )
-
     # 트리거가 like_count 자동 증가
-    await cur.execute("SELECT like_count FROM posts WHERE id = %s", (post_id,))
-    post = await cur.fetchone()
-
+    await db.refresh(post)
     return LikeStatusResponse(
         liked=True,
-        like_count=post["like_count"] if post else 1,
+        like_count=post.like_count,
     )
 
 

@@ -1,13 +1,14 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from db.models.like import Like
 from db.models.post import Post
 from routers.users import CurrentUserId
-from schemas.commons import PostId, Page, Pagination, CurrentCursor, DBSession
+from schemas.commons import PostId, Page, Pagination, DBSession
 from schemas.like import LikeStatusResponse, LikedPostsResponse
 from schemas.post import PostListItem
 
@@ -28,33 +29,31 @@ async def _get_post_or_404(db: DBSession, post_id: PostId) -> Post:
     return post
 
 @router.get("/posts/liked", response_model=LikedPostsResponse)
-async def get_posts_liked(user_id: CurrentUserId, cur: CurrentCursor, page: Page = 1) -> LikedPostsResponse:
+async def get_posts_liked(user_id: CurrentUserId, db: DBSession, page: Page = 1) -> LikedPostsResponse:
     """내가 좋아요한 게시글 목록"""
     offset = (page - 1) * LIKES_PAGE_SIZE
 
     # 총 개수 조회
-    await cur.execute(
-        "SELECT COUNT(*) as total FROM likes WHERE user_id = %s",
-        (user_id,)
-    )
-    total_count = (await cur.fetchone())["total"]
+    total_count = (await db.execute(
+        select(func.count())
+        .select_from(Like)
+        .where(Like.user_id == user_id)
+    )).scalar()
     total_pages = (total_count + LIKES_PAGE_SIZE - 1) // LIKES_PAGE_SIZE or 1
 
-    await cur.execute(
-        """
-        SELECT p.id as post_id, p.author_id as author, p.title, p.view_count, p.like_count, p.created_at
-        FROM likes l
-        JOIN posts p ON l.post_id = p.id
-        WHERE l.user_id = %s
-        ORDER BY l.created_at DESC
-        LIMIT %s OFFSET %s
-        """,
-        (user_id, LIKES_PAGE_SIZE, offset)
+    result = await db.execute(
+        select(Post)
+        .join(Like, Post.id == Like.post_id)
+        .options(joinedload(Post.author))
+        .where(Like.user_id == user_id)
+        .order_by(Like.created_at.desc())
+        .limit(LIKES_PAGE_SIZE)
+        .offset(offset)
     )
-    liked_posts = await cur.fetchall()
+    liked_posts = result.unique().scalars().all()
 
     return LikedPostsResponse(
-        data=[PostListItem(**post) for post in liked_posts],
+        data=[PostListItem.model_validate(post) for post in liked_posts],
         pagination=Pagination(page=page, total=total_pages)
     )
 
